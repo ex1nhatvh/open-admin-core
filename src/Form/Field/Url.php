@@ -1,8 +1,8 @@
 <?php
 
-namespace OpenAdmin\Admin\Form\Field;
+namespace OpenAdminCore\Admin\Form\Field;
 
-use OpenAdmin\Admin\Form;
+use OpenAdminCore\Admin\Form;
 
 class Url extends Text
 {

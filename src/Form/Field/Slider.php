@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Form\Field;
+namespace OpenAdminCore\Admin\Form\Field;
 
-use OpenAdmin\Admin\Form\Field;
-use OpenAdmin\Admin\Form\Field\Traits\HasNumberModifiers;
+use OpenAdminCore\Admin\Form\Field;
+use OpenAdminCore\Admin\Form\Field\Traits\HasNumberModifiers;
 
 class Slider extends Field
 {

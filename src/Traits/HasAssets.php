@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdmin\Admin\Traits;
+namespace OpenAdminCore\Admin\Traits;
 
 trait HasAssets
 {

@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Traits;
+namespace OpenAdminCore\Admin\Traits;
 
-use OpenAdmin\Admin\Form;
-use OpenAdmin\Admin\Grid;
-use OpenAdmin\Admin\Tree;
+use OpenAdminCore\Admin\Form;
+use OpenAdminCore\Admin\Grid;
+use OpenAdminCore\Admin\Tree;
 
 /**
  * @deprecated

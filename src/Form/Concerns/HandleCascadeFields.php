@@ -1,8 +1,8 @@
 <?php
 
-namespace OpenAdmin\Admin\Form\Concerns;
+namespace OpenAdminCore\Admin\Form\Concerns;
 
-use OpenAdmin\Admin\Form\Field;
+use OpenAdminCore\Admin\Form\Field;
 
 trait HandleCascadeFields
 {

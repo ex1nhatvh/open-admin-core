@@ -1,8 +1,8 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Displayers;
+namespace OpenAdminCore\Admin\Grid\Displayers;
 
-use OpenAdmin\Admin\Admin;
+use OpenAdminCore\Admin\Admin;
 
 class Input extends AbstractDisplayer
 {

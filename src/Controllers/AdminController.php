@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Controllers;
+namespace OpenAdminCore\Admin\Controllers;
 
 use Illuminate\Routing\Controller;
-use OpenAdmin\Admin\Layout\Content;
-use OpenAdmin\Admin\Traits\HasCustomHooks;
+use OpenAdminCore\Admin\Layout\Content;
+use OpenAdminCore\Admin\Traits\HasCustomHooks;
 
 class AdminController extends Controller
 {

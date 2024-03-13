@@ -1,13 +1,13 @@
 <?php
 
-namespace OpenAdmin\Admin\Form;
+namespace OpenAdminCore\Admin\Form;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use OpenAdmin\Admin\Admin;
-use OpenAdmin\Admin\Form;
-use OpenAdmin\Admin\Widgets\Form as WidgetForm;
+use OpenAdminCore\Admin\Admin;
+use OpenAdminCore\Admin\Form;
+use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
 
 /**
  * Class NestedForm.
@@ -92,7 +92,7 @@ class NestedForm
     protected $original = [];
 
     /**
-     * @var \OpenAdmin\Admin\Form|\OpenAdmin\Admin\Widgets\Form
+     * @var \OpenAdminCore\Admin\Form|\OpenAdminCore\Admin\Widgets\Form
      */
     protected $form;
 
@@ -311,7 +311,7 @@ class NestedForm
                 $value = $field->prepare($value);
             }
 
-            if (($field instanceof \OpenAdmin\Admin\Form\Field\Hidden) || $value != $field->original() || ($this->save_null_values && $value == null)) {
+            if (($field instanceof \OpenAdminCore\Admin\Form\Field\Hidden) || $value != $field->original() || ($this->save_null_values && $value == null)) {
                 if (is_array($columns)) {
                     foreach ($columns as $name => $column) {
                         Arr::set($prepared, $column, $value[$name]);

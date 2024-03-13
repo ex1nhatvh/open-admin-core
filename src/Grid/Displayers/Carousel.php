@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Displayers;
+namespace OpenAdminCore\Admin\Grid\Displayers;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Facades\Storage;
-use OpenAdmin\Admin\Widgets\Carousel as CarouselWidget;
+use OpenAdminCore\Admin\Widgets\Carousel as CarouselWidget;
 
 class Carousel extends AbstractDisplayer
 {

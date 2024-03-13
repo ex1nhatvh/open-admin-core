@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdmin\Admin\Form;
+namespace OpenAdminCore\Admin\Form;
 
 use Illuminate\Contracts\Support\Renderable;
 

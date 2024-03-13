@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Form\Field\Traits;
+namespace OpenAdminCore\Admin\Form\Field\Traits;
 
 use Illuminate\Support\Arr;
-use OpenAdmin\Admin\Admin;
-use OpenAdmin\Admin\Form;
+use OpenAdminCore\Admin\Admin;
+use OpenAdminCore\Admin\Form;
 
 /**
  * @property Form $form

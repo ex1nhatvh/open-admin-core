@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Concerns;
+namespace OpenAdminCore\Admin\Grid\Concerns;
 
 use Closure;
-use OpenAdmin\Admin\Grid;
+use OpenAdminCore\Admin\Grid;
 
 trait HasActions
 {

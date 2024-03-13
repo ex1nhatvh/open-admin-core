@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid;
+namespace OpenAdminCore\Admin\Grid;
 
-use OpenAdmin\Admin\Grid;
-use OpenAdmin\Admin\Grid\Exporters\CsvExporter;
+use OpenAdminCore\Admin\Grid;
+use OpenAdminCore\Admin\Grid\Exporters\CsvExporter;
 
 class Exporter
 {

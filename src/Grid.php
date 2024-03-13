@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdmin\Admin;
+namespace OpenAdminCore\Admin;
 
 use Closure;
 use Illuminate\Database\Eloquent\Model as Eloquent;
@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Relations;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
-use OpenAdmin\Admin\Exception\Handler;
-use OpenAdmin\Admin\Grid\Column;
-use OpenAdmin\Admin\Grid\Concerns;
-use OpenAdmin\Admin\Grid\Displayers;
-use OpenAdmin\Admin\Grid\Model;
-use OpenAdmin\Admin\Grid\Row;
-use OpenAdmin\Admin\Grid\Tools;
-use OpenAdmin\Admin\Traits\ShouldSnakeAttributes;
+use OpenAdminCore\Admin\Exception\Handler;
+use OpenAdminCore\Admin\Grid\Column;
+use OpenAdminCore\Admin\Grid\Concerns;
+use OpenAdminCore\Admin\Grid\Displayers;
+use OpenAdminCore\Admin\Grid\Model;
+use OpenAdminCore\Admin\Grid\Row;
+use OpenAdminCore\Admin\Grid\Tools;
+use OpenAdminCore\Admin\Traits\ShouldSnakeAttributes;
 
 class Grid
 {
@@ -42,7 +42,7 @@ class Grid
     /**
      * The grid data model instance.
      *
-     * @var \OpenAdmin\Admin\Grid\Model|\Illuminate\Database\Eloquent\Builder
+     * @var \OpenAdminCore\Admin\Grid\Model|\Illuminate\Database\Eloquent\Builder
      */
     protected $model;
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Filter\Presenter;
+namespace OpenAdminCore\Admin\Grid\Filter\Presenter;
 
 use Illuminate\Contracts\Support\Arrayable;
-use OpenAdmin\Admin\Facades\Admin;
+use OpenAdminCore\Admin\Facades\Admin;
 
 class Radio extends Presenter
 {

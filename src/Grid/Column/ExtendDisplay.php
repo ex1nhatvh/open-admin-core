@@ -1,12 +1,12 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Column;
+namespace OpenAdminCore\Admin\Grid\Column;
 
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
-use OpenAdmin\Admin\Grid\Column;
-use OpenAdmin\Admin\Grid\Displayers;
-use OpenAdmin\Admin\Grid\Model;
+use OpenAdminCore\Admin\Grid\Column;
+use OpenAdminCore\Admin\Grid\Displayers;
+use OpenAdminCore\Admin\Grid\Model;
 
 /**
  * Trait ExtendDisplay.

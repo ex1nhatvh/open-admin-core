@@ -1,8 +1,8 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Actions;
+namespace OpenAdminCore\Admin\Grid\Actions;
 
-use OpenAdmin\Admin\Actions\RowAction;
+use OpenAdminCore\Admin\Actions\RowAction;
 
 class Show extends RowAction
 {

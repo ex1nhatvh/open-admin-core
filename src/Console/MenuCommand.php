@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Console;
+namespace OpenAdminCore\Admin\Console;
 
 use Illuminate\Console\Command;
-use OpenAdmin\Admin\Facades\Admin;
+use OpenAdminCore\Admin\Facades\Admin;
 
 class MenuCommand extends Command
 {

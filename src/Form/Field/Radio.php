@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Form\Field;
+namespace OpenAdminCore\Admin\Form\Field;
 
 use Illuminate\Contracts\Support\Arrayable;
-use OpenAdmin\Admin\Form\Field;
-use OpenAdmin\Admin\Form\Field\Traits\CanCascadeFields;
+use OpenAdminCore\Admin\Form\Field;
+use OpenAdminCore\Admin\Form\Field\Traits\CanCascadeFields;
 
 class Radio extends Field
 {

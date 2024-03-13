@@ -1,11 +1,11 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Tools;
+namespace OpenAdminCore\Admin\Grid\Tools;
 
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Query\Builder;
-use OpenAdmin\Admin\Grid;
+use OpenAdminCore\Admin\Grid;
 
 class Footer extends AbstractTool
 {

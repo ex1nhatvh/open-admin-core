@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Controllers;
+namespace OpenAdminCore\Admin\Controllers;
 
 use Illuminate\Support\Arr;
-use OpenAdmin\Admin\Admin;
+use OpenAdminCore\Admin\Admin;
 
 class Dashboard
 {

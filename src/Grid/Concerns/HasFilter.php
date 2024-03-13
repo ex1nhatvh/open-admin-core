@@ -1,17 +1,17 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Concerns;
+namespace OpenAdminCore\Admin\Grid\Concerns;
 
 use Closure;
 use Illuminate\Support\Collection;
-use OpenAdmin\Admin\Grid\Filter;
+use OpenAdminCore\Admin\Grid\Filter;
 
 trait HasFilter
 {
     /**
      * The grid Filter.
      *
-     * @var \OpenAdmin\Admin\Grid\Filter
+     * @var \OpenAdminCore\Admin\Grid\Filter
      */
     protected $filter;
 

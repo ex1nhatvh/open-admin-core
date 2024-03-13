@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Tools;
+namespace OpenAdminCore\Admin\Grid\Tools;
 
 use Illuminate\Contracts\Support\Renderable;
-use OpenAdmin\Admin\Grid;
+use OpenAdminCore\Admin\Grid;
 
 abstract class AbstractTool implements Renderable
 {

@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Form;
+namespace OpenAdminCore\Admin\Form;
 
 use Illuminate\Support\Collection;
-use OpenAdmin\Admin\Form;
+use OpenAdminCore\Admin\Form;
 
 class Tab
 {

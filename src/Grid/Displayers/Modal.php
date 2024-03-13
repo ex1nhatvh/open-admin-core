@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Displayers;
+namespace OpenAdminCore\Admin\Grid\Displayers;
 
 use Illuminate\Contracts\Support\Renderable;
-use OpenAdmin\Admin\Admin;
-use OpenAdmin\Admin\Grid\Simple;
+use OpenAdminCore\Admin\Admin;
+use OpenAdminCore\Admin\Grid\Simple;
 
 class Modal extends AbstractDisplayer
 {

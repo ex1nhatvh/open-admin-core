@@ -1,12 +1,12 @@
 <?php
 
-namespace OpenAdmin\Admin\Form\Field;
+namespace OpenAdminCore\Admin\Form\Field;
 
 use Illuminate\Support\Arr;
-use OpenAdmin\Admin\Form;
-use OpenAdmin\Admin\Form\Field;
-use OpenAdmin\Admin\Form\Field\Traits\HasMediaPicker;
-use OpenAdmin\Admin\Form\Field\Traits\UploadField;
+use OpenAdminCore\Admin\Form;
+use OpenAdminCore\Admin\Form\Field;
+use OpenAdminCore\Admin\Form\Field\Traits\HasMediaPicker;
+use OpenAdminCore\Admin\Form\Field\Traits\UploadField;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class MultipleFile extends Field

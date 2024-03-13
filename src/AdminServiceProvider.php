@@ -1,12 +1,12 @@
 <?php
 
-namespace OpenAdmin\Admin;
+namespace OpenAdminCore\Admin;
 
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
-use OpenAdmin\Admin\Layout\Content;
+use OpenAdminCore\Admin\Layout\Content;
 
 class AdminServiceProvider extends ServiceProvider
 {
@@ -206,7 +206,7 @@ class AdminServiceProvider extends ServiceProvider
     public function bladeDirectives()
     {
         Blade::directive('box', function ($title) {
-            return "<?php \$box = new \OpenAdmin\Admin\Widgets\Box({$title}, '";
+            return "<?php \$box = new \OpenAdminCore\Admin\Widgets\Box({$title}, '";
         });
 
         Blade::directive('endbox', function ($expression) {

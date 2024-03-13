@@ -1,13 +1,13 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Concerns;
+namespace OpenAdminCore\Admin\Grid\Concerns;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use OpenAdmin\Admin\Grid\Column;
-use OpenAdmin\Admin\Grid\Model;
-use OpenAdmin\Admin\Grid\Tools;
+use OpenAdminCore\Admin\Grid\Column;
+use OpenAdminCore\Admin\Grid\Model;
+use OpenAdminCore\Admin\Grid\Tools;
 
 /**
  * Trait HasQuickSearch.

@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Form\Field\Traits;
+namespace OpenAdminCore\Admin\Form\Field\Traits;
 
-use OpenAdmin\Admin\Admin;
-use OpenAdmin\Admin\Grid\Selectable;
+use OpenAdminCore\Admin\Admin;
+use OpenAdminCore\Admin\Grid\Selectable;
 
 trait BelongsToRelation
 {
@@ -37,7 +37,7 @@ trait BelongsToRelation
     {
         if (!class_exists($selectable) || !is_subclass_of($selectable, Selectable::class)) {
             throw new \InvalidArgumentException(
-                "[Class [{$selectable}] must be a sub class of OpenAdmin\Admin\Grid\Selectable"
+                "[Class [{$selectable}] must be a sub class of OpenAdminCore\Admin\Grid\Selectable"
             );
         }
 
@@ -264,7 +264,7 @@ JS;
     }
 
     /**
-     * @return \OpenAdmin\Admin\Grid
+     * @return \OpenAdminCore\Admin\Grid
      */
     protected function makeGrid()
     {

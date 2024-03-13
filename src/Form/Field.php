@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdmin\Admin\Form;
+namespace OpenAdminCore\Admin\Form;
 
 use Closure;
 use Illuminate\Contracts\Support\Arrayable;
@@ -8,9 +8,9 @@ use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
-use OpenAdmin\Admin\Admin;
-use OpenAdmin\Admin\Form;
-use OpenAdmin\Admin\Widgets\Form as WidgetForm;
+use OpenAdminCore\Admin\Admin;
+use OpenAdminCore\Admin\Form;
+use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
 
 /**
  * Class Field.
@@ -1604,7 +1604,7 @@ class Field implements Renderable
     /**
      * @param \Closure $callback
      *
-     * @return \OpenAdmin\Admin\Form\Field
+     * @return \OpenAdminCore\Admin\Form\Field
      */
     public function with(Closure $callback): self
     {

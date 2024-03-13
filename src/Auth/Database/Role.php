@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Auth\Database;
+namespace OpenAdminCore\Admin\Auth\Database;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use OpenAdmin\Admin\Traits\DefaultDatetimeFormat;
+use OpenAdminCore\Admin\Traits\DefaultDatetimeFormat;
 
 class Role extends Model
 {

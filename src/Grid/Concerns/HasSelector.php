@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Concerns;
+namespace OpenAdminCore\Admin\Grid\Concerns;
 
-use OpenAdmin\Admin\Grid;
-use OpenAdmin\Admin\Grid\Tools\Selector;
+use OpenAdminCore\Admin\Grid;
+use OpenAdminCore\Admin\Grid\Tools\Selector;
 
 /**
  * @mixin Grid

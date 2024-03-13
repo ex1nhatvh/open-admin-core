@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Console;
+namespace OpenAdminCore\Admin\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use OpenAdmin\Admin\Admin;
+use OpenAdminCore\Admin\Admin;
 
 class ImportCommand extends Command
 {

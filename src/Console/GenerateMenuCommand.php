@@ -1,12 +1,12 @@
 <?php
 
-namespace OpenAdmin\Admin\Console;
+namespace OpenAdminCore\Admin\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
-use OpenAdmin\Admin\Auth\Database\Menu;
+use OpenAdminCore\Admin\Auth\Database\Menu;
 
 class GenerateMenuCommand extends Command
 {

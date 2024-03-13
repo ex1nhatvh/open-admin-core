@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Concerns;
+namespace OpenAdminCore\Admin\Grid\Concerns;
 
 use Illuminate\Support\Collection;
-use OpenAdmin\Admin\Grid;
-use OpenAdmin\Admin\Grid\Tools\ColumnSelector;
+use OpenAdminCore\Admin\Grid;
+use OpenAdminCore\Admin\Grid\Tools\ColumnSelector;
 
 trait CanHidesColumns
 {

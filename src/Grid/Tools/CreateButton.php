@@ -1,8 +1,8 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Tools;
+namespace OpenAdminCore\Admin\Grid\Tools;
 
-use OpenAdmin\Admin\Grid;
+use OpenAdminCore\Admin\Grid;
 
 class CreateButton extends AbstractTool
 {

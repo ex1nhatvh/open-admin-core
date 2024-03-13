@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Filter\Presenter;
+namespace OpenAdminCore\Admin\Grid\Filter\Presenter;
 
 use Illuminate\Support\Arr;
-use OpenAdmin\Admin\Admin;
+use OpenAdminCore\Admin\Admin;
 
 class DateTime extends Presenter
 {

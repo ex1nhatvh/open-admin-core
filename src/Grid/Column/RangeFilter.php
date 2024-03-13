@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdmin\Admin\Grid\Column;
+namespace OpenAdminCore\Admin\Grid\Column;
 
-use OpenAdmin\Admin\Admin;
-use OpenAdmin\Admin\Grid\Model;
+use OpenAdminCore\Admin\Admin;
+use OpenAdminCore\Admin\Grid\Model;
 
 class RangeFilter extends Filter
 {
