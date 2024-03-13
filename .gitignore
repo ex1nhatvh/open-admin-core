@@ -1,0 +1,16 @@
+.idea/
+.vscode/
+.env
+composer.lock
+Nginx_1.*.conf
+docker-compose.yml
+/vendor
+.phpunit.result.cache
+.DS_Store
+phpunit.phar
+composer.phar
+*.project
+.php_cs.cache
+resources/assets/minify-manifest.json
+resources/assets/open-admin.min.css
+resources/assets/open-admin.min.js
