@@ -3,6 +3,7 @@
 namespace OpenAdminCore\Admin\Console;
 
 use Illuminate\Console\Command;
+use OpenAdminCore\Admin\Auth\Database\AdminTablesSeeder;
 
 class InstallCommand extends Command
 {
@@ -51,7 +52,7 @@ class InstallCommand extends Command
         $userModel = config('admin.database.users_model');
 
         if ($userModel::count() == 0) {
-            $this->call('db:seed', ['--class' => \OpenAdminCore\Admin\Auth\Database\AdminTablesSeeder::class]);
+            $this->call('db:seed', ['--class' => AdminTablesSeeder::class]);
         }
     }
 

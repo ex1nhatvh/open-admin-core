@@ -54,13 +54,13 @@ Installation
 First, install laravel (7.0 / 8.0 or up), and make sure that the database connection settings are correct.
 
 ```
-composer require open-admin-org/open-admin
+composer require dedermus/open-admin-core
 ```
 
 Then run these commands to publish assets and config：
 
 ```
-php artisan vendor:publish --provider="OpenAdmin\Admin\AdminServiceProvider"
+php artisan vendor:publish --provider="OpenAdminCore\Admin\AdminServiceProvider"
 ```
 After run command you can find config file in `config/admin.php`, in this file you can change the install directory,db connection or table names.
 
