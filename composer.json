@@ -15,8 +15,7 @@
     "php": "~7.3|~8.0",
     "symfony/dom-crawler": "~3.1|~4.0|~5.0",
     "laravel/framework": ">=7.0",
-    "doctrine/dbal": "2.*|3.*",
-    "twbs/bootstrap": "5.3.3"
+    "doctrine/dbal": "2.*|3.*"
   },
   "require-dev": {
     "laravel/laravel": ">=8.0",
@@ -44,12 +43,7 @@
   },
   "scripts": {
     "sass": "sass --watch resources/assets/open-admin-core/scss/styles.scss:resources/assets/open-admin-core/css/styles.css resources/assets/open-admin-core/scss/pages:resources/assets/open-admin-core/css/pages --style compressed",
-    "test": "./vendor/bin/phpunit",
-    "post-autoload-dump": [
-        "@php -r \"copy('vendor/twbs/bootstrap/scss/', 'resources/assets/bootstrap5.3.3/scss/');\"",
-        "@php -r \"copy('vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js', 'resources/assets/bootstrap5.3.3/bootstrap.bundle.min.js');\"",
-        "@php -r \"copy('vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js.map', 'resources/assets/bootstrap5.3.3/bootstrap.bundle.min.js.map');\""
-        ]
+    "test": "./vendor/bin/phpunit"
   },
   "suggest": {
     "intervention/image": "Required to handling and manipulation upload images (~2.3).",
