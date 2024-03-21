@@ -46,7 +46,7 @@ class ConfigCommand extends Command
         $this->printDiff('Removed', $removed, true);
 
         $this->line('');
-        $this->comment('Please open `vendor/encore/open-admin/config/admin.php` to check the difference');
+        $this->comment('Please open `vendor/dedermus/open-admin-core/config/admin.php` to check the difference');
     }
 
     protected function diff(array $from, array $to)

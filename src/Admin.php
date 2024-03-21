@@ -25,7 +25,7 @@ class Admin
      *
      * @var string
      */
-    public const VERSION = '1.0.27';
+    public const VERSION = '1.0.01';
 
     /**
      * @var Navbar
@@ -418,7 +418,7 @@ class Admin
 
     public static function asset($asset)
     {
-        return url('/vendor/open-admin/'.$asset);
+        return url('/vendor/dedermus/'.$asset);
     }
 
     public static function js_trans()

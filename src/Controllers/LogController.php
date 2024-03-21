@@ -26,15 +26,15 @@ class LogController extends AdminController
         $grid->model()->orderBy('id', 'DESC');
 
         $grid->column('id', 'ID')->sortable();
-        $grid->column('user.name', 'User');
-        $grid->column('method')->display(function ($method) {
+        $grid->column('user.name', trans('admin.name'));
+        $grid->column('method', trans('admin.http.method'))->display(function ($method) {
             $color = Arr::get(OperationLog::$methodColors, $method, 'grey');
 
             return "<span class=\"badge bg-$color\">$method</span>";
-        });
-        $grid->column('path')->label('info');
-        $grid->column('ip')->label('primary');
-        $grid->column('input')->display(function ($input) {
+        })->sortable();
+        $grid->column('path', trans('admin.http.path'))->label('info')->sortable();
+        $grid->column('ip')->label('primary')->sortable();
+        $grid->column('input', trans('admin.input'))->display(function ($input) {
             $input = json_decode($input, true);
             $input = Arr::except($input, ['_pjax', '_token', '_method', '_previous_']);
             if (empty($input)) {
@@ -42,9 +42,9 @@ class LogController extends AdminController
             }
 
             return '<pre>'.json_encode($input, JSON_PRETTY_PRINT | JSON_HEX_TAG).'</pre>';
-        });
+        })->sortable();
 
-        $grid->column('created_at', trans('admin.created_at'));
+        $grid->column('created_at', trans('admin.created_at'))->sortable();
 
         $grid->actions(function (Grid\Displayers\Actions\Actions $actions) {
             $actions->disableEdit();

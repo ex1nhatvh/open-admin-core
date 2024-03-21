@@ -11,7 +11,7 @@
 		@endif
 
 		<link rel="stylesheet" href="{{ Admin::asset("open-admin/css/styles.css")}}">
-		<script src="{{ Admin::asset("bootstrap5/bootstrap.bundle.min.js")}}"></script>
+		<script src="{{ Admin::asset("bootstrap5.3.3/bootstrap.bundle.min.js")}}"></script>
 
 	</head>
 	<body class="bg-light" @if(config('admin.login_background_image'))style="background: url({{config('admin.login_background_image')}}) no-repeat;background-size: cover;"@endif>
