@@ -78,7 +78,7 @@ trait HasAssets
      * @var array
      */
     public static $baseJs = [
-        'vendor/open-admin/bootstrap5.5.5/bootstrap.bundle.min.js',
+        'vendor/open-admin/bootstrap5.3.3/bootstrap.bundle.min.js',
         'vendor/open-admin/nprogress/nprogress.js',
         'vendor/open-admin/axios/axios.min.js',
         'vendor/open-admin/sweetalert2/sweetalert2.min.js',
