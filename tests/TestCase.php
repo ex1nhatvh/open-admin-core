@@ -26,7 +26,7 @@ class TestCase extends BaseTestCase
 
         $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
-        $app->register('OpenAdminCoreCore\Admin\AdminServiceProvider');
+        $app->register('OpenAdminCore\Admin\AdminServiceProvider');
 
         return $app;
     }
