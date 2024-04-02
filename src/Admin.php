@@ -418,7 +418,7 @@ class Admin
 
     public static function asset($asset)
     {
-        return url('/vendor/dedermus/'.$asset);
+        return url('/vendor/open-admin/'.$asset);
     }
 
     public static function js_trans()

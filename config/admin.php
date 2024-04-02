@@ -263,7 +263,7 @@ return [
     | Set a default avatar for newly created users.
     |
     */
-    'default_avatar' => '/vendor/dedermus/open-admin-core/gfx/user.svg',
+    'default_avatar' => '/vendor/open-admin/open-admin/gfx/user.svg',
 
     /*
     |--------------------------------------------------------------------------
