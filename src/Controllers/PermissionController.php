@@ -29,8 +29,8 @@ class PermissionController extends AdminController
         $grid = new Grid(new $permissionModel());
 
         $grid->column('id', 'ID')->sortable();
-        $grid->column('slug', trans('admin.slug'));
-        $grid->column('name', trans('admin.name'));
+        $grid->column('slug', trans('admin.slug'))->sortable();
+        $grid->column('name', trans('admin.name'))->sortable();
 
         $grid->column('http_path', trans('admin.route'))->display(function ($path) {
             return collect(explode("\n", $path))->map(function ($path) {
@@ -55,8 +55,8 @@ class PermissionController extends AdminController
             })->implode('');
         });
 
-        $grid->column('created_at', trans('admin.created_at'));
-        $grid->column('updated_at', trans('admin.updated_at'));
+        $grid->column('created_at', trans('admin.created_at'))->sortable();
+        $grid->column('updated_at', trans('admin.updated_at'))->sortable();
 
         $grid->tools(function (Grid\Tools $tools) {
             $tools->batch(function (Grid\Tools\BatchActions $actions) {

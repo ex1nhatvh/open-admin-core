@@ -28,13 +28,13 @@ class RoleController extends AdminController
         $grid = new Grid(new $roleModel());
 
         $grid->column('id', 'ID')->sortable();
-        $grid->column('slug', trans('admin.slug'));
-        $grid->column('name', trans('admin.name'));
+        $grid->column('slug', trans('admin.slug'))->sortable();
+        $grid->column('name', trans('admin.name'))->sortable();
 
         $grid->column('permissions', trans('admin.permission'))->pluck('name')->label();
 
-        $grid->column('created_at', trans('admin.created_at'));
-        $grid->column('updated_at', trans('admin.updated_at'));
+        $grid->column('created_at', trans('admin.created_at'))->sortable();
+        $grid->column('updated_at', trans('admin.updated_at'))->sortable();
 
         $grid->actions(function (Grid\Displayers\Actions\Actions $actions) {
             if ($actions->row->slug == 'administrator') {
