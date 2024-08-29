@@ -35,21 +35,21 @@
 
 Требования
 ------------
-- PHP >= 7.3.0
-- Laravel >= 8.75
+- PHP ^8.1
+- Laravel >= ^11.9
 - Fileinfo PHP Extension
 
 Установка
 ------------
 
-Сначала установите laravel 8 или выше и убедитесь, что настройки подключения к базе данных верны.
+Сначала установите laravel 11 или выше и убедитесь, что настройки подключения к базе данных верны.
 
 подтягиваем скелет фреймворка
 ```
-composer create-project --prefer-dist laravel/laravel="8.*"
+composer create-project laravel/laravel example-app
 ```
 
-устанавливаем локаль и дугие параметры в config/app.php
+устанавливаем локаль и другие параметры в config/app.php
 ```
 /*
 |--------------------------------------------------------------------------
@@ -97,7 +97,7 @@ php artisan storage:link
 ```
 создаем БД с именем new (или с дугим на усмотрение разработчика)
 
-настриваем подключение к БД в .env (примерные настройки для среды разработки)
+настраваем подключение к БД в .env (примерные настройки для среды разработки)
 ```
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
@@ -140,6 +140,19 @@ php artisan vendor:publish --provider="OpenAdminCore\Admin\AdminServiceProvider"
         
         ...
 ```
+Включение поддержки HTTPS
+```
+    /*
+    |--------------------------------------------------------------------------
+    | Access via `https`
+    |--------------------------------------------------------------------------
+    |
+    | If your page is going to be accessed via https, set it to `true`.
+    |
+    */
+    'https' => env('ADMIN_HTTPS', true),
+```
+
 
 Наконец, выполните следующую команду, чтобы завершить установку.
 ```
@@ -203,16 +216,16 @@ php artisan vendor:publish --tag=open-admin-assets --force
 Переработанные расширения от Open-Admin под Bootstrap 5.3
 
 | Extension                                                        | Description                              | open-admin                              |
-| ---------------------------------------------------------------- | ---------------------------------------- |---------------------------------------- |
-| [helpers](https://github.com/open-admin-org/helpers)             | Several tools to help you in development | ~1.0 |
-| [media-manager](https://github.com/open-admin-org/media-manager) | Provides a web interface to manage local files          | ~1.0 |
-| [config](https://github.com/open-admin-org/config)               | Config manager for open-admin            |~1.0 |
-| [grid-sortable](https://github.com/open-admin-org/grid-sortable) | Sortable grids                           |~1.0 |
+|------------------------------------------------------------------| ---------------------------------------- |---------------------------------------- |
+| [helpers](https://github.com/dedermus/helpers)                   | Several tools to help you in development | ~1.0 |
+| [media-manager](https://github.com/dedermus/media-manager)       | Provides a web interface to manage local files          | ~1.0 |
+| [config](https://github.com/dedermus/config)                     | Config manager for open-admin            |~1.0 |
+| [grid-sortable](https://github.com/dedermus/grid-sortable)       | Sortable grids                           |~1.0 |
 | [Ckeditor](https://github.com/open-admin-org/ckeditor)           | Ckeditor for forms                       |~1.0 |
-| [api-tester](https://github.com/open-admin-org/api-tester)       | Test api calls from the admin            |~1.0 |
-| [scheduling](https://github.com/open-admin-org/scheduling)       | Show and test your cronjobs              |~1.0 |
+| [api-tester](https://github.com/dedermus/api-tester)             | Test api calls from the admin            |~1.0 |
+| [scheduling](https://github.com/dedermus/scheduling)             | Show and test your cronjobs              |~1.0 |
 | [phpinfo](https://github.com/open-admin-org/phpinfo)             | Show php info in the admin               |~1.0 |
-| [log-viewer](https://github.com/open-admin-org/log-viewer)       | Log viewer for laravel                   |~1.0.12 |
+| [log-viewer](https://github.com/dedermus/log-viewer)             | Log viewer for laravel                   |~1.0.12 |
 | [page-designer](https://github.com/open-admin-org/page-designer) | Page designer to position items freely   |~1.0.18 |
 | [reporter](https://github.com/open-admin-org/reporter)           | rovides a developer-friendly web interface to view the exception    |~1.0.18 |
 | [redis-manager](https://github.com/open-admin-org/redis-manager) | Redis manager for open-admin             |~1.0.20 |
