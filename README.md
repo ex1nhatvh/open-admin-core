@@ -35,7 +35,7 @@
 
 Требования
 ------------
-- PHP ^8.1
+- PHP ^8.2
 - Laravel >= ^11.9
 - Fileinfo PHP Extension
 
@@ -174,7 +174,7 @@ php artisan vendor:publish --tag=open-admin-assets --force
 
 Поддержка справа налево
 ------------
-пройдись по этому пути `<YOUR_PROJECT_PATH>\vendor\encore\laravel-admin\src\Traits\HasAssets.php` и модифицируй `$baseCss` массив для загрузки справа налево (rtl) версии начальной загрузки и CSS-файлов AdminLTE.    
+пройдись по этому пути `<YOUR_PROJECT_PATH>\vendor\dedermus\open-admin-core\src\Traits\HasAssets.php` и модифицируй `$baseCss` массив для загрузки справа налево (rtl) версии начальной загрузки и CSS-файлов AdminLTE.    
 **bootstrap.min.css** измените его на **bootstrap.rtl.min.css**    
 **AdminLTE.min.css** измените его на **AdminLTE.rtl.min.css**
 
