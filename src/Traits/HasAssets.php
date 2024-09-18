@@ -84,7 +84,7 @@ trait HasAssets
         'vendor/open-admin/sweetalert2/sweetalert2.min.js',
         'vendor/open-admin/toastify-js/toastify.js',
         'vendor/open-admin/flatpickr/flatpickr.min.js',
-        'vendor/open-admin/flatpickr/dist/l10n/'.config('app.locale').'.min.js',  //4.6.13 version
+        'vendor/open-admin/flatpickr/dist/l10n/ru.min.js',  //4.6.13 version
         'vendor/open-admin/choicesjs/scripts/choices.min.js',
         'vendor/open-admin/sortablejs/Sortable.min.js',
 
@@ -209,6 +209,7 @@ trait HasAssets
         if (!is_null($js)) {
             return static::$baseJs = $js;
         }
+        array_push(static::$baseJs,         'vendor/open-admin/flatpickr/dist/l10n/'.config('app.locale').'.min.js'); //4.6.13 version
 
         return static::$baseJs;
     }
