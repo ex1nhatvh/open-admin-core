@@ -18705,7 +18705,7 @@ body .table.allow-wrap tr td {
 }
 
 .table tr td.column-__actions__ {
-    overflow: auto
+    overflow: visible    /* changed from auto to visible */
 }
 
 .table tr td .__actions__div .label {
@@ -18717,7 +18717,7 @@ body .table.allow-wrap tr td {
 }
 
 .table-responsive td {
-    overflow: hidden;
+    overflow: auto;   /* changed from hidden to auto */
     text-overflow: ellipsis
 }
 
