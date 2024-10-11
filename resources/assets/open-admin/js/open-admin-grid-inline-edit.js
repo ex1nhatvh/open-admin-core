@@ -49,7 +49,7 @@
                 }
             })
 
-            el.addEventListener('show.bs.popover', function (event) {
+            el.addEventListener('inserted.bs.popover', function (event) { // 'show.bs.popover' меняем на 'inserted.bs.popover'
                 let popover = bootstrap.Popover.getInstance(this);
                 admin.grid.inline_edit.trigger = this;
                 admin.grid.inline_edit.popover = popover;
