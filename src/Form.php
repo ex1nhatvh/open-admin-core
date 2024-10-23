@@ -574,7 +574,8 @@ class Form implements Renderable
         }
 
         DB::transaction(function () {
-            $updates = $this->prepareUpdate($this->updates);
+            //$updates = $this->prepareUpdate($this->updates);
+            $updates = $this->removeIgnoredFields($this->prepareUpdate($this->updates));
 
             foreach ($updates as $column => $value) {
                 /* @var Model $this ->model */
