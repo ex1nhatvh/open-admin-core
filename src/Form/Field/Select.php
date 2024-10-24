@@ -227,10 +227,12 @@ JS;
             'placeholder'        => $this->label,
         ], $this->config);
 
+        $element_id = str_replace('.', '', $this->getElementClassSelector());
+
         $this->additional_script = <<<JS
-            let elm = document.querySelector("{$this->getElementClassSelector()}");
+            let elm_{$element_id} = document.querySelector("{$this->getElementClassSelector()}");
             var lookupTimeout;
-            elm.addEventListener('search', function(event) {
+            elm_{$element_id}.addEventListener('search', function(event) {
                 clearTimeout(lookupTimeout);
                 lookupTimeout = setTimeout(function(){
                     var query = {$this->choicesObjName()}.input.value;
@@ -240,7 +242,7 @@ JS;
                 }, 250);
             });
 
-            elm.addEventListener('choice', function(event) {
+            elm_{$element_id}.addEventListener('choice', function(event) {
                 {$this->choicesObjName()}.setChoices([], '{$idField}', '{$textField}', true);
             });
         JS;
