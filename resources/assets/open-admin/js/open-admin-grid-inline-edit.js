@@ -119,20 +119,36 @@
             }
             obj.data[trigger.dataset.name] = valueObject.val;
 
-            admin.ajax.request(url,obj,function(result){
-                if (result.status){
+            // - замена обработки AJAX на вставленный ниже этого
+            // admin.ajax.request(url,obj,function(result){
+            //     if (result.status){
+            //         trigger.dataset.original = valueObject.val;
+            //         trigger.querySelector(".ie-display").innerHTML = valueObject.label;
+            //         admin.toastr.success(result.data);
+            //         popover.hide();
+            //     }else{
+            //         admin.toastr.warning(result.data);
+            //         /* // old  jquery code
+            //         var errors = xhr.responseJSON.errors;
+            //         for (var key in errors) {
+            //             $popover.find('.error').append('<div><i class="icon-times-circle-o"></i> '+errors[key]+'</div>')
+            //         }
+            //         */
+            //     }
+            // });
+
+            admin.ajax.request(url,obj,function(result)
+            {
+                let response_data = result.data;
+
+                if(response_data.status)
+                {
                     trigger.dataset.original = valueObject.val;
                     trigger.querySelector(".ie-display").innerHTML = valueObject.label;
-                    admin.toastr.success(result.data);
+                    admin.toastr.success(response_data.message);
                     popover.hide();
                 }else{
-                    admin.toastr.warning(result.data);
-                    /* // old  jquery code
-                    var errors = xhr.responseJSON.errors;
-                    for (var key in errors) {
-                        $popover.find('.error').append('<div><i class="icon-times-circle-o"></i> '+errors[key]+'</div>')
-                    }
-                    */
+                    admin.toastr.warning(response_data.message);
                 }
             });
         },
