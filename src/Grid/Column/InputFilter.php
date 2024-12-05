@@ -42,6 +42,12 @@ class InputFilter extends Filter
             return;
         }
 
+        if ($this->type == 'ilike') {
+            $model->where($this->getColumnName(), 'ilike', "%{$value}%");
+
+            return;
+        }
+
         if (in_array($this->type, ['date', 'time'])) {
             $method = 'where'.ucfirst($this->type);
             $model->{$method}($this->getColumnName(), $value);
