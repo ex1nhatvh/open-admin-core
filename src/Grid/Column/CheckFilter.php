@@ -75,12 +75,12 @@ SCRIPT;
         $value = $this->getFilterValue([]);
 
         $lists = collect($this->options)->map(function ($label, $key) use ($value) {
-            $checked = in_array($key, $value) ? 'checked' : '';
+            $checked = in_array($label, $value) ? 'checked' : '';
 
             return <<<HTML
 <li class="" style="margin: 0;">
     <label style="width: 100%;padding: 3px;">
-        <input type="checkbox" class="{$this->class['item']}" name="{$this->getColumnName()}[]" value="{$key}" {$checked}/>&nbsp;&nbsp;&nbsp;{$label}
+        <input type="checkbox" class="{$this->class['item']}" name="{$this->getColumnName()}[]" value="{$label}" {$checked}/>&nbsp;&nbsp;&nbsp;{$label}
     </label>
 </li>
 HTML;
