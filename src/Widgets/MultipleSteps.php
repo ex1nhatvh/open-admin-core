@@ -1,9 +1,12 @@
 <?php
 
-namespace OpenAdminCore\Admin\Widgets;
+namespace Encore\Admin\Widgets;
 
 use Illuminate\Contracts\Support\Renderable;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 class MultipleSteps implements Renderable
 {
     /**
@@ -12,7 +15,7 @@ class MultipleSteps implements Renderable
     protected $current;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $steps = [];
 
@@ -24,8 +27,8 @@ class MultipleSteps implements Renderable
     /**
      * MultipleSteps constructor.
      *
-     * @param array $steps
-     * @param null  $current
+     * @param array<mixed> $steps
+     * @param null|int|string  $current
      */
     public function __construct($steps = [], $current = null)
     {
@@ -35,7 +38,7 @@ class MultipleSteps implements Renderable
     }
 
     /**
-     * @param array $steps
+     * @param array<mixed> $steps
      * @param null  $current
      *
      * @return static
@@ -46,7 +49,7 @@ class MultipleSteps implements Renderable
     }
 
     /**
-     * @param array      $steps
+     * @param array<mixed> $steps
      * @param string|int $current
      *
      * @return string|int
@@ -63,14 +66,14 @@ class MultipleSteps implements Renderable
     }
 
     /**
-     * @return string|null
+     * @return string|null|void
      */
     public function render()
     {
         $class = $this->steps[$this->current];
 
         if (!is_subclass_of($class, StepForm::class)) {
-            admin_error("Class [{$class}] must be a sub-class of [OpenAdminCore\Admin\Widgets\StepForm].");
+            admin_error("Class [{$class}] must be a sub-class of [Encore\Admin\Widgets\StepForm].");
 
             return;
         }

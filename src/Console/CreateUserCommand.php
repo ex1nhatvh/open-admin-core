@@ -1,9 +1,8 @@
 <?php
 
-namespace OpenAdminCore\Admin\Console;
+namespace Encore\Admin\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
 
 class CreateUserCommand extends Command
 {
@@ -23,6 +22,8 @@ class CreateUserCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return void
      */
     public function handle()
     {
@@ -31,30 +32,24 @@ class CreateUserCommand extends Command
 
         $username = $this->ask('Please enter a username to login');
 
-        $password = Hash::make($this->secret('Please enter a password to login'));
+        $password = bcrypt($this->secret('Please enter a password to login'));
 
         $name = $this->ask('Please enter a name to display');
 
         $roles = $roleModel::all();
 
-        /** @var array $selected */
-        $selectedOption = $roles->pluck('name')->toArray();
+        /** @var array<mixed> $selected */
+        $selected = $this->choice('Please choose a role for the user', $roles->pluck('name')->toArray(), null, null, true);
 
-        if (empty($selectedOption)) {
-            $selected = $this->choice('Please choose a role for the user', $selectedOption, null, null, true);
-
-            $roles = $roles->filter(function ($role) use ($selected) {
-                return in_array($role->name, $selected);
-            });
-        }
+        $roles = $roles->filter(function ($role) use ($selected) {
+            return in_array($role->name, $selected);
+        });
 
         $user = new $userModel(compact('username', 'password', 'name'));
 
         $user->save();
 
-        if (isset($roles)) {
-            $user->roles()->attach($roles);
-        }
+        $user->roles()->attach($roles);
 
         $this->info("User [$name] created successfully.");
     }

@@ -1,32 +1,16 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Concerns;
+namespace Encore\Admin\Grid\Concerns;
 
 use Closure;
-use OpenAdminCore\Admin\Grid\Tools\Footer;
+use Encore\Admin\Grid\Tools\Footer;
 
 trait HasFooter
 {
     /**
-     * @var Closure
+     * @var Closure|null
      */
     protected $footer;
-
-    public $fixedFooter = true;
-
-    /**
-     * Set footer fixed.
-     *
-     * @param bool
-     *
-     * @return $this|Closure
-     */
-    public function fixedFooter($bool = true)
-    {
-        $this->fixedFooter = $bool;
-
-        return $this;
-    }
 
     /**
      * Set grid footer.

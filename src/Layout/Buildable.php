@@ -1,8 +1,13 @@
 <?php
 
-namespace OpenAdminCore\Admin\Layout;
+namespace Encore\Admin\Layout;
 
 interface Buildable
 {
+    /**
+     * Build the element.
+     *
+     * @return mixed
+     */
     public function build();
 }

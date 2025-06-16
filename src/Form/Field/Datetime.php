@@ -1,14 +1,20 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
 class Datetime extends Date
 {
+    /**
+     * @var string
+     */
     protected $format = 'YYYY-MM-DD HH:mm:ss';
 
+    /**
+     * @return string
+     */
     public function render()
     {
-        $this->style('max-width', '160px');
+        $this->defaultAttribute('style', 'width: 160px !important; flex: 0 0 auto !important;');
 
         return parent::render();
     }

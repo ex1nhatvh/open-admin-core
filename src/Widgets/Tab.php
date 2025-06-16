@@ -1,15 +1,16 @@
 <?php
 
-namespace OpenAdminCore\Admin\Widgets;
+namespace Encore\Admin\Widgets;
 
 use Illuminate\Contracts\Support\Renderable;
+
 
 class Tab extends Widget implements Renderable
 {
     use ContainsForms;
 
-    public const TYPE_CONTENT = 1;
-    public const TYPE_LINK    = 2;
+    const TYPE_CONTENT = 1;
+    const TYPE_LINK = 2;
 
     /**
      * @var string
@@ -17,7 +18,7 @@ class Tab extends Widget implements Renderable
     protected $view = 'admin::widgets.tab';
 
     /**
-     * @var array
+     * @var array<string|int|array<mixed>>
      */
     protected $data = [
         'id'       => '',
@@ -38,23 +39,21 @@ class Tab extends Widget implements Renderable
      * @param string            $title
      * @param string|Renderable $content
      * @param bool              $active
-     * @param string|null       $id
      *
      * @return $this
      */
-    public function add($title, $content, $active = false, $id = null)
+    public function add($title, $content, $active = false)
     {
-        if ($active) {
-            $this->data['active'] = count($this->data['tabs']);
-        }
-
         $this->data['tabs'][] = [
-            'id'      => $id ?: mt_rand(),
-            'ref'     => is_numeric($title) ? '_'.$title : $title,
+            'id'      => mt_rand(),
             'title'   => $title,
             'content' => $content,
             'type'    => static::TYPE_CONTENT,
         ];
+
+        if ($active) {
+            $this->data['active'] = count($this->data['tabs']) - 1;
+        }
 
         return $this;
     }
@@ -70,15 +69,16 @@ class Tab extends Widget implements Renderable
      */
     public function addLink($title, $href, $active = false)
     {
-        if ($active) {
-            $this->data['active'] = count($this->data['tabs']);
-        }
         $this->data['tabs'][] = [
-            'id'    => mt_rand(),
-            'title' => $title,
-            'href'  => $href,
-            'type'  => static::TYPE_LINK,
+            'id'      => mt_rand(),
+            'title'   => $title,
+            'href'    => $href,
+            'type'    => static::TYPE_LINK,
         ];
+
+        if ($active) {
+            $this->data['active'] = count($this->data['tabs']) - 1;
+        }
 
         return $this;
     }
@@ -87,6 +87,8 @@ class Tab extends Widget implements Renderable
      * Set title.
      *
      * @param string $title
+     *
+     * @return void
      */
     public function title($title = '')
     {
@@ -96,7 +98,7 @@ class Tab extends Widget implements Renderable
     /**
      * Set drop-down items.
      *
-     * @param array $links
+     * @param array<mixed> $links
      *
      * @return $this
      */

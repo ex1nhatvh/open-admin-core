@@ -1,11 +1,10 @@
 <?php
 
-namespace OpenAdminCore\Admin\Controllers;
+namespace Encore\Admin\Controllers;
 
-use Illuminate\Support\Facades\Hash;
-use OpenAdminCore\Admin\Form;
-use OpenAdminCore\Admin\Grid;
-use OpenAdminCore\Admin\Show;
+use Encore\Admin\Form;
+use Encore\Admin\Grid;
+use Encore\Admin\Show;
 
 class UserController extends AdminController
 {
@@ -29,13 +28,13 @@ class UserController extends AdminController
         $grid = new Grid(new $userModel());
 
         $grid->column('id', 'ID')->sortable();
-        $grid->column('username', trans('admin.username'))->sortable();
-        $grid->column('name', trans('admin.name'))->sortable();
+        $grid->column('username', trans('admin.username'));
+        $grid->column('name', trans('admin.name'));
         $grid->column('roles', trans('admin.roles'))->pluck('name')->label();
-        $grid->column('created_at', trans('admin.created_at'))->sortable();
-        $grid->column('updated_at', trans('admin.updated_at'))->sortable();
+        $grid->column('created_at', trans('admin.created_at'));
+        $grid->column('updated_at', trans('admin.updated_at'));
 
-        $grid->actions(function (Grid\Displayers\Actions\Actions $actions) {
+        $grid->actions(function (Grid\Displayers\Actions $actions) {
             if ($actions->getKey() == 1) {
                 $actions->disableDelete();
             }
@@ -92,12 +91,11 @@ class UserController extends AdminController
         $form = new Form(new $userModel());
 
         $userTable = config('admin.database.users_table');
-        $connection = config('admin.database.connection');
 
         $form->display('id', 'ID');
         $form->text('username', trans('admin.username'))
-            ->creationRules(['required', "unique:{$connection}.{$userTable}"])
-            ->updateRules(['required', "unique:{$connection}.{$userTable},username,{{id}}"]);
+            ->creationRules(['required', "unique:{$userTable}"])
+            ->updateRules(['required', "unique:{$userTable},username,{{id}}"]);
 
         $form->text('name', trans('admin.name'))->rules('required');
         $form->image('avatar', trans('admin.avatar'));
@@ -117,7 +115,7 @@ class UserController extends AdminController
 
         $form->saving(function (Form $form) {
             if ($form->password && $form->model()->password != $form->password) {
-                $form->password = Hash::make($form->password);
+                $form->password = bcrypt($form->password);
             }
         });
 

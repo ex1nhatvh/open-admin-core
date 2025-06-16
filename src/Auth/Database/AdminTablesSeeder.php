@@ -1,9 +1,8 @@
 <?php
 
-namespace OpenAdminCore\Admin\Auth\Database;
+namespace Encore\Admin\Auth\Database;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class AdminTablesSeeder extends Seeder
 {
@@ -18,7 +17,7 @@ class AdminTablesSeeder extends Seeder
         Administrator::truncate();
         Administrator::create([
             'username' => 'admin',
-            'password' => Hash::make('admin'),
+            'password' => bcrypt('admin'),
             'name'     => 'Administrator',
         ]);
 
@@ -76,49 +75,49 @@ class AdminTablesSeeder extends Seeder
                 'parent_id' => 0,
                 'order'     => 1,
                 'title'     => 'Dashboard',
-                'icon'      => 'icon-chart-bar',
+                'icon'      => 'fa-bar-chart',
                 'uri'       => '/',
             ],
             [
                 'parent_id' => 0,
                 'order'     => 2,
                 'title'     => 'Admin',
-                'icon'      => 'icon-server',
+                'icon'      => 'fa-tasks',
                 'uri'       => '',
             ],
             [
                 'parent_id' => 2,
                 'order'     => 3,
                 'title'     => 'Users',
-                'icon'      => 'icon-users',
+                'icon'      => 'fa-users',
                 'uri'       => 'auth/users',
             ],
             [
                 'parent_id' => 2,
                 'order'     => 4,
                 'title'     => 'Roles',
-                'icon'      => 'icon-user',
+                'icon'      => 'fa-user',
                 'uri'       => 'auth/roles',
             ],
             [
                 'parent_id' => 2,
                 'order'     => 5,
                 'title'     => 'Permission',
-                'icon'      => 'icon-ban',
+                'icon'      => 'fa-ban',
                 'uri'       => 'auth/permissions',
             ],
             [
                 'parent_id' => 2,
                 'order'     => 6,
                 'title'     => 'Menu',
-                'icon'      => 'icon-bars',
+                'icon'      => 'fa-bars',
                 'uri'       => 'auth/menu',
             ],
             [
                 'parent_id' => 2,
                 'order'     => 7,
                 'title'     => 'Operation log',
-                'icon'      => 'icon-history',
+                'icon'      => 'fa-history',
                 'uri'       => 'auth/logs',
             ],
         ]);

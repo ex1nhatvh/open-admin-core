@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Filter;
+namespace Encore\Admin\Grid\Filter;
 
 use Illuminate\Support\Arr;
 
@@ -19,9 +19,9 @@ class Like extends AbstractFilter
     /**
      * Get condition of this filter.
      *
-     * @param array $inputs
+     * @param array<mixed> $inputs
      *
-     * @return array|mixed|void
+     * @return array<mixed>|mixed|void
      */
     public function condition($inputs)
     {
@@ -31,7 +31,7 @@ class Like extends AbstractFilter
             $value = array_filter($value);
         }
 
-        if (is_null($value) || empty($value)) {
+        if (is_null($value) || strlen($value) === 0) {
             return;
         }
 

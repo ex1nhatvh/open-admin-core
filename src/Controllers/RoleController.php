@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdminCore\Admin\Controllers;
+namespace Encore\Admin\Controllers;
 
-use OpenAdminCore\Admin\Form;
-use OpenAdminCore\Admin\Grid;
-use OpenAdminCore\Admin\Show;
+use Encore\Admin\Form;
+use Encore\Admin\Grid;
+use Encore\Admin\Show;
 
 class RoleController extends AdminController
 {
@@ -28,15 +28,15 @@ class RoleController extends AdminController
         $grid = new Grid(new $roleModel());
 
         $grid->column('id', 'ID')->sortable();
-        $grid->column('slug', trans('admin.slug'))->sortable();
-        $grid->column('name', trans('admin.name'))->sortable();
+        $grid->column('slug', trans('admin.slug'));
+        $grid->column('name', trans('admin.name'));
 
         $grid->column('permissions', trans('admin.permission'))->pluck('name')->label();
 
-        $grid->column('created_at', trans('admin.created_at'))->sortable();
-        $grid->column('updated_at', trans('admin.updated_at'))->sortable();
+        $grid->column('created_at', trans('admin.created_at'));
+        $grid->column('updated_at', trans('admin.updated_at'));
 
-        $grid->actions(function (Grid\Displayers\Actions\Actions $actions) {
+        $grid->actions(function (Grid\Displayers\Actions $actions) {
             if ($actions->row->slug == 'administrator') {
                 $actions->disableDelete();
             }
@@ -92,7 +92,7 @@ class RoleController extends AdminController
 
         $form->text('slug', trans('admin.slug'))->rules('required');
         $form->text('name', trans('admin.name'))->rules('required');
-        $form->listbox('permissions', trans('admin.permissions'))->options($permissionModel::all()->pluck('name', 'id'))->height(300);
+        $form->listbox('permissions', trans('admin.permissions'))->options($permissionModel::all()->pluck('name', 'id'));
 
         $form->display('created_at', trans('admin.created_at'));
         $form->display('updated_at', trans('admin.updated_at'));

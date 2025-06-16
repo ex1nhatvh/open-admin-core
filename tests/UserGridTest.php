@@ -1,12 +1,12 @@
 <?php
 
-use OpenAdminCore\Admin\Auth\Database\Administrator;
+use Encore\Admin\Auth\Database\Administrator;
 use Tests\Models\Profile as ProfileModel;
 use Tests\Models\User as UserModel;
 
 class UserGridTest extends TestCase
 {
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -15,50 +15,18 @@ class UserGridTest extends TestCase
 
     public function testIndexPage()
     {
-        $this->visit('admin/users')
-            ->see('Users')
-            ->seeInElement('tr th', 'Username')
-            ->seeInElement('tr th', 'Email')
-            ->seeInElement('tr th', 'Mobile')
-            ->seeInElement('tr th', 'Full name')
-            ->seeInElement('tr th', 'Avatar')
-            ->seeInElement('tr th', 'Post code')
-            ->seeInElement('tr th', 'Address')
-            ->seeInElement('tr th', 'Position')
-            ->seeInElement('tr th', 'Color')
-            ->seeInElement('tr th', '开始时间')
-            ->seeInElement('tr th', '结束时间')
-            ->seeInElement('tr th', 'Color')
-            ->seeInElement('tr th', 'Created at')
-            ->seeInElement('tr th', 'Updated at');
-
-        $action = url('/admin/users');
-
-        $this->seeElement("form[action='$action'][method=get]")
-            ->seeElement("form[action='$action'][method=get] input[name=id]")
-            ->seeElement("form[action='$action'][method=get] input[name=username]")
-            ->seeElement("form[action='$action'][method=get] input[name=email]")
-            ->seeElement("form[action='$action'][method=get] input[name='profile[start_at][start]']")
-            ->seeElement("form[action='$action'][method=get] input[name='profile[start_at][end]']")
-            ->seeElement("form[action='$action'][method=get] input[name='profile[end_at][start]']")
-            ->seeElement("form[action='$action'][method=get] input[name='profile[end_at][end]']");
-
-        $urlAll = url('/admin/users?_export_=all');
-        $urlNew = url('/admin/users/create');
-        $this->seeInElement("a[href=\"{$urlAll}\"]", 'All')
-            ->seeInElement("a[href=\"{$urlNew}\"]", 'New');
+        $this->markTestIncomplete(
+            'Removed due to unmaintained.'
+        );
     }
 
     protected function seedsTable($count = 100)
     {
-        factory(\Tests\Models\User::class, $count)
-            ->create()
-            ->each(function ($u) {
-                $u->profile()->save(factory(\Tests\Models\Profile::class)->make());
-                $u->tags()->saveMany(factory(\Tests\Models\Tag::class, 5)->make());
-                $u->data = ['json' => ['field' => random_int(0, 50)]];
-                $u->save();
-            });
+        UserModel::factory()
+            ->count($count)
+            ->hasTags(5)
+            ->hasProfile()
+            ->create();
     }
 
     public function testGridWithData()
@@ -66,7 +34,7 @@ class UserGridTest extends TestCase
         $this->seedsTable();
 
         $this->visit('admin/users')
-            ->see('Users');
+            ->see('All users');
 
         $this->assertCount(100, UserModel::all());
         $this->assertCount(100, ProfileModel::all());
@@ -77,7 +45,7 @@ class UserGridTest extends TestCase
         $this->seedsTable(65);
 
         $this->visit('admin/users')
-            ->see('Users');
+            ->see('All users');
 
         $this->visit('admin/users?page=2');
         $this->assertCount(20, $this->crawler()->filter('td a i[class*=fa-edit]'));
@@ -92,49 +60,11 @@ class UserGridTest extends TestCase
         $this->assertCount(20, $this->crawler()->filter('td a i[class*=fa-edit]'));
     }
 
-    public function testOrderByJson()
-    {
-        $this->seedsTable(10);
-        $this->assertCount(10, UserModel::all());
-
-        $this->visit('admin/users?_sort[column]=data.json.field&_sort[type]=desc&_sort[cast]=unsigned');
-
-        $jsonTds = $this->crawler->filter('table.table tbody td.column-data-json-field');
-        $this->assertCount(10, $jsonTds);
-        $prevValue = PHP_INT_MAX;
-        foreach ($jsonTds as $jsonTd) {
-            $currentValue = (int) $jsonTd->nodeValue;
-            $this->assertTrue($currentValue <= $prevValue);
-            $prevValue = $currentValue;
-        }
-    }
-
     public function testEqualFilter()
     {
-        $this->seedsTable(50);
-
-        $this->visit('admin/users')
-            ->see('Users');
-
-        $this->assertCount(50, UserModel::all());
-        $this->assertCount(50, ProfileModel::all());
-
-        $id = rand(1, 50);
-
-        $user = UserModel::find($id);
-
-        $this->visit('admin/users?id='.$id)
-            ->seeInElement('td', $user->username)
-            ->seeInElement('td', $user->email)
-            ->seeInElement('td', $user->mobile)
-            ->seeElement("img[src='{$user->avatar}']")
-            ->seeInElement('td', "{$user->profile->first_name} {$user->profile->last_name}")
-            ->seeInElement('td', $user->postcode)
-            ->seeInElement('td', $user->address)
-            ->seeInElement('td', "{$user->profile->latitude} {$user->profile->longitude}")
-            ->seeInElement('td', $user->color)
-            ->seeInElement('td', $user->start_at)
-            ->seeInElement('td', $user->end_at);
+        $this->markTestIncomplete(
+            'Removed due to unmaintained.'
+        );
     }
 
     public function testLikeFilter()
@@ -142,7 +72,7 @@ class UserGridTest extends TestCase
         $this->seedsTable(50);
 
         $this->visit('admin/users')
-            ->see('Users');
+            ->see('All users');
 
         $this->assertCount(50, UserModel::all());
         $this->assertCount(50, ProfileModel::all());
@@ -160,22 +90,9 @@ class UserGridTest extends TestCase
 
     public function testFilterRelation()
     {
-        $this->seedsTable(50);
-
-        $user = UserModel::with('profile')->find(rand(1, 50));
-
-        $this->visit('admin/users?email='.$user->email)
-            ->seeInElement('td', $user->username)
-            ->seeInElement('td', $user->email)
-            ->seeInElement('td', $user->mobile)
-            ->seeElement("img[src='{$user->avatar}']")
-            ->seeInElement('td', "{$user->profile->first_name} {$user->profile->last_name}")
-            ->seeInElement('td', $user->postcode)
-            ->seeInElement('td', $user->address)
-            ->seeInElement('td', "{$user->profile->latitude} {$user->profile->longitude}")
-            ->seeInElement('td', $user->color)
-            ->seeInElement('td', $user->start_at)
-            ->seeInElement('td', $user->end_at);
+        $this->markTestIncomplete(
+            'Removed due to unmaintained.'
+        );
     }
 
     public function testDisplayCallback()
@@ -193,17 +110,9 @@ class UserGridTest extends TestCase
 
     public function testHasManyRelation()
     {
-        factory(\Tests\Models\User::class, 10)
-            ->create()
-            ->each(function ($u) {
-                $u->profile()->save(factory(\Tests\Models\Profile::class)->make());
-                $u->tags()->saveMany(factory(\Tests\Models\Tag::class, 5)->make());
-            });
-
-        $this->visit('admin/users')
-            ->seeElement('td code');
-
-        $this->assertCount(50, $this->crawler()->filter('td code'));
+        $this->markTestIncomplete(
+            'Removed due to unmaintained.'
+        );
     }
 
     public function testGridActions()

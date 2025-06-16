@@ -1,24 +1,33 @@
 <?php
 
-namespace OpenAdminCore\Admin\Auth\Database;
+namespace Encore\Admin\Auth\Database;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use OpenAdminCore\Admin\Traits\DefaultDatetimeFormat;
 
+/**
+ * @method static mixed create(array $attributes)
+ */
 class OperationLog extends Model
 {
-    use DefaultDatetimeFormat;
-
+    /**
+     * @var array<int, string>
+     */
     protected $fillable = ['user_id', 'path', 'method', 'ip', 'input'];
 
+    /**
+     * @var array<string, string>
+     */
     public static $methodColors = [
-        'GET'    => 'success',
-        'POST'   => 'primary',
-        'PUT'    => 'info',
-        'DELETE' => 'danger',
+        'GET'    => 'green',
+        'POST'   => 'yellow',
+        'PUT'    => 'blue',
+        'DELETE' => 'red',
     ];
 
+    /**
+     * @var array<int, string>
+     */
     public static $methods = [
         'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH',
         'LINK', 'UNLINK', 'COPY', 'HEAD', 'PURGE',
@@ -27,7 +36,7 @@ class OperationLog extends Model
     /**
      * Create a new Eloquent model instance.
      *
-     * @param array $attributes
+     * @param array<mixed> $attributes
      */
     public function __construct(array $attributes = [])
     {
@@ -45,7 +54,7 @@ class OperationLog extends Model
      *
      * @return BelongsTo
      */
-    public function user(): BelongsTo
+    public function user() : BelongsTo
     {
         return $this->belongsTo(config('admin.database.users_model'));
     }

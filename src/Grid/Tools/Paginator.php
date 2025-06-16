@@ -1,31 +1,27 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Tools;
+namespace Encore\Admin\Grid\Tools;
 
+use Encore\Admin\Grid;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
-use OpenAdminCore\Admin\Grid;
+use Illuminate\Support\Facades\Request;
 
 class Paginator extends AbstractTool
 {
     /**
-     * @var \Illuminate\Pagination\LengthAwarePaginator
+     * @var null|mixed
      */
     protected $paginator = null;
-
-    /**
-     * @var bool
-     */
-    protected $perPageSelector = true;
 
     /**
      * Create a new Paginator instance.
      *
      * @param Grid $grid
      */
-    public function __construct(Grid $grid, $perPageSelector = true)
+    public function __construct(Grid $grid)
     {
         $this->grid = $grid;
-        $this->perPageSelector = $perPageSelector;
 
         $this->initPaginator();
     }
@@ -39,14 +35,14 @@ class Paginator extends AbstractTool
     {
         $this->paginator = $this->grid->model()->eloquent();
 
+        /** @phpstan-ignore-next-line Instanceof between Illuminate\Database\Eloquent\Model and Illuminate\Pagination\LengthAwarePaginator will always evaluate to false. */
         if ($this->paginator instanceof LengthAwarePaginator) {
-            $this->paginator->appends(request()->all());
+            $this->paginator->appends(Request::all());
         }
     }
 
     /**
      * Get Pagination links.
-     *
      * @return string
      */
     protected function paginationLinks()
@@ -61,10 +57,6 @@ class Paginator extends AbstractTool
      */
     protected function perPageSelector()
     {
-        if (!$this->perPageSelector) {
-            return;
-        }
-
         return new PerPageSelector($this->grid);
     }
 
@@ -99,13 +91,8 @@ class Paginator extends AbstractTool
             return '';
         }
 
-        $vars = [
-            'range'       => $this->paginationRanger(),
-            'links'       => $this->paginationLinks(),
-            'per_page'    => $this->perPageSelector(),
-            'fixedFooter' => $this->grid->fixedFooter,
-        ];
-
-        return view('admin::grid.pagination', $vars)->render();
+        return '<div class="flex-grow-1">'.$this->paginationRanger().'</div>'.
+        $this->perPageSelector().
+            $this->paginationLinks();
     }
 }

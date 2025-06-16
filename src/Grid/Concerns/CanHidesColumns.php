@@ -1,17 +1,17 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Concerns;
+namespace Encore\Admin\Grid\Concerns;
 
+use Encore\Admin\Grid;
+use Encore\Admin\Grid\Tools\ColumnSelector;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Grid;
-use OpenAdminCore\Admin\Grid\Tools\ColumnSelector;
 
 trait CanHidesColumns
 {
     /**
      * Default columns be hidden.
      *
-     * @var array
+     * @var array<mixed>
      */
     public $hiddenColumns = [];
 
@@ -46,7 +46,7 @@ trait CanHidesColumns
     /**
      * Setting default shown columns on grid.
      *
-     * @param array|string $columns
+     * @param array<mixed>|string $columns
      *
      * @return $this
      */
@@ -66,11 +66,11 @@ trait CanHidesColumns
     /**
      * Get visible columns from request query.
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function getVisibleColumnsFromQuery()
     {
-        $columns = explode(',', request(ColumnSelector::SELECT_COLUMN_NAME) ?? '');
+        $columns = explode_ex(',', request(ColumnSelector::SELECT_COLUMN_NAME));
 
         return array_filter($columns) ?:
             array_values(array_diff($this->columnNames, $this->hiddenColumns));
@@ -79,7 +79,7 @@ trait CanHidesColumns
     /**
      * Get all visible column instances.
      *
-     * @return Collection|static
+     * @return Collection<int|string, mixed>|static
      */
     public function visibleColumns()
     {
@@ -99,7 +99,7 @@ trait CanHidesColumns
     /**
      * Get all visible column names.
      *
-     * @return array
+     * @return array<mixed>
      */
     public function visibleColumnNames()
     {
@@ -119,7 +119,7 @@ trait CanHidesColumns
     /**
      * Get default visible column names.
      *
-     * @return array
+     * @return array<mixed>
      */
     public function getDefaultVisibleColumnNames()
     {

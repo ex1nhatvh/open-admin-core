@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Exporters;
+namespace Encore\Admin\Grid\Exporters;
 
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\Exportable;
@@ -17,17 +17,17 @@ abstract class ExcelExporter extends AbstractExporter implements FromQuery, With
     protected $fileName;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $headings = [];
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $columns = [];
 
     /**
-     * @return array
+     * @return array<mixed>
      */
     public function headings(): array
     {

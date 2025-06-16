@@ -7,7 +7,6 @@ return [
     'setting'               => 'Настройка',
     'name'                  => 'Имя',
     'username'              => 'Логин',
-    'users'                 => 'Пользователи',
     'password'              => 'Пароль',
     'password_confirmation' => 'Подтверждение пароля',
     'remember_me'           => 'Запомнить',
@@ -27,7 +26,6 @@ return [
     'reset'                 => 'Сбросить',
     'export'                => 'Экспорт',
     'batch_delete'          => 'Пакетное удаление',
-    'batch_edit'            => 'Пакетное Редактирование',
     'save'                  => 'Сохранить',
     'refresh'               => 'Обновить',
     'order'                 => 'Сортировка',
@@ -100,10 +98,6 @@ return [
         'filter_clear'       => 'Показать все',
         'filter_placeholder' => 'Фильтр',
     ],
-    'grid_items_selected'    => '{n} элементов выбрано',
 
-    'menu_titles'            => [],
-    'prev'                   => 'Предыдущая',
-    'next'                   => 'Следующая',
-    'quick_create'           => 'Быстрое добавление',
+    'menu_titles' => [],
 ];

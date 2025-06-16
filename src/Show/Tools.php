@@ -1,7 +1,8 @@
 <?php
 
-namespace OpenAdminCore\Admin\Show;
+namespace Encore\Admin\Show;
 
+use Encore\Admin\Admin;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Collection;
@@ -16,30 +17,37 @@ class Tools implements Renderable
     protected $panel;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $resource;
 
     /**
      * Default tools.
      *
-     * @var array
+     * @var array<string>
      */
     protected $tools = ['delete', 'edit', 'list'];
 
     /**
      * Tools should be appends to default tools.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $appends;
 
     /**
      * Tools should be prepends to default tools.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $prepends;
+
+    /**
+     * list path Expressly
+     *
+     * @var string|null
+     */
+    protected $listPath;
 
     /**
      * Tools constructor.
@@ -145,13 +153,31 @@ class Tools implements Renderable
     }
 
     /**
+     * Set request path for resource list Expressly.
+     *
+     * @param string $listPath
+     *
+     * @return $this
+     */
+    public function setListPath(string $listPath)
+    {
+        $this->listPath = $listPath;
+
+        return $this;
+    }
+
+    /**
      * Get request path for resource list.
      *
      * @return string
      */
-    protected function getListPath()
+    protected function getListPath(bool $directList = false)
     {
-        return ltrim($this->getResource(), '/');
+        if($directList && !is_null($this->listPath)){
+            return $this->listPath;
+        }
+
+        return '/'.ltrim($this->getResource(), '/');
     }
 
     /**
@@ -186,11 +212,12 @@ class Tools implements Renderable
     protected function renderList()
     {
         $list = trans('admin.list');
+        $url = url($this->getListPath(true));
 
         return <<<HTML
-<div class="btn-group pull-right">
-    <a href="{$this->getListPath()}" class="btn btn-sm btn-light " title="{$list}">
-        <i class="icon-list"></i><span class="hidden-xs"> {$list}</span>
+<div class="btn-group pull-right" style="margin-right: 5px">
+    <a href="{$url}" class="btn btn-sm btn-default d-flex justify-content-center align-items-center p-2" title="{$list}">
+        <i class="fa fa-list p-1"></i><span class="d-none d-md-inline"> {$list}</span>
     </a>
 </div>
 HTML;
@@ -204,11 +231,12 @@ HTML;
     protected function renderEdit()
     {
         $edit = trans('admin.edit');
+        $url = url($this->getEditPath());
 
         return <<<HTML
-<div class="btn-group pull-right me-2">
-    <a href="{$this->getEditPath()}" class="btn btn-sm btn-primary" title="{$edit}">
-        <i class="icon-edit"></i><span class="hidden-xs"> {$edit}</span>
+<div class="btn-group pull-right" style="margin-right: 5px">
+    <a href="{$url}" class="btn btn-sm btn-primary d-flex justify-content-center align-items-center p-2" title="{$edit}">
+        <i class="fa fa-edit p-1"></i><span class="d-none d-md-inline"> {$edit}</span>
     </a>
 </div>
 HTML;
@@ -221,14 +249,67 @@ HTML;
      */
     protected function renderDelete()
     {
+        $url = url($this->getDeletePath());
+        $listUrl = url($this->getListPath(true));
         $trans = [
+            'delete_confirm' => trans('admin.delete_confirm'),
+            'confirm'        => trans('admin.confirm'),
+            'cancel'         => trans('admin.cancel'),
             'delete'         => trans('admin.delete'),
         ];
 
+        $class = uniqid();
+
+        $script = <<<SCRIPT
+
+$('.{$class}-delete').unbind('click').click(function() {
+
+    swal({
+        title: "{$trans['delete_confirm']}",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "{$trans['confirm']}",
+        showLoaderOnConfirm: true,
+        allowOutsideClick: false,
+        cancelButtonText: "{$trans['cancel']}",
+        preConfirm: function() {
+            $('.swal2-cancel').hide();
+            return new Promise(function(resolve) {
+                $.ajax({
+                    method: 'post',
+                    url: '{$url}',
+                    data: {
+                        _method:'delete',
+                        _token:LA.token,
+                    },
+                    success: function (data) {
+                        $.pjax({container:'#pjax-container', url: '{$listUrl}' });
+
+                        resolve(data);
+                    }
+                });
+            });
+        }
+    }).then(function(result) {
+        var data = result.value;
+        if (typeof data === 'object') {
+            if (data.status) {
+                swal(data.message, '', 'success');
+            } else {
+                swal(data.message, '', 'error');
+            }
+        }
+    });
+});
+
+SCRIPT;
+        Admin::script($script);
+
         return <<<HTML
-<div class="btn-group pull-right me-2">
-    <a onclick="admin.resource.delete(event,this)" data-url="{$this->getDeletePath()}" data-list_url="{$this->getListPath()}"  class="btn btn-sm btn-danger delete" title="{$trans['delete']}">
-        <i class="icon-trash"></i><span class="hidden-xs">  {$trans['delete']}</span>
+<div class="btn-group pull-right" style="margin-right: 5px">
+    <a href="javascript:void(0);" class="btn btn-sm btn-danger {$class}-delete d-flex justify-content-center align-items-center p-2" title="{$trans['delete']}">
+        <i class="fa fa-trash p-1"></i><span class="d-none d-md-inline">  {$trans['delete']}</span>
     </a>
 </div>
 HTML;
@@ -237,7 +318,7 @@ HTML;
     /**
      * Render custom tools.
      *
-     * @param Collection $tools
+     * @param Collection<int|string, mixed> $tools
      *
      * @return mixed
      */

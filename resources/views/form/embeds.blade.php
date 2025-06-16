@@ -1,11 +1,13 @@
 
+<div class="row">
+    <div class="col-sm-12">
+        <h4 class="field-header">{{ $label }}</h4>
+    </div>
+</div>
 
-
-<h4 class="embed-title ps-3" style="font-size:1.2rem;">{{ $label }}</h4>
-<hr>
+<hr style="margin-top: 0px;">
 
 <div id="embed-{{$column}}" class="embed-{{$column}}">
-
 
     <div class="embed-{{$column}}-forms">
 
@@ -14,9 +16,10 @@
             @foreach($form->fields() as $field)
                 {!! $field->render() !!}
             @endforeach
-
+            
         </div>
     </div>
+    
 </div>
 
-<hr>
+<hr style="margin-top: 0px;">

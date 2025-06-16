@@ -1,12 +1,11 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
+use Encore\Admin\Form\EmbeddedForm;
+use Encore\Admin\Form\Field;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Form\EmbeddedForm;
-use OpenAdminCore\Admin\Form\Field;
-use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
 
 class Embeds extends Field
 {
@@ -19,7 +18,7 @@ class Embeds extends Field
      * Create a new HasMany field instance.
      *
      * @param string $column
-     * @param array  $arguments
+     * @param array<mixed>  $arguments
      */
     public function __construct($column, $arguments = [])
     {
@@ -38,9 +37,9 @@ class Embeds extends Field
     /**
      * Prepare input data for insert or update.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
-     * @return array
+     * @return array<mixed>
      */
     public function prepare($input)
     {
@@ -50,7 +49,23 @@ class Embeds extends Field
     }
 
     /**
+     * Prepare input data for confirm.
+     *
+     * @param array<mixed> $input
+     *
+     * @return array<mixed>
+     */
+    public function prepareConfirm($input)
+    {
+        $form = $this->buildEmbeddedForm();
+
+        return $form->setOriginal($this->original)->prepare($input, true);
+    }
+
+    /**
      * {@inheritdoc}
+     * @param array<mixed> $input
+     * @return mixed
      */
     public function getValidator(array $input)
     {
@@ -133,13 +148,30 @@ class Embeds extends Field
     }
 
     /**
+     * Determine if form fields has files.
+     *
+     * @return bool
+     */
+    public function hasFile()
+    {
+        /** @phpstan-ignore-next-line maybe not reference */
+        foreach ($this->fields() as $field) {
+            if ($field instanceof Field\File || $field instanceof Field\MultipleFile) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Format validation attributes.
      *
-     * @param array  $input
+     * @param array<mixed>  $input
      * @param string $label
-     * @param string $column
+     * @param string|array<mixed> $column
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function formatValidationAttribute($input, $label, $column)
     {
@@ -154,6 +186,11 @@ class Embeds extends Field
         foreach (array_keys(Arr::dot($input)) as $key) {
             if (is_string($column)) {
                 if (Str::endsWith($key, ".$column")) {
+                    $attributes[$key] = $label;
+                }
+                //Bug fix multiple select rule
+                elseif (Str::endsWith($key, ".$column.0")) {
+                    $key = str_replace(".0", "", $key);
                     $attributes[$key] = $label;
                 }
             } else {
@@ -171,8 +208,8 @@ class Embeds extends Field
     /**
      * Reset input key for validation.
      *
-     * @param array $input
-     * @param array $column $column is the column name array set
+     * @param array<mixed> $input
+     * @param array<mixed> $column $column is the column name array set
      *
      * @return void.
      */
@@ -205,7 +242,7 @@ class Embeds extends Field
      *
      * When the data validation errors, data is obtained from session flash.
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function getEmbeddedData()
     {
@@ -231,13 +268,9 @@ class Embeds extends Field
      */
     protected function buildEmbeddedForm()
     {
-        $form = new EmbeddedForm($this->getEmbeddedColumnName());
+        $form = new EmbeddedForm($this->column);
 
-        if ($this->form instanceof WidgetForm) {
-            $form->setParentWidgetForm($this->form);
-        } else {
-            $form->setParent($this->form);
-        }
+        $form->setParent($this->form);
 
         call_user_func($this->builder, $form);
 
@@ -247,36 +280,11 @@ class Embeds extends Field
     }
 
     /**
-     * Determine the column name to use with the embedded form.
-     *
-     * @return array|string
-     */
-    protected function getEmbeddedColumnName()
-    {
-        if ($this->isNested()) {
-            return $this->elementName;
-        }
-
-        return $this->column;
-    }
-
-    /**
-     * Check if the field is in a nested form.
-     *
-     * @return bool
-     */
-    protected function isNested()
-    {
-        return !empty($this->elementName);
-    }
-
-    /**
      * Render the form.
-     *
-     * @return \Illuminate\View\View
+     * @return string
      */
     public function render()
     {
-        return parent::fieldRender(['form' => $this->buildEmbeddedForm()]);
+        return parent::render()->with(['form' => $this->buildEmbeddedForm()]);
     }
 }

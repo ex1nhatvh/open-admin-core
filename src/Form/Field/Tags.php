@@ -1,16 +1,16 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
+use Encore\Admin\Form\Field;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Form\Field;
 
-class Tags extends Select
+class Tags extends Field
 {
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $value = [];
 
@@ -30,17 +30,29 @@ class Tags extends Select
     protected $key = null;
 
     /**
-     * @var \Closure
+     * @var \Closure|null
      */
     protected $saveAction = null;
 
     /**
-     * @var array
+     * @var array<string>
      */
-    protected $separators = [',', ';', '，', '；', ' '];
+    protected static $css = [
+        '/vendor/open-admin/AdminLTE/plugins/select2/select2.min.css',
+    ];
+
+    /**
+     * @var array<string>
+     */
+    protected static $js = [
+        '/vendor/open-admin/AdminLTE/plugins/select2/select2.full.min.js',
+    ];
 
     /**
      * {@inheritdoc}
+     * @param array<mixed> $data
+     *
+     * @return void
      */
     public function fill($data)
     {
@@ -53,15 +65,15 @@ class Tags extends Select
         if (is_string($this->value)) {
             $this->value = explode(',', $this->value);
         }
-
+        /** @phpstan-ignore-next-line Parameter #2 $callback of function array_filter expects (callable(mixed): bool)|null, 'strlen' given. */
         $this->value = array_filter((array) $this->value, 'strlen');
     }
 
     /**
      * Set visible column and key of data.
      *
-     * @param $visibleColumn
-     * @param $key
+     * @param mixed $visibleColumn
+     * @param mixed $key
      *
      * @return $this
      */
@@ -80,7 +92,7 @@ class Tags extends Select
     /**
      * Set the field options.
      *
-     * @param array|Collection|Arrayable $options
+     * @param array<mixed>|Collection<int|string, mixed>|Arrayable<int|string, mixed> $options
      *
      * @return $this|Field
      */
@@ -104,25 +116,6 @@ class Tags extends Select
     }
 
     /**
-     * Set Tag Separators.
-     *
-     * @param array $separators
-     *
-     * @return $this
-     */
-    public function separators($separators = [])
-    {
-        if ($separators instanceof Collection or $separators instanceof Arrayable) {
-            $separators = $separators->toArray();
-        }
-        if (!empty($separators)) {
-            $this->separators = $separators;
-        }
-
-        return $this;
-    }
-
-    /**
      * Set save Action.
      *
      * @param \Closure $saveAction
@@ -138,10 +131,13 @@ class Tags extends Select
 
     /**
      * {@inheritdoc}
+     * @param array<mixed> $value
+     *
+     * @return array<mixed>
      */
     public function prepare($value)
     {
-        $value = parent::prepare($value);
+        /** @phpstan-ignore-next-line Parameter #2 $callback of function array_filter expects (callable(mixed): bool)|null, 'strlen' given.*/
         $value = array_filter($value, 'strlen');
 
         if ($this->keyAsValue) {
@@ -160,7 +156,7 @@ class Tags extends Select
      *
      * @param mixed $value
      *
-     * @return $this|array|mixed
+     * @return $this|array<mixed>|mixed
      */
     public function value($value = null)
     {
@@ -175,16 +171,24 @@ class Tags extends Select
 
     /**
      * {@inheritdoc}
+     * @return string
      */
     public function render()
     {
-        $this->config = array_merge([
-            'allowHTML'             => true,
-            'paste'                 => true,
-            'duplicateItemsAllowed' => false,
-            'editItems'             => true,
-        ], $this->config);
+        $this->script = "$(\"{$this->getElementClassSelector()}\").select2({
+            tags: true,
+            tokenSeparators: [',']
+        });";
 
-        return parent::render();
+        if ($this->keyAsValue) {
+            $options = $this->value + $this->options;
+        } else {
+            $options = array_unique(array_merge($this->value, $this->options));
+        }
+
+        return parent::render()->with([
+            'options'    => $options,
+            'keyAsValue' => $this->keyAsValue,
+        ]);
     }
 }

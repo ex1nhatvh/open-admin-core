@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form;
+namespace Encore\Admin\Form;
 
+use Encore\Admin\Form;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Form;
 
 class Tab
 {
@@ -13,7 +13,7 @@ class Tab
     protected $form;
 
     /**
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $tabs;
 
@@ -59,13 +59,13 @@ class Tab
      *
      * @param \Closure $content
      *
-     * @return Collection
+     * @return Collection<int|string, mixed>
      */
     protected function collectFields(\Closure $content)
     {
         call_user_func($content, $this->form);
 
-        $fields = clone $this->form->fields();
+        $fields = clone $this->form->builder()->fields();
 
         $all = $fields->toArray();
 
@@ -99,30 +99,18 @@ class Tab
     /**
      * Get all tabs.
      *
-     * @return Collection
+     * @return Collection<int|string, mixed>
      */
     public function getTabs()
     {
         // If there is no active tab, then active the first.
-        $activeTabs = $this->tabs->filter(function ($tab) {
+        if ($this->tabs->filter(function ($tab) {
             return $tab['active'];
-        });
-
-        // if empty only first
-        if ($activeTabs->isEmpty()) {
-            $first           = $this->tabs->first();
+        })->isEmpty()) {
+            $first = $this->tabs->first();
             $first['active'] = true;
-            $this->tabs->offsetSet(0, $first);
-        }
 
-        // if multiple only first
-        if ($activeTabs->count() > 1) {
-            foreach ($this->tabs as $i => $tab) {
-                if ($activeTabs[0] != $tab) {
-                    $tab['active'] = false;
-                    $this->tabs->offsetSet($i, $tab);
-                }
-            }
+            $this->tabs->offsetSet(0, $first);
         }
 
         return $this->tabs;

@@ -1,14 +1,11 @@
 <?php
 
-namespace OpenAdminCore\Admin\Traits;
+namespace Encore\Admin\Traits;
 
-use OpenAdminCore\Admin\Form;
-use OpenAdminCore\Admin\Grid;
-use OpenAdminCore\Admin\Tree;
+use Encore\Admin\Form;
+use Encore\Admin\Grid;
+use Encore\Admin\Tree;
 
-/**
- * @deprecated
- */
 trait AdminBuilder
 {
     /**
@@ -28,6 +25,8 @@ trait AdminBuilder
      */
     public static function form(\Closure $callback)
     {
+        //Form::registerBuiltinFields();
+
         return new Form(new static(), $callback);
     }
 

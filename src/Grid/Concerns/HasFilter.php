@@ -1,17 +1,17 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Concerns;
+namespace Encore\Admin\Grid\Concerns;
 
 use Closure;
+use Encore\Admin\Grid\Filter;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Grid\Filter;
 
 trait HasFilter
 {
     /**
      * The grid Filter.
      *
-     * @var \OpenAdminCore\Admin\Grid\Filter
+     * @var \Encore\Admin\Grid\Filter
      */
     protected $filter;
 
@@ -69,6 +69,8 @@ trait HasFilter
      * Set the grid filter.
      *
      * @param Closure $callback
+     *
+     * @return void
      */
     public function filter(Closure $callback)
     {

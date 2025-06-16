@@ -1,14 +1,14 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Filter\Presenter;
+namespace Encore\Admin\Grid\Filter\Presenter;
 
+use Encore\Admin\Facades\Admin;
 use Illuminate\Contracts\Support\Arrayable;
-use OpenAdminCore\Admin\Facades\Admin;
 
 class Radio extends Presenter
 {
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $options = [];
 
@@ -22,7 +22,7 @@ class Radio extends Presenter
     /**
      * Radio constructor.
      *
-     * @param array $options
+     * @param array<mixed>|Arrayable<int|string, mixed>|null $options
      */
     public function __construct($options = [])
     {
@@ -31,8 +31,6 @@ class Radio extends Presenter
         }
 
         $this->options = (array) $options;
-
-        return $this;
     }
 
     /**
@@ -40,23 +38,27 @@ class Radio extends Presenter
      *
      * @return $this
      */
-    public function stacked(): self
+    public function stacked() : self
     {
         $this->inline = false;
 
         return $this;
     }
 
+    /**
+     * @return void
+     */
     protected function prepare()
     {
-        //$script = "$('.{$this->filter->getId()}').iCheck({radioClass:'iradio_minimal-blue'});";
-        //Admin::script($script);
+        $script = "$('.{$this->filter->getId()}').iCheck({radioClass:'iradio_minimal-blue'});";
+
+        Admin::script($script);
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
-    public function variables(): array
+    public function variables() : array
     {
         $this->prepare();
 

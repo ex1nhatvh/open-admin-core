@@ -1,44 +1,126 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
+use Encore\Admin\Validator\HasOptionRule;
+use Encore\Admin\Facades\Admin;
+use Encore\Admin\Form\Field;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Form\Field;
-use OpenAdminCore\Admin\Form\Field\Traits\CanCascadeFields;
 
 class Select extends Field
 {
-    use CanCascadeFields;
+    /**
+     * @var array<string>
+     */
+    protected static $css = [
+        '/vendor/open-admin/AdminLTE/plugins/select2/select2.min.css',
+    ];
 
     /**
-     * @var array
+     * @var array<string>
+     */
+    protected static $js = [
+        '/vendor/open-admin/AdminLTE/plugins/select2/select2.full.min.js',
+    ];
+
+    /**
+     * @var string 
+     */
+    public static $modalSelectorName = '#modal-showmodal';
+
+    /**
+     * @var array<mixed>
      */
     protected $groups = [];
 
     /**
-     * @var array
+     * @var array<mixed>
      */
-    protected $config = [];
-
-    /**
-     * @var string
-     */
-    protected $cascadeEvent = 'change';
+    protected $buttons = [];
 
     /**
      * @var bool
      */
-    protected $native = false;
+    protected $escapeMarkup;
 
-    public $additional_script = '';
+    /**
+     * @var array<string>
+     */
+    protected $config = [];
+
+    /**
+     * @var boolean
+     */
+    protected $freeInput = false;
+
+    /**
+     * @var boolean
+     */
+    protected $addEmpty = true;
+
+    /**
+     * @var mixed options for validation.
+     */
+    protected $validationOptions;
+
+    /**
+     * @var bool Whether is select is modal.
+     * https://select2.org/troubleshooting/common-problems
+     */
+    protected $asModal = false;
+
+    /**
+     * Field constructor.
+     *
+     * @param string $column
+     * @param array<mixed> $arguments
+     */
+    public function __construct($column = '', $arguments = [])
+    {
+        parent::__construct($column, $arguments);
+
+        $this->rules([new HasOptionRule($this)]);
+    }
+
+    /**
+     * Get options.
+     * *Not set $this->options*
+     * @param mixed|null $value
+     *
+     * @return array<mixed>
+     */
+    public function getOptions($value = null) : array
+    {
+        if($this->validationOptions){
+            $options = $this->validationOptions;
+        }
+        else{
+            $options = $this->options;
+        }
+
+        if ($options instanceof \Closure) {
+            $options = call_user_func($options, ($value ?? $this->value), $this, isset($this->form) ? $this->form->model() : null);
+        }
+
+        if($options instanceof \Illuminate\Support\Collection){
+            $options = $options->toArray();
+        }
+
+        if(is_null($options)){
+            return [];
+        }
+
+        /** @phpstan-ignore-next-line Parameter #2 $callback of function array_filter expects (callable(mixed): bool)|null, 'strlen' given. */
+        return array_filter($options, 'strlen');
+    }
 
     /**
      * Set options.
      *
-     * @param array|callable|string $options
+     * @param array<mixed>|callable|string $options
      *
      * @return $this|mixed
      */
@@ -68,6 +150,34 @@ class Select extends Field
     }
 
     /**
+     * Set options for validation.
+     *
+     * @param array<mixed>|callable|string $options
+     *
+     * @return $this
+     */
+    public function validationOptions($options)
+    {
+        $this->validationOptions = $options;
+
+        return $this;
+    }
+
+    /**
+     * Set the markup. render as html
+     *
+     * @param  bool  $escapeMarkup
+     *
+     * @return  self
+     */ 
+    public function escapeMarkup(bool $escapeMarkup)
+    {
+        $this->escapeMarkup = $escapeMarkup;
+
+        return $this;
+    }
+
+    /**
      * @param array $groups
      */
 
@@ -85,13 +195,91 @@ class Select extends Field
      *        ...
      *     ]
      *
-     * @param array $groups
+     * @param array<mixed> $groups
      *
      * @return $this
      */
     public function groups(array $groups)
     {
         $this->groups = $groups;
+
+        return $this;
+    }
+
+
+    /**
+     * Set option buttons.
+     *
+     * eg: $buttons = [
+     *        [
+     *        'label' => 'xxxx',
+     *        'btn_class' => 'xxxx',
+     *        'icon' => 'xxxx',
+     *        'attributes' => [
+     *           'xxx' => 'yyyy',
+     *         ],
+     *            ...
+     *        ],
+     *        ...
+     *     ]
+
+     * @param array<mixed> $buttons
+     * @return $this
+     */
+    public function buttons(array $buttons)
+    {
+        $this->buttons = collect($buttons)->map(function($button){
+            $attributes = Arr::get($button, 'attributes', []);
+            $html = [];
+            
+            foreach ($attributes as $name => $value) {
+                $html[] = $name.'="'.e($value).'"';
+            }
+            $button['attribute'] = implode(' ', $html);
+            return $button;
+        })->toArray();
+
+        return $this;
+    }
+
+    /**
+     * Set as Modal.
+     *
+     * https://select2.org/troubleshooting/common-problems
+     *
+     * @return $this
+     */
+    public function asModal()
+    {
+        $this->asModal = true;
+
+        return $this;
+    }
+    
+    /**
+     * Set free input option
+     * 
+     * @param boolean $freeInput
+     *
+     * @return $this
+     */
+    public function freeInput(bool $freeInput)
+    {
+        $this->freeInput = $freeInput;
+
+        return $this;
+    }
+    
+    /**
+     * Set add empty option
+     * 
+     * @param boolean $addEmpty
+     *
+     * @return $this
+     */
+    public function addEmpty(bool $addEmpty)
+    {
+        $this->addEmpty = $addEmpty;
 
         return $this;
     }
@@ -106,7 +294,7 @@ class Select extends Field
      *
      * @return $this
      */
-    public function load($field, $url, $idField = 'id', $textField = 'text', bool $allowClear = true)
+    public function load($field, $sourceUrl, $idField = 'id', $textField = 'text', bool $allowClear = true)
     {
         if (Str::contains($field, '.')) {
             $field = $this->formatName($field);
@@ -115,28 +303,93 @@ class Select extends Field
             $class = $field;
         }
 
-        $this->additional_script .= <<<JS
+        $placeholder = json_encode([
+            'id'   => '',
+            'text' => trans('admin.choose'),
+        ]);
 
-            let elm = document.querySelector("{$this->getElementClassSelector()}");
-            var lookupTimeout;
-            elm.addEventListener('change', function(event) {
-                var query = {$this->choicesObjName()}.getValue().value;
-                var current_value = {$this->choicesObjName($field)}.getValue().value;
-                admin.ajax.post("{$url}",{query:query},function(data){
-                    let found = false;
-                    for (i in data.data){
-                        if (data.data[i].id == current_value){
-                            data.data[i].selected = true;
-                            found = true;
-                        }
-                    }
-                    if (!found){
-                        data.data.push({'{$idField}':'','{$textField}':'','selected':true});
-                    }
-                    {$this->choicesObjName($field)}.setChoices(data.data, '{$idField}', '{$textField}', true);
-                })
-            });
-JS;
+        $freeInput = $this->freeInput ? '1' : '0';
+
+        $script = <<<EOT
+$(document).off('change', "{$this->getElementClassSelector()}");
+$(document).on('change', "{$this->getElementClassSelector()}", function () {
+    var target = $(this).closest('.fields-group').find(".$class");
+    $.get("$sourceUrl",{q : this.value}, function (data) {
+        target.find("option").remove();
+        $(target).select2({
+            placeholder: $placeholder,
+            allowClear: $allowClear,
+            tags: $freeInput,
+            data: $.map(data, function (d) {
+                d.id = d.$idField;
+                d.text = d.$textField;
+                return d;
+            })
+        }).trigger('change');
+    });
+});
+EOT;
+
+        Admin::script($script);
+
+        return $this;
+    }
+
+    /**
+     * Load options for other selects on change.
+     *
+     * @param array<mixed>  $fields
+     * @param array<mixed>  $sourceUrls
+     * @param string $idField
+     * @param string $textField
+     *
+     * @return $this
+     */
+    public function loads($fields = [], $sourceUrls = [], $idField = 'id', $textField = 'text', bool $allowClear = true)
+    {
+        $fieldsStr = implode('.', $fields);
+        $urlsStr = implode('^', $sourceUrls);
+
+        $placeholder = json_encode([
+            'id'   => '',
+            'text' => trans('admin.choose'),
+        ]);
+
+        $freeInput = $this->freeInput ? '1' : '0';
+
+        $script = <<<EOT
+var fields = '$fieldsStr'.split('.');
+var urls = '$urlsStr'.split('^');
+
+var refreshOptions = function(url, target) {
+    $.get(url).then(function(data) {
+        target.find("option").remove();
+        $(target).select2({
+            placeholder: $placeholder,
+            allowClear: $allowClear,        
+            tags: $freeInput,
+            data: $.map(data, function (d) {
+                d.id = d.$idField;
+                d.text = d.$textField;
+                return d;
+            })
+        }).trigger('change');
+    });
+};
+
+$(document).off('change', "{$this->getElementClassSelector()}");
+$(document).on('change', "{$this->getElementClassSelector()}", function () {
+    var _this = this;
+    var promises = [];
+
+    fields.forEach(function(field, index){
+        var target = $(_this).closest('.fields-group').find('.' + fields[index]);
+        promises.push(refreshOptions(urls[index] + "?q="+ _this.value, target));
+    });
+});
+EOT;
+
+        Admin::script($script);
 
         return $this;
     }
@@ -152,7 +405,8 @@ JS;
      */
     public function model($model, $idField = 'id', $textField = 'name')
     {
-        if (!class_exists($model)
+        if (
+            !class_exists($model)
             || !in_array(Model::class, class_parents($model))
         ) {
             throw new \InvalidArgumentException("[$model] must be a valid model class");
@@ -182,29 +436,60 @@ JS;
     }
 
     /**
+     * @return $this
+     */
+    public function disableClear(){
+        return $this->config('allowClear', false);
+    }
+
+    /**
      * Load options from remote.
      *
      * @param string $url
-     * @param array  $parameters
-     * @param array  $options
+     * @param array<mixed>  $parameters
+     * @param array<mixed>  $options
      *
      * @return $this
      */
     protected function loadRemoteOptions($url, $parameters = [], $options = [])
     {
-        $this->config = array_merge([
-            'removeItems'        => true,
-            'removeItemButton'   => true,
-            'allowHTML'          => true,
+        $ajaxOptions = [
+            'url' => $url.'?'.http_build_query($parameters),
+        ];
+        $configs = array_merge([
+            'allowClear'         => true,
+            'tags'               => $this->freeInput,
+            'placeholder'        => [
+                'id'        => '',
+                'text'      => trans('admin.choose'),
+            ],
         ], $this->config);
 
-        $parameters_json = json_encode($parameters);
+        $configs = json_encode($configs);
+        $configs = substr($configs, 1, strlen($configs) - 2);
 
-        $this->additional_script .= <<<JS
-        admin.ajax.post("{$url}",{$parameters_json},function(data){
-            {$this->choicesObjName()}.setChoices(data.data, 'id', 'text', true);
-        });
-JS;
+        $ajaxOptions = json_encode(array_merge($ajaxOptions, $options));
+
+        $this->script = <<<EOT
+
+$.ajax($ajaxOptions).done(function(data) {
+
+  var select = $("{$this->getElementClassSelector()}");
+
+  select.select2({
+    data: data,
+    $configs
+  });
+  
+  var value = select.data('value') + '';
+  
+  if (value) {
+    value = value.split(',');
+    select.select2('val', value);
+  }
+});
+
+EOT;
 
         return $this;
     }
@@ -213,71 +498,73 @@ JS;
      * Load options from ajax results.
      *
      * @param string $url
-     * @param $idField
-     * @param $textField
+     * @param string $idField
+     * @param string $textField
      *
      * @return $this
      */
     public function ajax($url, $idField = 'id', $textField = 'text')
     {
-        $this->config = array_merge([
-            'removeItems'        => true,
-            'removeItemButton'   => true,
-            'allowHTML'          => true,
+        if(empty($url)){
+            return $this;
+        }
+
+        $configs = array_merge([
+            'allowClear'         => true,
             'placeholder'        => $this->label,
+            'minimumInputLength' => 1,
+            'tags'               => $this->freeInput,
         ], $this->config);
 
-        $element_id = str_replace('.', '', $this->getElementClassSelector());
+        $configs = json_encode($configs);
+        $configs = substr($configs, 1, strlen($configs) - 2);
+        $dropdownParent = $this->asModal ? '$("' . static::$modalSelectorName . ' .modal-dialog")' : 'null';
 
-        $this->additional_script = <<<JS
-            let elm_{$element_id} = document.querySelector("{$this->getElementClassSelector()}");
-            var lookupTimeout;
-            elm_{$element_id}.addEventListener('search', function(event) {
-                clearTimeout(lookupTimeout);
-                lookupTimeout = setTimeout(function(){
-                    var query = {$this->choicesObjName()}.input.value;
-                    admin.ajax.post("{$url}",{query:query},function(data){
-                        {$this->choicesObjName()}.setChoices(data.data, '{$idField}', '{$textField}', true);
-                    })
-                }, 250);
-            });
+        $this->script = <<<EOT
 
-            elm_{$element_id}.addEventListener('choice', function(event) {
-                {$this->choicesObjName()}.setChoices([], '{$idField}', '{$textField}', true);
-            });
-        JS;
+$("{$this->getElementClassSelector()}").not('.admin-added-select2').select2({
+  ajax: {
+    url: "$url",
+    dataType: 'json',
+    delay: 250,
+    data: function (params) {
+      return {
+        q: params.term,
+        page: params.page,
+      };
+    },
+    processResults: function (data, params) {
+      params.page = params.page || 1;
 
-        return $this;
-    }
+      return {
+        results: $.map(data.data, function (d) {
+                   d.id = d.$idField;
+                   d.text = d.$textField;
+                   return d;
+                }),
+        pagination: {
+          more: data.next_page_url
+        }
+      };
+    },
+    cache: true
+  },
+  $configs,
+  dropdownParent: $dropdownParent,
+  escapeMarkup: function (markup) {
+      return markup;
+  }
+}).addClass('admin-added-select2');
 
-    /**
-     * Set use browser native selectbox.
-     *
-     * @return $this
-     */
-    public function useNative()
-    {
-        $this->native = true;
-
-        return $this;
-    }
-
-    /**
-     * Set use browser native selectbox.
-     *
-     * @return $this
-     */
-    public function useChoicesjs()
-    {
-        $this->native = false;
+EOT;
 
         return $this;
     }
 
     /**
-     * Set config for Choicesjs.
+     * Set config for select2.
      *
-     * all configurations see https://github.com/jshjohnson/Choices
+     * all configurations see https://select2.org/configuration/options-api
      *
      * @param string $key
      * @param mixed  $val
@@ -292,86 +579,90 @@ JS;
     }
 
     /**
-     * Set as readonly (actual dissable with backup hidden field).
+     * {@inheritdoc}
      */
-    public function readonly($set = true): self
+    public function readonly()
     {
-        $this->useNative();
-        $this->config('readonly', $set);
-        $this->disabled($set);
+        $this->config('containerCssClass', 'select2-readonly');
 
-        return parent::readonly($set);
-    }
-
-    /**
-     * Returns variable name for ChoicesJS object.
-     */
-    public function choicesObjName($field = false)
-    {
-        if (empty($field)) {
-            $field = str_replace([' ', '-'], ['_', '_'], $this->getElementClassString());
-        }
-
-        return 'choices_'.$field;
-    }
-
-    /**
-     * Check if field should be rendered as Choises JS (not the case if fields are embed in popup).
-     */
-    public function allowedChoicesJs()
-    {
-        $class = get_class($this);
-
-        return in_array($class, [
-            'OpenAdminCore\Admin\Form\Field\Select',
-            'OpenAdminCore\Admin\Form\Field\Tags',
-            'OpenAdminCore\Admin\Form\Field\MultipleSelect',
-            'OpenAdminCore\Admin\Form\Field\Timezone',
-        ]);
+        return parent::readonly();
     }
 
     /**
      * {@inheritdoc}
+     * @return string
      */
     public function render()
     {
         $configs = array_merge([
-            'removeItems'        => true,
-            'removeItemButton'   => true,
-            'allowHTML'          => true,
-            'placeholder'        => [
+            'allowClear'  => true,
+            'tags'        => $this->freeInput,
+            'language' =>  \App::getLocale(),
+            'placeholder' => [
                 'id'   => '',
-                'text' => $this->label,
-            ],
-            'classNames' => [
-                'containerOuter' => 'choices '.$this->getElementClassString(),
+                'text' => $this->getPlaceholder(),
             ],
         ], $this->config);
-        $configs = json_encode($configs);
 
-        if (!$this->native && $this->allowedChoicesJs()) {
-            $this->script .= 'var '.$this->choicesObjName()." = new Choices('{$this->getElementClassSelector()}',{$configs});";
-            $this->script .= $this->additional_script;
+        $configs = json_encode($configs);
+        $configs = substr($configs, 1, strlen($configs) - 2);
+
+        if (empty($this->script)) {
+            $dropdownParent = $this->asModal ? '$("' . static::$modalSelectorName . ' .modal-dialog")' : 'null';
+            $this->script = "$(\"{$this->getElementClassSelector()}\").not('.admin-added-select2').select2({
+                dropdownParent: $dropdownParent,
+                $configs,
+            }).addClass('admin-added-select2');";
+        }
+
+        if($this->escapeMarkup){
+            $this->script .= "$(\"{$this->getElementClassSelector()}\").select2({
+                escapeMarkup: function(markup) {
+                    return markup;
+                }
+            });";
         }
 
         if ($this->options instanceof \Closure) {
-            if ($this->form) {
+            if ($this->form && $this->form->model()) {
                 $this->options = $this->options->bindTo($this->form->model());
             }
-            $this->options(call_user_func($this->options, $this->value, $this));
+
+            $this->options(call_user_func($this->options, $this->value, $this, isset($this->form) ? $this->form->model() : null));
         }
 
+        /** @phpstan-ignore-next-line Parameter #2 $callback of function array_filter expects (callable(mixed): bool)|null, 'strlen' given. */
         $this->options = array_filter($this->options, 'strlen');
 
         $this->addVariables([
             'options' => $this->options,
             'groups'  => $this->groups,
+            'buttons'  => $this->buttons,
+            'addEmpty'  => $this->addEmpty,
         ]);
-
-        $this->addCascadeScript();
 
         $this->attribute('data-value', implode(',', (array) $this->value()));
 
         return parent::render();
     }
+
+    /**
+     * {@inheritdoc}
+     * @return array<string, array<string>>
+     */
+    public static function getAssets()
+    {
+        $assets = [
+            'css' => static::$css,
+            'js'  => static::$js,
+        ];
+
+        // add select2 lang file
+        if(in_array(get_called_class(), [Select::class, MultipleSelect::class])){
+            $assets['js'][] = '/vendor/open-admin/AdminLTE/plugins/select2/i18n/' . \App::getLocale() . '.js';
+        }
+
+        return $assets;
+    }
+
 }

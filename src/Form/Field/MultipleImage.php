@@ -1,8 +1,7 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
-use OpenAdminCore\Admin\Form\Field\Traits\ImageField;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class MultipleImage extends MultipleFile
@@ -34,17 +33,8 @@ class MultipleImage extends MultipleFile
 
         $this->callInterventionMethods($image->getRealPath());
 
-        /* return tap($this->upload($image), function () {
+        return tap($this->upload($image), function () {
             $this->name = null;
-        }); */
-
-        /* Copied from single image prepare section and made necessary changes so the return
-        value is same as before, but now thumbnails are saved to the disk as well. */
-
-        $path = $this->upload($image);
-        $this->uploadAndDeleteOriginalThumbnail($image);
-        $this->name = null;
-
-        return $path;
+        });
     }
 }

@@ -1,6 +1,10 @@
-<select class="form-select {{ $class }}" name="{{$name}}[]" multiple='multiple' style="width: 100%;">
+<select class="form-control {{ $class }}" name="{{$name}}[]" multiple style="width: 100%;">
     <option></option>
     @foreach($options as $select => $option)
-        <option value="{{$select}}" {{ in_array((string)$select, (array)$value) ?'selected':'' }}>{{$option}}</option>
+        @if(is_array(request($name, [])))
+        <option value="{{$select}}" {{ in_array((string)$select, request($name, [])) ? 'selected':'' }}>{{$option}}</option>
+        @else
+        <option value="{{$select}}" {{ (string)$select === (string)request($name) ? 'selected':'' }}>{{$option}}</option>
+        @endif
     @endforeach
 </select>

@@ -1,16 +1,17 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Tools;
+namespace Encore\Admin\Grid\Tools;
 
+use Encore\Admin\Grid;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
-use OpenAdminCore\Admin\Grid;
 
 class Footer extends AbstractTool
 {
     /**
-     * @var Builder
+     * @var \Illuminate\Database\Eloquent\Builder<Model>|null
      */
     protected $queryBuilder;
 
@@ -26,8 +27,7 @@ class Footer extends AbstractTool
 
     /**
      * Get model query builder.
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return \Illuminate\Database\Eloquent\Builder<Model>
      */
     public function queryBuilder()
     {
@@ -58,7 +58,7 @@ class Footer extends AbstractTool
         }
 
         return <<<HTML
-    <div class="card-footer clearfix">
+    <div class="box-footer clearfix">
         {$content}
     </div>
 HTML;

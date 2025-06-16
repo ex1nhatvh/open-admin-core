@@ -1,13 +1,12 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form;
+namespace Encore\Admin\Form;
 
+use Encore\Admin\Admin;
+use Encore\Admin\Form;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Admin;
-use OpenAdminCore\Admin\Form;
-use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
 
 /**
  * Class NestedForm.
@@ -24,7 +23,7 @@ use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
  * @method Field\Url            url($column, $label = '')
  * @method Field\Color          color($column, $label = '')
  * @method Field\Email          email($column, $label = '')
- * @method Field\PhoneNumber    phonenumber($column, $label = '')
+ * @method Field\Mobile         mobile($column, $label = '')
  * @method Field\Slider         slider($column, $label = '')
  * @method Field\Map            map($latitude, $longitude, $label = '')
  * @method Field\Editor         editor($column, $label = '')
@@ -54,16 +53,21 @@ use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
  */
 class NestedForm
 {
-    public const DEFAULT_KEY_NAME = '__LA_KEY__';
+    const DEFAULT_KEY_NAME = '__LA_KEY__';
 
-    public const REMOVE_FLAG_NAME = '_remove_';
+    const REMOVE_FLAG_NAME = '_remove_';
 
-    public const REMOVE_FLAG_CLASS = 'fom-removed';
+    const REMOVE_FLAG_CLASS = 'fom-removed';
 
     /**
      * @var mixed
      */
     protected $key;
+
+    /**
+     * @var int|null
+     */
+    protected $index;
 
     /**
      * @var string
@@ -73,33 +77,28 @@ class NestedForm
     /**
      * NestedForm key.
      *
-     * @var Model
+     * @var Model|null
      */
     protected $model;
 
     /**
      * Fields in form.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $fields;
 
     /**
      * Original data for this field.
      *
-     * @var array
+     * @var array<string, mixed>
      */
     protected $original = [];
 
     /**
-     * @var \OpenAdminCore\Admin\Form|\OpenAdminCore\Admin\Widgets\Form
+     * @var \Encore\Admin\Form
      */
     protected $form;
-
-    /**
-     * @var bool
-     */
-    protected $save_null_values = true;
 
     /**
      * Create a new NestedForm instance.
@@ -129,23 +128,9 @@ class NestedForm
     }
 
     /**
-     * Save null values or not.
-     *
-     * @param bool $set
-     *
-     * @return $this
-     */
-    public function saveNullValues($set = true)
-    {
-        $this->save_null_values = $set;
-
-        return $this;
-    }
-
-    /**
      * Get the value of the model's primary key.
      *
-     * @return mixed|null
+     * @return string|mixed|null
      */
     public function getKey()
     {
@@ -159,6 +144,10 @@ class NestedForm
 
         if (isset($key)) {
             return $key;
+        }
+
+        if (isset($this->index)) {
+            return 'new_'.($this->index);
         }
 
         return 'new_'.static::DEFAULT_KEY_NAME;
@@ -179,27 +168,34 @@ class NestedForm
     }
 
     /**
+     * Get index for hasMany.
+     * @return int
+     */
+    public function getIndex()
+    {
+        return $this->index;
+    }
+
+    /**
+     * Set index for hasMany.
+     * @param mixed $index
+     * @return $this
+     */
+    public function setIndex($index)
+    {
+        $this->index = $index;
+
+        return $this;
+    }
+
+    /**
      * Set Form.
      *
      * @param Form $form
      *
      * @return $this
      */
-    public function setForm(Form $form = null)
-    {
-        $this->form = $form;
-
-        return $this;
-    }
-
-    /**
-     * Set Widget/Form.
-     *
-     * @param WidgetForm $form
-     *
-     * @return $this
-     */
-    public function setWidgetForm(WidgetForm $form = null)
+    public function setForm($form = null)
     {
         $this->form = $form;
 
@@ -217,9 +213,19 @@ class NestedForm
     }
 
     /**
+     * Get relation name.
+     *
+     * @return string
+     */
+    public function getRelationName()
+    {
+        return $this->relationName;
+    }
+
+    /**
      * Set original values for fields.
      *
-     * @param array  $data
+     * @param array<mixed>  $data
      * @param string $relatedKeyName
      *
      * @return $this
@@ -247,17 +253,33 @@ class NestedForm
     /**
      * Prepare for insert or update.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
      * @return mixed
      */
     public function prepare($input)
     {
-        if (!empty($input)) {
-            foreach ($input as $key => $record) {
-                $this->setFieldOriginalValue($key);
-                $input[$key] = $this->prepareRecord($record);
-            }
+        foreach ($input as $key => $record) {
+            $this->setFieldOriginalValue($key);
+            $input[$key] = $this->prepareRecord($record);
+        }
+
+        return $input;
+    }
+
+
+    /**
+     * Prepare for Confirm.
+     *
+     * @param array<mixed> $input
+     *
+     * @return mixed
+     */
+    public function prepareConfirm($input)
+    {
+        foreach ($input as $key => $record) {
+            $this->setFieldOriginalValue($key);
+            $input[$key] = $this->prepareRecord($record, true);
         }
 
         return $input;
@@ -285,11 +307,11 @@ class NestedForm
     /**
      * Do prepare work before store and update.
      *
-     * @param array $record
+     * @param array<string, mixed> $record
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    protected function prepareRecord($record)
+    protected function prepareRecord($record, bool $asConfirm = false)
     {
         if ($record[static::REMOVE_FLAG_NAME] == 1) {
             return $record;
@@ -303,15 +325,36 @@ class NestedForm
 
             $value = $this->fetchColumnValue($record, $columns);
 
-            if ($value === false) {
+            if ($field->getInternal()) {
+                $value = $field->prepare(null);
+            }
+
+            if (is_null($value) && is_null($field->original())) {
                 continue;
             }
 
-            if (method_exists($field, 'prepare')) {
-                $value = $field->prepare($value);
+            if ($asConfirm && method_exists($field, 'prepareConfirm')) {
+                $value = $field->prepareConfirm($value);
+            } else {
+                if (method_exists($field, 'prepare')) {
+                    $value = $field->prepare($value);
+                }
+
+                if (method_exists($field, 'prepareRecord')) {
+                    $value = $field->prepareRecord($value, $record);
+                }
             }
 
-            if (($field instanceof \OpenAdminCore\Admin\Form\Field\Hidden) || $value != $field->original() || ($this->save_null_values && $value == null)) {
+            $isSet = false;
+            if (($field instanceof \Encore\Admin\Form\Field\Hidden) || $value != $field->original()) {
+                $isSet = true;
+            }
+            // 0($value) != null($field->original()) is false, so if value is 0, especially check.
+            elseif ($value === 0 && $value !== $field->original()) {
+                $isSet = true;
+            }
+
+            if ($isSet) {
                 if (is_array($columns)) {
                     foreach ($columns as $name => $column) {
                         Arr::set($prepared, $column, $value[$name]);
@@ -330,10 +373,10 @@ class NestedForm
     /**
      * Fetch value in input data by column name.
      *
-     * @param array        $data
-     * @param string|array $columns
+     * @param array<mixed>        $data
+     * @param string|array<mixed> $columns
      *
-     * @return array|mixed
+     * @return array<string,mixed>|mixed
      */
     protected function fetchColumnValue($data, $columns)
     {
@@ -369,7 +412,7 @@ class NestedForm
     /**
      * Get fields of this form.
      *
-     * @return Collection
+     * @return Collection<int|string, mixed>
      */
     public function fields()
     {
@@ -379,14 +422,15 @@ class NestedForm
     /**
      * Fill data to all fields in form.
      *
-     * @param array $data
-     *
+     * @param array<mixed> $data
+     * @param int $index
      * @return $this
      */
-    public function fill(array $data = [])
+    public function fill(array $data, $index)
     {
         /* @var Field $field */
         foreach ($this->fields() as $field) {
+            $field->setIndex($index);
             $field->fill($data);
         }
 
@@ -396,11 +440,11 @@ class NestedForm
     /**
      * Get the html and script of template.
      *
-     * @return array
+     * @return array<string>
      */
     public function getTemplateHtmlAndScript()
     {
-        $html    = '';
+        $html = '';
         $scripts = [];
 
         /* @var Field $field */
@@ -408,12 +452,22 @@ class NestedForm
             //when field render, will push $script to Admin
             $html .= $field->render();
 
+            $field_scripts = $field->getScript();
+            // @phpstan-ignore-next-line Function is_nullorempty not found.
+            if (!is_nullorempty($field_scripts)) {
+                if (!is_array($field_scripts)) {
+                    $field_scripts = [$field_scripts];
+                }
+                foreach ($field_scripts as $script) {
+                    $scripts[] = array_pop(Admin::$script);
+                }
+            }
             /*
              * Get and remove the last script of Admin::$script stack.
              */
-            if ($field->getScript()) {
-                $scripts[] = array_pop(Admin::$script);
-            }
+            // if ($field->getScript()) {
+            //     $scripts[] = array_pop(Admin::$script);
+            // }
         }
 
         return [$html, implode("\r\n", $scripts)];
@@ -436,13 +490,13 @@ class NestedForm
 
         if (is_array($column)) {
             foreach ($column as $k => $name) {
-                $errorKey[$k]     = sprintf('%s.%s.%s', $this->relationName, $key, $name);
-                $elementName[$k]  = sprintf('%s[%s][%s]', $this->relationName, $key, $name);
+                $errorKey[$k] = sprintf('%s.%s.%s', $this->relationName, $key, $name);
+                $elementName[$k] = sprintf('%s[%s][%s]', $this->relationName, $key, $name);
                 $elementClass[$k] = [$this->relationName, $name];
             }
         } else {
-            $errorKey     = sprintf('%s.%s.%s', $this->relationName, $key, $column);
-            $elementName  = sprintf('%s[%s][%s]', $this->relationName, $key, $column);
+            $errorKey = sprintf('%s.%s.%s', $this->relationName, $key, $column);
+            $elementName = sprintf('%s[%s][%s]', $this->relationName, $key, $column);
             $elementClass = [$this->relationName, $column];
         }
 
@@ -455,7 +509,7 @@ class NestedForm
      * Add nested-form fields dynamically.
      *
      * @param string $method
-     * @param array  $arguments
+     * @param array<int,mixed>  $arguments
      *
      * @return mixed
      */
@@ -467,11 +521,7 @@ class NestedForm
             /* @var Field $field */
             $field = new $className($column, array_slice($arguments, 1));
 
-            if ($this->form instanceof WidgetForm) {
-                $field->setWidgetForm($this->form);
-            } else {
-                $field->setForm($this->form);
-            }
+            $field->setForm($this->form);
 
             $field = $this->formatField($field);
 

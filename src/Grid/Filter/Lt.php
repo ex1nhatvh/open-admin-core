@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Filter;
+namespace Encore\Admin\Grid\Filter;
 
 use Illuminate\Support\Arr;
 
@@ -8,15 +8,17 @@ class Lt extends AbstractFilter
 {
     /**
      * {@inheritdoc}
+     *
+     * @var string
      */
     protected $view = 'admin::filter.lt';
 
     /**
      * Get condition of this filter.
      *
-     * @param array $inputs
+     * @param array<mixed> $inputs
      *
-     * @return array|mixed|void
+     * @return array<mixed>|mixed|void
      */
     public function condition($inputs)
     {

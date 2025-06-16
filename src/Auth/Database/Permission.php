@@ -1,24 +1,21 @@
 <?php
 
-namespace OpenAdminCore\Admin\Auth\Database;
+namespace Encore\Admin\Auth\Database;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Traits\DefaultDatetimeFormat;
 
 class Permission extends Model
 {
-    use DefaultDatetimeFormat;
-
     /**
-     * @var array
+     * @var array<int, string>
      */
     protected $fillable = ['name', 'slug', 'http_method', 'http_path'];
 
     /**
-     * @var array
+     * @var array<string>
      */
     public static $httpMethods = [
         'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD',
@@ -27,7 +24,7 @@ class Permission extends Model
     /**
      * Create a new Eloquent model instance.
      *
-     * @param array $attributes
+     * @param array<mixed> $attributes
      */
     public function __construct(array $attributes = [])
     {
@@ -45,7 +42,7 @@ class Permission extends Model
      *
      * @return BelongsToMany
      */
-    public function roles(): BelongsToMany
+    public function roles() : BelongsToMany
     {
         $pivotTable = config('admin.database.role_permissions_table');
 
@@ -61,7 +58,7 @@ class Permission extends Model
      *
      * @return bool
      */
-    public function shouldPassThrough(Request $request): bool
+    public function shouldPassThrough(Request $request) : bool
     {
         if (empty($this->http_method) && empty($this->http_path)) {
             return true;
@@ -104,23 +101,17 @@ class Permission extends Model
     /**
      * If a request match the specific HTTP method and path.
      *
-     * @param array   $match
+     * @param array<mixed>   $match
      * @param Request $request
      *
      * @return bool
      */
-    protected function matchRequest(array $match, Request $request): bool
+    protected function matchRequest(array $match, Request $request) : bool
     {
-        if ($match['path'] == '/') {
-            $path = '/';
-        } else {
-            $path = trim($match['path'], '/');
-        }
-
-        if (!$request->is($path)) {
+        if (!$request->is(trim($match['path'], '/'))) {
             return false;
         }
-
+        /** @phpstan-ignore-next-line Unable to resolve the template type TKey in call to function collect  */
         $method = collect($match['method'])->filter()->map(function ($method) {
             return strtoupper($method);
         });
@@ -129,7 +120,9 @@ class Permission extends Model
     }
 
     /**
-     * @param $method
+     * @param array<mixed>|mixed $method
+     *
+     * @return void
      */
     public function setHttpMethodAttribute($method)
     {
@@ -139,9 +132,9 @@ class Permission extends Model
     }
 
     /**
-     * @param $method
+     * @param string|mixed $method
      *
-     * @return array
+     * @return array<mixed>|mixed
      */
     public function getHttpMethodAttribute($method)
     {

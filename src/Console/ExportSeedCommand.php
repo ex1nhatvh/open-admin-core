@@ -1,8 +1,9 @@
 <?php
 
-namespace OpenAdminCore\Admin\Console;
+namespace Encore\Admin\Console;
 
 use Illuminate\Console\Command;
+use mysql_xdevapi\SqlStatementResult;
 
 class ExportSeedCommand extends Command
 {
@@ -12,15 +13,14 @@ class ExportSeedCommand extends Command
      * @var string
      */
     protected $signature = 'admin:export-seed {classname=AdminTablesSeeder}
-                                              {--users : add to seed users tables}
-                                              {--except-fields=id,created_at,updated_at : except fields}';
+                                              {--users : add to seed users tables}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Export seed a Open-admin database tables menu, roles and permissions';
+    protected $description = 'Export seed a Laravel-admin database tables menu, roles and permissions';
 
     /**
      * Execute the console command.
@@ -30,10 +30,10 @@ class ExportSeedCommand extends Command
     public function handle()
     {
         $name = $this->argument('classname');
-        $exceptFields = explode(',', $this->option('except-fields'));
+        $exceptFields = [];
         $exportUsers = $this->option('users');
 
-        $seedFile = $this->laravel->databasePath().'/seeders/'.$name.'.php';
+        $seedFile = $this->laravel->databasePath().'/seeds/'.$name.'.php';
         $contents = $this->getStub('AdminTablesSeeder');
 
         $replaces = [
@@ -80,7 +80,7 @@ class ExportSeedCommand extends Command
      * Get data array from table as string result var_export.
      *
      * @param string $table
-     * @param array  $exceptFields
+     * @param array<mixed>  $exceptFields
      *
      * @return string
      */
@@ -99,7 +99,7 @@ class ExportSeedCommand extends Command
     /**
      * Get stub contents.
      *
-     * @param $name
+     * @param string $name
      *
      * @return string
      */
@@ -111,14 +111,15 @@ class ExportSeedCommand extends Command
     /**
      * Custom var_export for correct work with \r\n.
      *
-     * @param $var
+     * @param string|array<mixed>|bool|int|double $var
      * @param string $indent
      *
-     * @return string
+     * @return string|array<mixed>|bool|int|double
      */
     protected function varExport($var, $indent = '')
     {
         switch (gettype($var)) {
+
             case 'string':
                 return '"'.addcslashes($var, "\\\$\"\r\n\t\v\f").'"';
 

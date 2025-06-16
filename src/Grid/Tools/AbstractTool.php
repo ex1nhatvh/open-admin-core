@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Tools;
+namespace Encore\Admin\Grid\Tools;
 
+use Encore\Admin\Grid;
 use Illuminate\Contracts\Support\Renderable;
-use OpenAdminCore\Admin\Grid;
 
 abstract class AbstractTool implements Renderable
 {
@@ -33,6 +33,8 @@ abstract class AbstractTool implements Renderable
 
     /**
      * If the tool is allowed.
+     *
+     * @return bool
      */
     public function allowed()
     {
@@ -61,9 +63,6 @@ abstract class AbstractTool implements Renderable
         return $this->grid;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     abstract public function render();
 
     /**

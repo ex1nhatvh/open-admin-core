@@ -1,24 +1,64 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
+use Encore\Admin\Admin;
+use Encore\Admin\Form\Field;
 use Illuminate\Support\Arr;
-use OpenAdminCore\Admin\Admin;
-use OpenAdminCore\Admin\Form\Field;
-use OpenAdminCore\Admin\Form\Field\Traits\Sortable;
 
 class ListField extends Field
 {
-    use Sortable;
     /**
-     * @var array
+     * Max list size.
+     *
+     * @var int|null
+     */
+    protected $max;
+
+    /**
+     * Minimum list size.
+     *
+     * @var int|null
+     */
+    protected $min = 0;
+
+    /**
+     * @var array<string>
      */
     protected $value = [''];
 
     /**
+     * Set Max list size.
+     *
+     * @param int $size
+     *
+     * @return $this
+     */
+    public function max(int $size)
+    {
+        $this->max = $size;
+
+        return $this;
+    }
+
+    /**
+     * Set Minimum list size.
+     *
+     * @param int $size
+     *
+     * @return $this
+     */
+    public function min(int $size)
+    {
+        $this->min = $size;
+
+        return $this;
+    }
+
+    /**
      * Fill data to the field.
      *
-     * @param array $data
+     * @param array<mixed> $data
      *
      * @return void
      */
@@ -27,18 +67,14 @@ class ListField extends Field
         $this->data = $data;
 
         $this->value = Arr::get($data, $this->column, $this->value);
-        if (!is_array($this->value)) {
-            $this->value = json_decode($this->value);
-        }
-        if (empty($this->value)) {
-            $this->value = [''];
-        }
 
         $this->formatValue();
     }
 
     /**
      * {@inheritdoc}
+     * @param array<mixed> $input
+     * @return bool|\Illuminate\Contracts\Validation\Validator
      */
     public function getValidator(array $input)
     {
@@ -60,60 +96,60 @@ class ListField extends Field
             return false;
         }
 
-        $rules["{$this->column}.*"] = $fieldRules;
-        $attributes["{$this->column}.*"] = __('Value');
+        $rules["{$this->column}.values.*"] = $fieldRules;
+        $attributes["{$this->column}.values.*"] = __('Value');
 
-        $rules["{$this->column}"][] = 'array';
+        $rules["{$this->column}.values"][] = 'array';
 
-        $attributes["{$this->column}"] = $this->label;
+        if (!is_null($this->max)) {
+            $rules["{$this->column}.values"][] = "max:$this->max";
+        }
+
+        if (!is_null($this->min)) {
+            $rules["{$this->column}.values"][] = "min:$this->min";
+        }
+
+        $attributes["{$this->column}.values"] = $this->label;
 
         return validator($input, $rules, $this->getValidationMessages(), $attributes);
     }
 
     /**
      * {@inheritdoc}
+     * @return  void
      */
     protected function setupScript()
     {
-        $this->script = <<<JS
+        $this->script = <<<SCRIPT
 
-        document.querySelector('.{$this->column}-add').addEventListener('click', function () {
-            var tpl = document.querySelector('template.{$this->column}-tpl').innerHTML;
-            var clone = htmlToElement(tpl);
-            document.querySelector('tbody.list-{$this->column}-table').appendChild(clone);
-        });
+$('.{$this->column}-add').on('click', function () {
+    var tpl = $('template.{$this->column}-tpl').html();
+    $('tbody.list-{$this->column}-table').append(tpl);
+});
 
-        document.querySelector('tbody.list-{$this->column}-table').addEventListener('click', function (event) {
-            if (event.target.classList.contains('{$this->column}-remove')){
-                event.target.closest('tr').remove();
-            }
-        });
-JS;
+$('tbody').on('click', '.{$this->column}-remove', function () {
+    $(this).closest('tr').remove();
+});
+
+SCRIPT;
     }
 
     /**
      * {@inheritdoc}
+     * @param mixed $value
+     * @return array<mixed>
      */
     public function prepare($value)
     {
-        $value = (array) parent::prepare($value);
-
-        $values = array_values($value);
-        if (count($values) == 1 && empty($values[0])) {
-            return [];
-        }
-
-        return $values;
+        return array_values($value['values']);
     }
 
     /**
      * {@inheritdoc}
+     * @return string
      */
     public function render()
     {
-        $this->addSortable('tbody.list-', '-table');
-        view()->share('options', $this->options);
-
         $this->setupScript();
 
         Admin::style('td .form-group {margin-bottom: 0 !important;}');

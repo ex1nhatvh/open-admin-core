@@ -1,87 +1,64 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
 class Color extends Text
 {
+    /**
+     * @var array<string>
+     */
     protected static $css = [
-        '/vendor/open-admin/coloris/coloris.min.css',
+        '/vendor/open-admin/AdminLTE/plugins/colorpicker/bootstrap-colorpicker.min.css',
     ];
 
+    /**
+     * @var array<string>
+     */
     protected static $js = [
-        '/vendor/open-admin/coloris/coloris.min.js',
+        '/vendor/open-admin/AdminLTE/plugins/colorpicker/bootstrap-colorpicker.min.js',
     ];
 
     /**
-     * @var array
-     */
-    protected $options = [];
-
-    /**
-     * Use `format` format.
-     *   // * hex: outputs #RRGGBB or #RRGGBBAA (default).
-     *   // * rgb: outputs rgb(R, G, B) or rgba(R, G, B, A).
-     *   // * hsl: outputs hsl(H, S, L) or hsla(H, S, L, A).
-     *   // * auto: guesses the format from the active input field. Defaults to hex if it fails.
-     *   // * mixed: outputs #RRGGBB when alpha is 1; otherwise rgba(R, G, B, A).
+     * Use `hex` format.
      *
      * @return $this
      */
-    public function format($format = 'hex')
+    public function hex()
     {
-        return $this->options(['format'=> $format]);
+        return $this->options(['format' => 'hex']);
     }
 
     /**
-     * Set using alpha.
-     *
-     * @param bool $set
+     * Use `rgb` format.
      *
      * @return $this
      */
-    public function alpha($set = true)
+    public function rgb()
     {
-        return $this->options(['alpha'=> $set]);
+        return $this->options(['format' => 'rgb']);
     }
 
     /**
-     * Set config for coloris.
-     *
-     * all configurations see https://github.com/mdbassit/Coloris/
-     *
-     * @param string $key
-     * @param mixed  $val
+     * Use `rgba` format.
      *
      * @return $this
      */
-    public function options($options = [])
+    public function rgba()
     {
-        $this->options = array_merge($options, $this->options);
-
-        return $this;
+        return $this->options(['format' => 'rgba']);
     }
 
     /**
      * Render this filed.
-     *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function render()
     {
-        $options = array_merge([
-            'el'         => $this->getElementClassSelector(),
-            'theme'      => 'polaroid',
-            'focusInput' => false,
+        $options = json_encode($this->options);
 
-        ], $this->options);
-        $options = json_encode($options);
+        $this->script = "$('{$this->getElementClassSelector()}').parent().colorpicker($options);";
 
-        //$this->setElementClass('form-control');
-
-        $this->script = "Coloris($options);";
-
-        $this->prepend('<i class="icon-eye-dropper"></i>');
-        //$this->style('max-width', '160px');
+        $this->prepend('<i></i>')
+            ->defaultAttribute('style', 'width: 140px');
 
         return parent::render();
     }

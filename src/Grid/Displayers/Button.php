@@ -1,9 +1,14 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Displayers;
+namespace Encore\Admin\Grid\Displayers;
 
 class Button extends AbstractDisplayer
 {
+    /**
+     * @param string|null $style
+     *
+     * @return string
+     */
     public function display($style = null)
     {
         $style = collect((array) $style)->map(function ($style) {

@@ -1,22 +1,30 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Displayers;
+namespace Encore\Admin\Grid\Displayers;
 
+use Encore\Admin\Widgets\Carousel as CarouselWidget;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Facades\Storage;
-use OpenAdminCore\Admin\Widgets\Carousel as CarouselWidget;
 
 class Carousel extends AbstractDisplayer
 {
+    /**
+     * @param int $width
+     * @param int $height
+     * @param string $server
+     * @return mixed
+     */
     public function display(int $width = 300, int $height = 200, $server = '')
     {
         if ($this->value instanceof Arrayable) {
             $this->value = $this->value->toArray();
         }
+
+        $this->value = array_values($this->value);
+
         if (empty($this->value)) {
             return '';
         }
-        $this->value = array_values($this->value);
 
         $images = collect((array) $this->value)->filter()->map(function ($path) use ($server) {
             if (url()->isValidUrl($path) || strpos($path, 'data:image') === 0) {
@@ -32,7 +40,7 @@ class Carousel extends AbstractDisplayer
             return compact('image', 'caption');
         });
 
-        $id = sprintf('carousel-%s-%s', $this->getName(), $this->getKey());
+        $id = sprintf('carousel-%s-%s', $this->column->getName(), $this->getKey());
 
         return (new CarouselWidget($images))->width($width)->height($height)->id($id);
     }

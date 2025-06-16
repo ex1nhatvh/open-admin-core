@@ -468,3 +468,11 @@ body .choices {
         border-bottom-left-radius: 0.3rem;
         border-bottom-right-radius: 0.3rem;
     }
+
+    .card.custom-border-info{
+        border-top: 3px solid #00c0ef;
+    }
+
+    .card.custom-border-success{
+        border-top: 3px solid #00a65a;
+    }

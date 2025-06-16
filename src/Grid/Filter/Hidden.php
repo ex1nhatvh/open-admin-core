@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Filter;
+namespace Encore\Admin\Grid\Filter;
 
 class Hidden extends AbstractFilter
 {
@@ -29,6 +29,10 @@ class Hidden extends AbstractFilter
 
     /**
      * {@inheritdoc}
+     *
+     * @param array<mixed> $inputs
+     *
+     * @return void
      */
     public function condition($inputs)
     {

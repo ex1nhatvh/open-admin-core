@@ -1,12 +1,12 @@
 <?php
 
-namespace OpenAdminCore\Admin\Middleware;
+namespace Encore\Admin\Middleware;
 
 use Closure;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\MessageBag;
-use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Facades\Admin;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -18,13 +18,13 @@ class Pjax
      * @param Request $request
      * @param Closure $next
      *
-     * @return Response
+     * @return mixed
      */
     public function handle($request, Closure $next)
     {
         $response = $next($request);
 
-        if (!$request->pjax() || $response->isRedirection() || Admin::guard()->guest()) {
+        if (!$request->pjax() || $response->isRedirection() || Auth::guard('admin')->guest()) {
             return $response;
         }
 
@@ -45,6 +45,8 @@ class Pjax
      * Send a response through this middleware.
      *
      * @param Response $response
+     *
+     * @return void
      */
     public static function respond(Response $response)
     {
@@ -52,6 +54,7 @@ class Pjax
             return $response;
         };
 
+        /** @phpstan-ignore-next-line https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static */
         (new static())->handle(Request::capture(), $next)->send();
 
         exit;
@@ -60,7 +63,7 @@ class Pjax
     /**
      * Handle Response with exceptions.
      *
-     * @param Response $response
+     * @param \Illuminate\Http\Response $response
      *
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -88,30 +91,11 @@ class Pjax
      */
     protected function filterResponse(Response $response, $container)
     {
-        $input = $response->getContent();
-
-        $title = $this->makeFromBetween($input, '<title>', '</title>');
-        $title = !empty($title) ? '<title>'.$title.'</title>' : '';
-
-        $content = $this->makeFromBetween($input, '<!--start-pjax-container-->', '<!--end-pjax-container-->');
-        $content = $this->decodeUtf8HtmlEntities($content);
-
-        /*
-        if (empty($content)) {
-            // try dom-crwawler
-            // this is much slower though
-            $crawler = new Crawler($input);
-            $title = $this->makeTitle($crawler);
-            $content = $this->fetchContents($crawler, $container);
-        }
-        */
-
-        if (empty($content)) {
-            abort(422);
-        }
+        $crawler = new Crawler($response->getContent());
 
         $response->setContent(
-            $title.$content
+            $this->makeTitle($crawler).
+            $this->fetchContents($crawler, $container)
         );
 
         return $this;
@@ -129,23 +113,6 @@ class Pjax
         $pageTitle = $crawler->filter('head > title')->html();
 
         return "<title>{$pageTitle}</title>";
-    }
-
-    /**
-     * Prepare an HTML title tag.
-     *
-     * @param string $input
-     *
-     * @return string
-     */
-    protected function makeFromBetween($input, $start, $end)
-    {
-        $str = '';
-        if (Str::contains($input, $start)) {
-            $str = Str::between($input, $start, $end);
-        }
-
-        return $str;
     }
 
     /**
@@ -184,8 +151,10 @@ class Pjax
     /**
      * Set the PJAX-URL header to the current uri.
      *
-     * @param Response $response
+     * @param \Illuminate\Http\Response $response
      * @param Request  $request
+     *
+     * @return void
      */
     protected function setUriHeader(Response $response, Request $request)
     {

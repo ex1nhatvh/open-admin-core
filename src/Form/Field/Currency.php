@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
 class Currency extends Text
 {
@@ -10,16 +10,16 @@ class Currency extends Text
     protected $symbol = '$';
 
     /**
-     * @var array
+     * @var array<string>
      */
     protected static $js = [
-        '/vendor/open-admin/inputmask/inputmask.min.js',
+        '/vendor/open-admin/AdminLTE/plugins/input-mask/jquery.inputmask.bundle.min.js',
     ];
 
     /**
      * @see https://github.com/RobinHerbots/Inputmask#options
      *
-     * @var array
+     * @var array<string, string|bool>
      */
     protected $options = [
         'alias'              => 'currency',
@@ -59,20 +59,19 @@ class Currency extends Text
      */
     public function prepare($value)
     {
-        $value = parent::prepare($value);
-
         return (float) $value;
     }
 
     /**
      * {@inheritdoc}
+     * @return string
      */
     public function render()
     {
         $this->inputmask($this->options);
 
-        $this->prepend($this->symbol);
-        $this->style('max-width', '160px');
+        $this->prepend($this->symbol)
+            ->defaultAttribute('style', 'width: 120px');
 
         return parent::render();
     }

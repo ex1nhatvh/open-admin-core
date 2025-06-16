@@ -1,9 +1,17 @@
 <?php
 
-namespace OpenAdminCore\Admin;
+namespace Encore\Admin;
 
 use Closure;
-use Illuminate\Contracts\Support\Arrayable;
+use Encore\Admin\Exception\Handler;
+use Encore\Admin\Form\Builder;
+use Encore\Admin\Form\Field;
+use Encore\Admin\Form\HasHooks;
+use Encore\Admin\Form\Row;
+use Encore\Admin\Form\Tab;
+use Encore\Admin\Grid\Tools\Footer;
+use Encore\Admin\Traits\Resource;
+use Encore\Admin\Traits\FormTrait;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations;
@@ -14,116 +22,159 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Validator;
-use OpenAdminCore\Admin\Exception\Handler;
-use OpenAdminCore\Admin\Form\Builder;
-use OpenAdminCore\Admin\Form\Concerns\HandleCascadeFields;
-use OpenAdminCore\Admin\Form\Concerns\HasFields;
-use OpenAdminCore\Admin\Form\Concerns\HasFormAttributes;
-use OpenAdminCore\Admin\Form\Concerns\HasHooks;
-use OpenAdminCore\Admin\Form\Field;
-use OpenAdminCore\Admin\Form\Layout\Layout;
-use OpenAdminCore\Admin\Form\Row;
-use OpenAdminCore\Admin\Form\Tab;
-use OpenAdminCore\Admin\Grid\Tools\BatchEdit;
-use OpenAdminCore\Admin\Traits\ShouldSnakeAttributes;
 use Spatie\EloquentSortable\Sortable;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Class Form.
+ *
+ * @property string $password
+ * @method Field\Text           text($column, $label = '')
+ * @method Field\Checkbox       checkbox($column, $label = '')
+ * @method Field\Radio          radio($column, $label = '')
+ * @method Field\Select         select($column, $label = '')
+ * @method Field\MultipleSelect multipleSelect($column, $label = '')
+ * @method Field\Textarea       textarea($column, $label = '')
+ * @method Field\Hidden         hidden($column, $label = '')
+ * @method Field\Id             id($column, $label = '')
+ * @method Field\Ip             ip($column, $label = '')
+ * @method Field\Url            url($column, $label = '')
+ * @method Field\Color          color($column, $label = '')
+ * @method Field\Email          email($column, $label = '')
+ * @method Field\Mobile         mobile($column, $label = '')
+ * @method Field\Slider         slider($column, $label = '')
+ * @method Field\File           file($column, $label = '')
+ * @method Field\Image          image($column, $label = '')
+ * @method Field\Date           date($column, $label = '')
+ * @method Field\Datetime       datetime($column, $label = '')
+ * @method Field\Time           time($column, $label = '')
+ * @method Field\Year           year($column, $label = '')
+ * @method Field\Month          month($column, $label = '')
+ * @method Field\DateRange      dateRange($start, $end, $label = '')
+ * @method Field\DateTimeRange  datetimeRange($start, $end, $label = '')
+ * @method Field\TimeRange      timeRange($start, $end, $label = '')
+ * @method Field\Number         number($column, $label = '')
+ * @method Field\Currency       currency($column, $label = '')
+ * @method Field\HasMany        hasMany($relationName, $label = '', $callback)
+ * @method Field\SwitchField    switch($column, $label = '')
+ * @method Field\Display        display($column, $label = '')
+ * @method Field\Rate           rate($column, $label = '')
+ * @method Field\Divider        divider($title = '')
+ * @method Field\Password       password($column, $label = '')
+ * @method Field\Decimal        decimal($column, $label = '')
+ * @method Field\Html           html($html, $label = '')
+ * @method Field\Tags           tags($column, $label = '')
+ * @method Field\Icon           icon($column, $label = '')
+ * @method Field\Embeds         embeds($column, $label = '', $callback)
+ * @method Field\MultipleImage  multipleImage($column, $label = '')
+ * @method Field\MultipleFile   multipleFile($column, $label = '')
+ * @method Field\Captcha        captcha($column, $label = '')
+ * @method Field\Listbox        listbox($column, $label = '')
+ * @method Field\Table          table($column, $label, $builder)
+ * @method Field\Timezone       timezone($column, $label = '')
+ * @method Field\KeyValue       keyValue($column, $label = '')
+ * @method Field\ListField      list($column, $label = '')
  */
 class Form implements Renderable
 {
+    use Resource;
     use HasHooks;
-    use HasFields;
-    use HasFormAttributes;
-    use HandleCascadeFields;
-    use ShouldSnakeAttributes;
+    use FormTrait;
+
     /**
      * Remove flag in `has many` form.
      */
-    public const REMOVE_FLAG_NAME = '_remove_';
+    const REMOVE_FLAG_NAME = '_remove_';
 
     /**
      * Eloquent model of the form.
      *
-     * @var Model
+     * @var Model|null
      */
-    public $model;
+    protected $model;
 
     /**
      * @var \Illuminate\Validation\Validator
      */
-    public $validator;
+    protected $validator;
+
+    /**
+     * Validation closure.
+     *
+     * @var Closure|null
+     */
+    protected $validatorSavingCallback;
+
+    /**
+     * prepare callback
+     *
+     * @var Closure|null
+     */
+    protected $prepareCallback;
 
     /**
      * @var Builder
      */
-    public $builder;
+    protected $builder;
 
     /**
      * Data for save to current model from input.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $updates = [];
 
     /**
      * Data for save to model's relations from input.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $relations = [];
 
     /**
-     * Refrence to model's relations fields.
-     *
-     * @var array
-     */
-    protected $relation_fields = [];
-
-    /**
-     * Refrence to fields that must be prepared before update.
-     *
-     * @var array
-     */
-    protected $must_prepare = [];
-
-    /**
      * Input data.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $inputs = [];
 
     /**
-     * @var Layout
+     * Available fields.
+     *
+     * @var array<string,mixed>
      */
-    protected $layout;
+    public static $availableFields = [];
+
+    /**
+     * Form field alias.
+     *
+     * @var array<string, mixed>
+     */
+    public static $fieldAlias = [];
 
     /**
      * Ignored saving fields.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $ignored = [];
 
     /**
      * Collected field assets.
      *
-     * @var array
+     * @var array<string, mixed>
      */
     protected static $collectedAssets = [];
 
     /**
-     * @var Form\Tab
+     * @var Form\Tab|null
      */
     protected $tab = null;
 
     /**
      * Field rows in form.
      *
-     * @var array
+     * @var array<mixed>
      */
     public $rows = [];
 
@@ -132,12 +183,43 @@ class Form implements Renderable
      */
     protected $isSoftDeletes = false;
 
-    public $fixedFooter = true;
+    /**
+     * @var bool
+     */
+    protected $isForceDelete = false;
+
+    /**
+     * redirect callback to list.
+     * @var bool
+     */
+    protected $redirectList = true;
+
+    /**
+     * Initialization closure array.
+     *
+     * @var Closure[]
+     */
+    protected static $initCallbacks;
+
+    /**
+     * If set, not call default renderException, and \Closure.
+     *
+     * @var \Closure|null
+     */
+    protected $renderException;
+
+
+    /**
+     * Set relation models
+     *
+     * @var array<mixed>|null
+     */
+    protected $relationModels;
 
     /**
      * Create a new form instance.
      *
-     * @param $model
+     * @param mixed $model
      * @param \Closure $callback
      */
     public function __construct($model, Closure $callback = null)
@@ -146,16 +228,41 @@ class Form implements Renderable
 
         $this->builder = new Builder($this);
 
-        $this->initLayout();
-
         if ($callback instanceof Closure) {
             $callback($this);
         }
 
-        $this->isSoftDeletes = in_array(SoftDeletes::class, class_uses_deep($this->model), true);
+        $this->isSoftDeletes = in_array(SoftDeletes::class, class_uses_deep($this->model));
 
-        $this->initFormAttributes();
         $this->callInitCallbacks();
+    }
+
+    /**
+     * Initialize with user pre-defined default disables, etc.
+     *
+     * @param Closure $callback
+     *
+     * @return void
+     */
+    public static function init(Closure $callback = null)
+    {
+        static::$initCallbacks[] = $callback;
+    }
+
+    /**
+     * Call the initialization closure array in sequence.
+     *
+     * @return void
+     */
+    protected function callInitCallbacks()
+    {
+        if (empty(static::$initCallbacks)) {
+            return;
+        }
+
+        foreach (static::$initCallbacks as $callback) {
+            call_user_func($callback, $this);
+        }
     }
 
     /**
@@ -163,60 +270,72 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function pushField(Field $field): self
+    public function pushField(Field $field)
     {
         $field->setForm($this);
 
-        if (!empty($field->must_prepare)) {
-            $this->must_prepare[] = $field->column();
-        }
-
-        $width = $this->builder->getWidth();
-        $field->setWidth($width['field'], $width['label']);
-
-        $this->fields()->push($field);
-        $this->layout->addField($field);
+        $this->builder->fields()->push($field);
 
         return $this;
     }
 
     /**
-     * @return Model
+     * @return Model|null
      */
-    public function model(): Model
+    public function model()
     {
         return $this->model;
     }
 
     /**
+     * @param mixed $model
+     * @return $this
+     */
+    public function setModel($model)
+    {
+        $this->model = $model;
+        return $this;
+    }
+
+    /**
      * @return Builder
      */
-    public function builder(): Builder
+    public function builder()
     {
         return $this->builder;
     }
 
     /**
-     * @return \Illuminate\Support\Collection
-     */
-    public function fields()
-    {
-        return $this->builder()->fields();
-    }
-
-    /**
      * Generate a edit form.
      *
-     * @param $id
+     * @param mixed $id
      *
      * @return $this
      */
-    public function edit($id): self
+    public function edit($id)
     {
         $this->builder->setMode(Builder::MODE_EDIT);
         $this->builder->setResourceId($id);
 
         $this->setFieldValue($id);
+
+        return $this;
+    }
+
+    /**
+     * Generate a replicate form.
+     *
+     * @param mixed $id
+     * @param array<mixed> $ignore
+     *
+     * @return $this
+     */
+    public function replicate($id, $ignore = [])
+    {
+        $this->builder->setMode(Builder::MODE_CREATE);
+        $this->builder->setResourceId($id);
+
+        $this->setFieldValue($id, true, $ignore);
 
         return $this;
     }
@@ -230,9 +349,9 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function tab($title, Closure $content, bool $active = false): self
+    public function tab($title, Closure $content, $active = false)
     {
-        $this->setTab()->append($title, $content, $active);
+        $this->getTab()->append($title, $content, $active);
 
         return $this;
     }
@@ -244,17 +363,7 @@ class Form implements Renderable
      */
     public function getTab()
     {
-        return $this->tab;
-    }
-
-    /**
-     * Set Tab instance.
-     *
-     * @return Tab
-     */
-    public function setTab(): Tab
-    {
-        if ($this->tab === null) {
+        if (is_null($this->tab)) {
             $this->tab = new Tab($this);
         }
 
@@ -264,7 +373,7 @@ class Form implements Renderable
     /**
      * Destroy data entity and remove files.
      *
-     * @param $id
+     * @param mixed $id
      *
      * @return mixed
      */
@@ -276,6 +385,7 @@ class Form implements Renderable
             }
 
             collect(explode(',', $id))->filter()->each(function ($id) {
+                /** @var SoftDeletableModel $builder */
                 $builder = $this->model()->newQuery();
 
                 if ($this->isSoftDeletes) {
@@ -284,7 +394,7 @@ class Form implements Renderable
 
                 $model = $builder->with($this->getRelations())->findOrFail($id);
 
-                if ($this->isSoftDeletes && $model->trashed()) {
+                if (($this->isSoftDeletes && $model->trashed()) || $this->isForceDelete) {
                     $this->deleteFiles($model, true);
                     $model->forceDelete();
 
@@ -304,6 +414,7 @@ class Form implements Renderable
                 'message' => trans('admin.delete_succeeded'),
             ];
         } catch (\Exception $exception) {
+            \Log::error($exception);
             $response = [
                 'status'  => false,
                 'message' => $exception->getMessage() ?: trans('admin.delete_failed'),
@@ -318,6 +429,8 @@ class Form implements Renderable
      *
      * @param Model $model
      * @param bool  $forceDelete
+     *
+     * @return void
      */
     protected function deleteFiles(Model $model, $forceDelete = false)
     {
@@ -328,43 +441,57 @@ class Form implements Renderable
 
         $data = $model->toArray();
 
-        $this->fields()->filter(function ($field) {
+        $this->builder->fields()->filter(function ($field) {
             return $field instanceof Field\File;
         })->each(function (Field\File $file) use ($data) {
             $file->setOriginal($data);
+
             $file->destroy();
         });
     }
 
     /**
      * Store a new record.
+     * @param null|mixed $data
      *
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|\Illuminate\Http\JsonResponse
+     * @return mixed
      */
-    public function store()
+    public function store($data = null)
     {
-        $data = \request()->all();
+        if(!$data){
+            $data = \request()->all();
+        }
 
         // Handle validation errors.
         if ($validationMessages = $this->validationMessages($data)) {
-            return $this->responseValidationError($validationMessages);
+            return back()->withInput()->withErrors($validationMessages);
         }
 
         if (($response = $this->prepare($data)) instanceof Response) {
             return $response;
         }
 
-        DB::transaction(function () {
+        \ExmentDB::transaction(function () {
             $inserts = $this->prepareInsert($this->updates);
 
             foreach ($inserts as $column => $value) {
                 $this->model->setAttribute($column, $value);
-                $this->fixColumnArrayValue($column);
             }
 
             $this->model->save();
+            $this->storeJancode($this->model);
 
             $this->updateRelation($this->relations);
+
+            try{
+                if (($response = $this->callSavedInTransaction()) instanceof Response) {
+                    return $response;
+                }    
+            }catch(\Exception $ex){
+                \Log::error($ex);
+                DB::rollback();
+                throw $ex;
+            }
         });
 
         if (($response = $this->callSaved()) instanceof Response) {
@@ -379,35 +506,28 @@ class Form implements Renderable
     }
 
     /**
-     * Laravel bug: if a model doesn't exists yet (no id) array's can't be saved to a column
-     * Either use a modifier on the model or its gets automaticly encoded as json.
-     * Prabably fixed in Laravel 8.
+     * Save Jancode
      *
-     * @param string $column
-     */
-    public function fixColumnArrayValue($column)
-    {
-        if (version_compare(app()->version(), '8.0.0', '<')) {
-            $this->model->$column = json_encode($this->model->$column);
-        }
-    }
-
-    /**
-     * @param MessageBag $message
+     * @param mixed $model
      *
-     * @return $this|\Illuminate\Http\JsonResponse
+     * @return void
      */
-    protected function responseValidationError(MessageBag $message)
+    protected function storeJancode($model)
     {
-        if (\request()->ajax() && !\request()->pjax()) {
-            return response()->json([
-                'status'     => false,
-                'validation' => $message,
-                'message'    => $message->first(),
-            ]);
-        }
-
-        return back()->withInput()->withErrors($message);
+        $jan_code = request()->get('jan_code');
+        $table_code = request()->get('table_code');
+        if ($jan_code && $table_code) {
+            DB::table('jan_codes')
+                ->insert([
+                    'table_id' => $table_code,
+                    'target_id' => $model->id,
+                    'jan_code' => $jan_code,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'created_user_id' => \Exment::user()->base_user_id,
+                    'updated_user_id' => \Exment::user()->base_user_id,
+                ]);
+        };
     }
 
     /**
@@ -419,14 +539,13 @@ class Form implements Renderable
      */
     protected function ajaxResponse($message)
     {
-        $request = \request();
+        $request = Request::capture();
 
         // ajax but not pjax
         if ($request->ajax() && !$request->pjax()) {
             return response()->json([
                 'status'  => true,
                 'message' => $message,
-                'display' => $this->applayFieldDisplay(),
             ]);
         }
 
@@ -434,42 +553,9 @@ class Form implements Renderable
     }
 
     /**
-     * @return array
-     */
-    protected function applayFieldDisplay()
-    {
-        $editable = [];
-
-        /** @var Field $field */
-        foreach ($this->fields() as $field) {
-            if (!\request()->has($field->column())) {
-                continue;
-            }
-
-            $newValue = $this->model->fresh()->getAttribute($field->column());
-
-            if ($newValue instanceof Arrayable) {
-                $newValue = $newValue->toArray();
-            }
-
-            if ($field instanceof Field\BelongsTo || $field instanceof Field\BelongsToMany) {
-                $selectable = $field->getSelectable();
-
-                if (method_exists($selectable, 'display')) {
-                    $display = $selectable::display();
-
-                    $editable[$field->column()] = $display->call($this->model, $newValue);
-                }
-            }
-        }
-
-        return $editable;
-    }
-
-    /**
      * Prepare input data for insert or update.
      *
-     * @param array $data
+     * @param array<mixed> $data
      *
      * @return mixed
      */
@@ -480,6 +566,11 @@ class Form implements Renderable
         }
 
         $this->inputs = array_merge($this->removeIgnoredFields($data), $this->inputs);
+
+        if($this->prepareCallback){
+            $func = $this->prepareCallback;
+            $this->inputs = $func($this->inputs);
+        }
 
         if (($response = $this->callSaving()) instanceof Response) {
             return $response;
@@ -493,11 +584,11 @@ class Form implements Renderable
     /**
      * Remove ignored fields from input.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
-     * @return array
+     * @return array<mixed>
      */
-    protected function removeIgnoredFields($input): array
+    protected function removeIgnoredFields($input)
     {
         Arr::forget($input, $this->ignored);
 
@@ -507,24 +598,23 @@ class Form implements Renderable
     /**
      * Get inputs for relations.
      *
-     * @param array $inputs
+     * @param array<mixed> $inputs
      *
-     * @return array
+     * @return array<mixed>
      */
-    protected function getRelationInputs($inputs = []): array
+    protected function getRelationInputs($inputs = [])
     {
         $relations = [];
 
         foreach ($inputs as $column => $value) {
-            if ((method_exists($this->model, $column)
-                || method_exists($this->model, $column = Str::camel($column)))
-                && !method_exists(Model::class, $column)
-            ) {
-                $relation = call_user_func([$this->model, $column]);
+            if (!method_exists($this->model, $column)) {
+                continue;
+            }
 
-                if ($relation instanceof Relations\Relation) {
-                    $relations[$column] = $value;
-                }
+            $relation = call_user_func([$this->model, $column]);
+
+            if ($relation instanceof Relations\Relation) {
+                $relations[$column] = $value;
             }
         }
 
@@ -535,12 +625,13 @@ class Form implements Renderable
      * Handle update.
      *
      * @param int  $id
-     * @param null $data
+     * @param mixed $data
      *
      * @return bool|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|mixed|null|Response
      */
     public function update($id, $data = null)
     {
+        $formId = request()->get('formid');
         $data = ($data) ?: request()->all();
 
         $isEditable = $this->isEditable($data);
@@ -549,7 +640,7 @@ class Form implements Renderable
             return $data;
         }
 
-        /* @var Model $this ->model */
+        /** @var SoftDeletableModel $builder */
         $builder = $this->model();
 
         if ($this->isSoftDeletes) {
@@ -573,18 +664,130 @@ class Form implements Renderable
             return $response;
         }
 
-        DB::transaction(function () {
-            //$updates = $this->prepareUpdate($this->updates);
-            $updates = $this->removeIgnoredFields($this->prepareUpdate($this->updates));
+        \ExmentDB::transaction(function () {
+            $updates = $this->prepareUpdate($this->updates);
 
             foreach ($updates as $column => $value) {
-                /* @var Model $this ->model */
+                /* @var Model $this->model */
                 $this->model->setAttribute($column, $value);
             }
 
             $this->model->save();
 
             $this->updateRelation($this->relations);
+            
+            try{
+                if (($response = $this->callSavedInTransaction()) instanceof Response) {
+                    return $response;
+                }    
+            }catch(\Exception $ex){
+                DB::rollback();
+                throw $ex;
+            }
+        });
+        if ($formId) {
+            return $this->redirectAfterUpdate($id);
+        }
+        if (($result = $this->callSaved()) instanceof Response) {
+            return $result;
+        }
+
+        if ($response = $this->ajaxResponse(trans('admin.update_succeeded'))) {
+            return $response;
+        }
+
+        return $this->redirectAfterUpdate($id);
+    }
+
+    
+    /**
+     * validatorSavingCallback
+     *
+     * @param Closure $callback
+     * @return $this
+     */
+    public function validatorSavingCallback(Closure $callback){
+        $this->validatorSavingCallback = $callback;
+
+        return $this;
+    }
+    
+
+    /**
+     * prepareCallback. Please return inputs array
+     *
+     * @param Closure $callback
+     * @return $this
+     */
+    public function prepareCallback(Closure $callback){
+        $this->prepareCallback = $callback;
+
+        return $this;
+    }
+
+
+    /**
+     * Handle validation update.
+     *
+     * @param int  $id
+     * @param mixed $data
+     *
+     * @return bool|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|mixed|null|Response
+     */
+    public function validationUpdate($id, $data = null)
+    {
+        $data = ($data) ?: request()->all();
+
+        $isEditable = $this->isEditable($data);
+
+        if (($data = $this->handleColumnUpdates($id, $data)) instanceof Response) {
+            return $data;
+        }
+
+        /** @var SoftDeletableModel $builder */
+        $builder = $this->model();
+
+        if ($this->isSoftDeletes) {
+            $builder = $builder->withTrashed();
+        }
+
+        $this->model = $builder->with($this->getRelations())->findOrFail($id);
+
+        $this->setFieldOriginalValue();
+
+        // Handle validation errors.
+        if ($validationMessages = $this->validationMessages($data)) {
+            if (!$isEditable) {
+                return back()->withInput()->withErrors($validationMessages);
+            }
+
+            return response()->json(['errors' => Arr::dot($validationMessages->getMessages())], 422);
+        }
+
+        if (($response = $this->prepare($data)) instanceof Response) {
+            return $response;
+        }
+
+        \ExmentDB::transaction(function () {
+            $updates = $this->prepareUpdate($this->updates);
+
+            foreach ($updates as $column => $value) {
+                /* @var Model $this->model */
+                $this->model->setAttribute($column, $value);
+            }
+
+            $this->model->save();
+
+            $this->updateRelation($this->relations);
+            
+            try{
+                if (($response = $this->callSavedInTransaction()) instanceof Response) {
+                    return $response;
+                }    
+            }catch(\Exception $ex){
+                DB::rollback();
+                throw $ex;
+            }
         });
 
         if (($result = $this->callSaved()) instanceof Response) {
@@ -599,14 +802,59 @@ class Form implements Renderable
     }
 
     /**
+     * Handle update before validation.
+     *
+     * @param int  $id
+     * @param mixed $data
+     *
+     * @return bool|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|mixed|null|Response
+     */
+    public function setupUpdate($id, $data = null)
+    {
+        $data = ($data) ?: request()->all();
+
+        $isEditable = $this->isEditable($data);
+
+        if (($data = $this->handleColumnUpdates($id, $data)) instanceof Response) {
+            return $data;
+        }
+
+        /** @var SoftDeletableModel $builder */
+        $builder = $this->model();
+
+        if ($this->isSoftDeletes) {
+            $builder = $builder->withTrashed();
+        }
+
+        $this->model = $builder->with($this->getRelations())->findOrFail($id);
+
+        $this->setFieldOriginalValue();
+
+        // Handle validation errors.
+        if ($validationMessages = $this->validationMessages($data)) {
+            return [
+                'validationMessages' => $validationMessages,
+                'result' => false,
+            ];
+        }
+
+        return [
+            'builder' => $builder,
+            'data' => $data,
+            'result' => true,
+        ];
+    }
+
+    /**
      * Get RedirectResponse after store.
      *
      * @return \Illuminate\Http\RedirectResponse
      */
-    protected function redirectAfterStore()
+    public function redirectAfterStore()
     {
-        $resourcesPath = $this->resource(0);
-        $key           = $this->model->getKey();
+        $resourcesPath = $this->getResource(0);
+
+        $key = $this->model->getKey();
 
         return $this->redirectAfterSaving($resourcesPath, $key);
     }
@@ -620,7 +868,7 @@ class Form implements Renderable
      */
     protected function redirectAfterUpdate($key)
     {
-        $resourcesPath = $this->resource(-1);
+        $resourcesPath = $this->getResource(-1);
 
         return $this->redirectAfterSaving($resourcesPath, $key);
     }
@@ -635,53 +883,49 @@ class Form implements Renderable
      */
     protected function redirectAfterSaving($resourcesPath, $key)
     {
-        if (request('after-save') == 'continue_editing') {
-            // continue editing
-            $url = rtrim($resourcesPath, '/')."/{$key}/edit";
-        } elseif (request('after-save') == 'continue_creating') {
-            // continue creating
-            $url = rtrim($resourcesPath, '/').'/create';
-        } elseif (request('after-save') == 'view') {
-            // view resource
-            $url = rtrim($resourcesPath, '/')."/{$key}";
-        } elseif (request('after-save') == 'exit') {
-            // return message
-            return trans('admin.save_succeeded');
-            exit;
-        } elseif (strpos(request('_previous_'), 'ids')) {
-            $url = (new BatchEdit(trans('admin.batch_edit')))->buildBatchUrl($resourcesPath);
+        $redirect = $this->builder()->getFooter()->getRedirect($resourcesPath, $key, request('after-save'));
+
+        admin_toastr(trans('admin.save_succeeded'));
+        
+        if(isset($redirect)){
+            return $redirect;
+        }
+
+        if($this->redirectList) {
+            $url = rtrim($resourcesPath, '/');
         } else {
             $url = request(Builder::PREVIOUS_URL_KEY) ?: $resourcesPath;
         }
-
-        admin_toastr(trans('admin.save_succeeded'));
-
         return redirect($url);
     }
 
     /**
      * Check if request is from editable.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
      * @return bool
      */
-    protected function isEditable(array $input = []): bool
+    protected function isEditable(array $input = [])
     {
-        return array_key_exists('_editable', $input) || array_key_exists('_edit_inline', $input);
+        return array_key_exists('_editable', $input);
     }
 
     /**
      * Handle updates for single column.
      *
      * @param int   $id
-     * @param array $data
+     * @param array<mixed> $data
      *
-     * @return array|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|Response
+     * @return array<mixed>|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|Response
      */
     protected function handleColumnUpdates($id, $data)
     {
         $data = $this->handleEditable($data);
+
+        $data = $this->handleFileDelete($data);
+
+        $data = $this->handleFileSort($data);
 
         if ($this->handleOrderable($id, $data)) {
             return response([
@@ -696,14 +940,14 @@ class Form implements Renderable
     /**
      * Handle editable update.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
-     * @return array
+     * @return array<mixed>
      */
-    protected function handleEditable(array $input = []): array
+    protected function handleEditable(array $input = [])
     {
         if (array_key_exists('_editable', $input)) {
-            $name  = $input['name'];
+            $name = $input['name'];
             $value = $input['value'];
 
             Arr::forget($input, ['pk', 'value', 'name']);
@@ -714,16 +958,60 @@ class Form implements Renderable
     }
 
     /**
+     * @param array<mixed> $input
+     *
+     * @return array<mixed>
+     */
+    protected function handleFileDelete(array $input = [])
+    {
+        if (array_key_exists(Field::FILE_DELETE_FLAG, $input)) {
+            $input[Field::FILE_DELETE_FLAG] = $input['key'];
+            unset($input['key']);
+        }
+
+        request()->replace($input);
+
+        return $input;
+    }
+
+    /**
+     * @param array<mixed> $input
+     *
+     * @return array<mixed>
+     */
+    protected function handleFileSort(array $input = [])
+    {
+        if (!array_key_exists(Field::FILE_SORT_FLAG, $input)) {
+            return $input;
+        }
+
+        $sorts = array_filter($input[Field::FILE_SORT_FLAG]);
+
+        if (empty($sorts)) {
+            return $input;
+        }
+
+        foreach ($sorts as $column => $order) {
+            $input[$column] = $order;
+        }
+
+        request()->replace($input);
+
+        return $input;
+    }
+
+    /**
      * Handle orderable update.
      *
      * @param int   $id
-     * @param array $input
+     * @param array<mixed> $input
      *
      * @return bool
      */
     protected function handleOrderable($id, array $input = [])
     {
         if (array_key_exists('_orderable', $input)) {
+            /** @var SortableModel $model */
             $model = $this->model->find($id);
 
             if ($model instanceof Sortable) {
@@ -739,24 +1027,12 @@ class Form implements Renderable
     /**
      * Update relation data.
      *
-     * @param array $relationsData
+     * @param array<mixed> $relationsData
      *
      * @return void
      */
     protected function updateRelation($relationsData)
     {
-        // makes sure prepared values for relations can be passed
-        // for example MultiFile deletions / sortings
-        //echo "<pre>".print_r($relationsData, 1)."</pre>";
-        //echo "<pre>".print_r($this->relation_fields, 1)."</pre>";
-        //exit;
-
-        foreach ($this->relation_fields as $field) {
-            if (!isset($relationsData[$field]) && in_array($field, $this->must_prepare)) {
-                $relationsData[$field] = false;
-            }
-        }
-
         foreach ($relationsData as $name => $values) {
             if (!method_exists($this->model, $name)) {
                 continue;
@@ -768,8 +1044,7 @@ class Form implements Renderable
                 || $relation instanceof Relations\MorphOne
                 || $relation instanceof Relations\BelongsTo;
 
-            $isRelationUpdate = true;
-            $prepared         = $this->prepareUpdate([$name => $values], $oneToOneRelation, $isRelationUpdate);
+            $prepared = $this->prepareUpdate([$name => $values], $oneToOneRelation);
 
             if (empty($prepared)) {
                 continue;
@@ -783,54 +1058,82 @@ class Form implements Renderable
                     }
                     break;
                 case $relation instanceof Relations\HasOne:
-                case $relation instanceof Relations\MorphOne:
-                    $related = $this->model->getRelationValue($name) ?: $relation->getRelated();
+
+                    $related = $this->model->$name;
+
+                    // if related is empty
+                    if (is_null($related)) {
+                        $related = $relation->getRelated();
+                        $qualifiedParentKeyName = $relation->getQualifiedParentKeyName();
+                        $localKey = Arr::last(explode('.', $qualifiedParentKeyName));
+                        $related->{$relation->getForeignKeyName()} = $this->model->{$localKey};
+                    }
 
                     foreach ($prepared[$name] as $column => $value) {
                         $related->setAttribute($column, $value);
                     }
 
-                    // save child
-                    $relation->save($related);
+                    $related->save();
                     break;
                 case $relation instanceof Relations\BelongsTo:
                 case $relation instanceof Relations\MorphTo:
-                    $related = $this->model->getRelationValue($name) ?: $relation->getRelated();
 
+                    $parent = $this->model->$name;
+
+                    // if related is empty
+                    if (is_null($parent)) {
+                        $parent = $relation->getRelated();
+                    }
+
+                    foreach ($prepared[$name] as $column => $value) {
+                        $parent->setAttribute($column, $value);
+                    }
+
+                    $parent->save();
+
+                    // When in creating, associate two models
+                    $foreignKeyMethod = version_compare(app()->version(), '5.8.0', '<') ? 'getForeignKey' : 'getForeignKeyName';
+                    if (!$this->model->{$relation->{$foreignKeyMethod}()}) {
+                        $this->model->{$relation->{$foreignKeyMethod}()} = $parent->getKey();
+
+                        $this->model->save();
+                    }
+
+                    break;
+                case $relation instanceof Relations\MorphOne:
+                    $related = $this->model->$name;
+                    if (is_null($related)) {
+                        $related = $relation->make();
+                    }
                     foreach ($prepared[$name] as $column => $value) {
                         $related->setAttribute($column, $value);
                     }
-
-                    // save parent
                     $related->save();
-
-                    // save child (self)
-                    $relation->associate($related)->save();
                     break;
                 case $relation instanceof Relations\HasMany:
                 case $relation instanceof Relations\MorphMany:
-                    if (!empty($prepared[$name])) {
-                        foreach ($prepared[$name] as $related) {
-                            /** @var Relations\HasOneOrMany $relation */
-                            $relation = $this->model->$name();
 
-                            $keyName = $relation->getRelated()->getKeyName();
+                    foreach ($prepared[$name] as $related) {
+                        /** @var Relations\Relation<Model>|\Illuminate\Database\Eloquent\Builder<Model> $relation */
+                        $relation = $this->model()->$name();
 
-                            /** @var Model $child */
-                            $child = $relation->findOrNew(Arr::get($related, $keyName));
+                        $keyName = $relation->getRelated()->getKeyName();
 
-                            if (Arr::get($related, static::REMOVE_FLAG_NAME) == 1) {
-                                $child->delete();
-                                continue;
-                            }
+                        $instance = $relation->findOrNew(Arr::get($related, $keyName));
 
-                            Arr::forget($related, static::REMOVE_FLAG_NAME);
+                        if ($related[static::REMOVE_FLAG_NAME] == 1) {
+                            $instance->delete();
 
-                            $child->fill($related);
-
-                            $child->save();
+                            continue;
                         }
+
+                        Arr::forget($related, static::REMOVE_FLAG_NAME);
+
+                        $instance->fill($related);
+
+                        $instance->save();
                     }
+
                     break;
             }
         }
@@ -839,36 +1142,38 @@ class Form implements Renderable
     /**
      * Prepare input data for update.
      *
-     * @param array $updates
+     * @param array<mixed> $updates
      * @param bool  $oneToOneRelation If column is one-to-one relation.
      *
-     * @return array
+     * @return array<mixed>
      */
-    protected function prepareUpdate(array $updates, $oneToOneRelation = false, $isRelationUpdate = false): array
+    protected function prepareUpdate(array $updates, $oneToOneRelation = false)
     {
         $prepared = [];
 
         /** @var Field $field */
-        foreach ($this->fields() as $field) {
+        foreach ($this->builder->fields() as $field) {
             $columns = $field->column();
 
-            if ($this->isInvalidColumn($columns, $oneToOneRelation || $field->isJsonType)
-                || (in_array($columns, $this->relation_fields) && !$isRelationUpdate)) {
+            // If column not in input array data, then continue.
+            if (!$field->getInternal() && !Arr::has($updates, $columns)) {
+                continue;
+            }
+
+            if ($this->isInvalidColumn($columns, $oneToOneRelation || $field->isJsonType)) {
                 continue;
             }
 
             $value = $this->getDataByColumn($updates, $columns);
+
             $value = $field->prepare($value);
 
-            // only process values if not false
-            if ($value !== false) {
-                if (is_array($columns)) {
-                    foreach ($columns as $name => $column) {
-                        Arr::set($prepared, $column, $value[$name]);
-                    }
-                } elseif (is_string($columns)) {
-                    Arr::set($prepared, $columns, $value);
+            if (is_array($columns)) {
+                foreach ($columns as $name => $column) {
+                    Arr::set($prepared, $column, $value[$name]);
                 }
+            } elseif (is_string($columns)) {
+                Arr::set($prepared, $columns, $value);
             }
         }
 
@@ -876,16 +1181,16 @@ class Form implements Renderable
     }
 
     /**
-     * @param string|array $columns
+     * @param string|array<mixed> $columns
      * @param bool         $containsDot
      *
      * @return bool
      */
-    protected function isInvalidColumn($columns, $containsDot = false): bool
+    protected function isInvalidColumn($columns, $containsDot = false)
     {
         foreach ((array) $columns as $column) {
-            if ((!$containsDot && Str::contains($column, '.'))
-                || ($containsDot && !Str::contains($column, '.'))) {
+            if ((!$containsDot && Str::contains($column, '.')) ||
+                ($containsDot && !Str::contains($column, '.'))) {
                 return true;
             }
         }
@@ -896,30 +1201,82 @@ class Form implements Renderable
     /**
      * Prepare input data for insert.
      *
-     * @param $inserts
+     * @param mixed $inserts
      *
-     * @return array
+     * @return array<mixed>
      */
-    protected function prepareInsert($inserts): array
+    protected function prepareInsert($inserts)
     {
         if ($this->isHasOneRelation($inserts)) {
             $inserts = Arr::dot($inserts);
         }
 
         foreach ($inserts as $column => $value) {
-            if (($field = $this->getFieldByColumn($column)) === null) {
+            if (is_null($field = $this->getFieldByColumn($column))) {
                 unset($inserts[$column]);
                 continue;
             }
+
             $inserts[$column] = $field->prepare($value);
+        }
+
+        // set internal value.
+        foreach ($this->builder->fields() as $field) {
+            // If column not in input array data, then continue.
+            if (!$field->getInternal()) {
+                continue;
+            }
+            
+            $column = $field->column();
+            $inserts[$column] = $field->prepare(null);
         }
 
         $prepared = [];
 
         foreach ($inserts as $key => $value) {
-            if ($value !== false) {
-                Arr::set($prepared, $key, $value);
+            Arr::set($prepared, $key, $value);
+        }
+
+        return $prepared;
+    }
+
+    /**
+     * Prepare data for confirm.
+     *
+     * @param mixed $inserts
+     *
+     * @return array<mixed>
+     */
+    protected function prepareConfirm($inserts)
+    {
+        if ($this->isHasOneRelation($inserts)) {
+            $inserts = Arr::dot($inserts);
+        }
+
+        foreach ($inserts as $column => $value) {
+            if (is_null($field = $this->getFieldByColumn($column))) {
+                unset($inserts[$column]);
+                continue;
             }
+
+            $inserts[$column] = $field->prepareConfirm($value);
+        }
+
+        // set internal value.
+        foreach ($this->builder->fields() as $field) {
+            // If column not in input array data, then continue.
+            if (!$field->getInternal()) {
+                continue;
+            }
+            
+            $column = $field->column();
+            $inserts[$column] = $field->prepareConfirm(null);
+        }
+
+        $prepared = [];
+
+        foreach ($inserts as $key => $value) {
+            Arr::set($prepared, $key, $value);
         }
 
         return $prepared;
@@ -928,11 +1285,11 @@ class Form implements Renderable
     /**
      * Is input data is has-one relation.
      *
-     * @param array $inserts
+     * @param array<mixed> $inserts
      *
      * @return bool
      */
-    protected function isHasOneRelation($inserts): bool
+    protected function isHasOneRelation($inserts)
     {
         $first = current($inserts);
 
@@ -950,11 +1307,11 @@ class Form implements Renderable
     /**
      * Ignore fields to save.
      *
-     * @param string|array $fields
+     * @param string|array<mixed> $fields
      *
      * @return $this
      */
-    public function ignore($fields): self
+    public function ignore($fields)
     {
         $this->ignored = array_merge($this->ignored, (array) $fields);
 
@@ -962,15 +1319,15 @@ class Form implements Renderable
     }
 
     /**
-     * @param array        $data
-     * @param string|array $columns
+     * @param array<mixed>        $data
+     * @param string|array<mixed> $columns
      *
-     * @return array|mixed
+     * @return array<mixed>|mixed
      */
     protected function getDataByColumn($data, $columns)
     {
         if (is_string($columns)) {
-            return Arr::get($data, $columns, false);
+            return Arr::get($data, $columns);
         }
 
         if (is_array($columns)) {
@@ -979,26 +1336,23 @@ class Form implements Renderable
                 if (!Arr::has($data, $column)) {
                     continue;
                 }
-                $value[$name] = Arr::get($data, $column, false);
+                $value[$name] = Arr::get($data, $column);
             }
 
             return $value;
         }
-        // if not found return false
-        // false values won't be save
-        return false;
     }
 
     /**
      * Find field object by column.
      *
-     * @param $column
+     * @param mixed $column
      *
      * @return mixed
      */
     protected function getFieldByColumn($column)
     {
-        return $this->fields()->first(
+        return $this->builder->fields()->first(
             function (Field $field) use ($column) {
                 if (is_array($field->column())) {
                     return in_array($column, $field->column());
@@ -1016,9 +1370,11 @@ class Form implements Renderable
      */
     protected function setFieldOriginalValue()
     {
+//        static::doNotSnakeAttributes($this->model);
+
         $values = $this->model->toArray();
 
-        $this->fields()->each(function (Field $field) use ($values) {
+        $this->builder->fields()->each(function (Field $field) use ($values) {
             $field->setOriginal($values);
         });
     }
@@ -1026,31 +1382,172 @@ class Form implements Renderable
     /**
      * Set all fields value in form.
      *
-     * @param $id
+     * @param mixed $id
+     * @param bool $replicate
+     * @param array<mixed> $ignore
      *
      * @return void
      */
-    protected function setFieldValue($id)
+    protected function setFieldValue($id, $replicate = false, $ignore = [])
     {
         $relations = $this->getRelations();
 
+        /** @var SoftDeletableModel $builder */
         $builder = $this->model();
 
         if ($this->isSoftDeletes) {
             $builder = $builder->withTrashed();
         }
 
-        $this->model = $builder->with($relations)->findOrFail($id);
+        if($id instanceof \Illuminate\Database\Eloquent\Model){
+            $this->model = $id;
+        }else{
+            $this->model = $builder->with($relations)->findOrFail($id);
+        }
+
+        if($replicate){
+            $this->model = $this->replicateModel($this->model, $relations, $ignore);
+        }
 
         $this->callEditing();
 
+//        static::doNotSnakeAttributes($this->model);
+
         $data = $this->model->toArray();
 
-        $this->fields()->each(function (Field $field) use ($data) {
-            if (!in_array($field->column(), $this->ignored, true)) {
+        $this->builder->fields()->each(function (Field $field) use ($data) {
+            if (!in_array($field->column(), $this->ignored)) {
                 $field->fill($data);
             }
         });
+    }
+
+    /**
+     * Get model by inputs
+     *
+     * @param array<mixed> $data
+     * @param Model|null $model if set base model, set args
+     *
+     * @return Model|Response
+     */
+    public function getModelByInputs(array $data = null, ?Model $model = null)
+    {
+        if(is_null($data)){
+            $data = request()->all();
+        }
+
+        if (($response = $this->prepare($data)) instanceof Response) {
+            return $response;
+        }
+
+        $inserts = $this->prepareConfirm($this->updates);
+
+        if($model){
+            $this->model = $model;
+        }
+
+        foreach ($inserts as $column => $value) {
+            $this->model->setAttribute($column, $value);
+        }
+
+        // Now, I only call this function, If need, set such as array.
+        $this->getRelationModelByInputs($data);
+
+        return $this->model;
+    }
+
+    /**
+     * Get relation models
+     *
+     * @param array<mixed>|null $inputs
+     * @return array<mixed>|null
+     */
+    public function getRelationModelByInputs(array $inputs = null)
+    {
+        if(!is_null($this->relationModels)){
+            return $this->relationModels;
+        }
+
+        if(is_null($inputs)){
+            $inputs = request()->all();
+        }
+
+        $relations = [];
+        foreach ($inputs as $column => $value) {
+            
+            if (!method_exists($this->model, $column)) {
+                continue;
+            }
+
+            $relation = call_user_func([$this->model, $column]);
+
+            if (!($relation instanceof Relations\Relation)) {
+                continue;
+            }
+            
+            $value = array_filter($value);
+            if ($relation instanceof Relations\BelongsToMany || $relation instanceof Relations\MorphToMany) {
+                $relations[$column] = (clone $relation->getRelated())->query()->findMany($value);
+                continue;
+            }
+            
+            // create child model
+            foreach($value as $v){
+                if(is_null($v)){
+                    continue;
+                }
+                if (Arr::get($v, Form::REMOVE_FLAG_NAME) == 1) {
+                    continue;
+                }
+
+                $prepared = $this->prepareConfirm([$column => $value]);
+
+                $model = clone $relation->getRelated();
+                $model->fill($v);
+
+                $relations[$column][] = $model;
+            }
+        }
+
+        $this->relationModels = $relations;
+        return $relations;
+    }
+
+
+    /**
+     * @param mixed $oldModel
+     * @param mixed $relations
+     * @param array<mixed> $ignore
+     * @return mixed
+     */
+    protected function replicateModel($oldModel, $relations, $ignore = []){
+        $model = $oldModel->replicate()->setRelations([]);
+
+        foreach($ignore as $i){
+            unset($model->{$i});
+        }
+
+        foreach($relations as $relation){
+            // if set hasmany, set model as relation
+            if(!($oldModel->{$relation}() instanceof \Illuminate\Database\Eloquent\Relations\HasMany)){
+                $model->setRelation($relation, $oldModel->{$relation});
+                continue;
+            }
+
+            // set hasmany values
+            $items = [];
+            foreach($oldModel->{$relation} as $childModel){
+                $childCopyModel = $childModel->replicate()->setRelations([]);
+                // remove parent id
+                $keyName = $oldModel->{$relation}()->getForeignKeyName();
+                unset($childCopyModel->{$keyName});
+
+                $items[] = $childCopyModel;
+            }
+            $model->setRelation($relation, collect($items));
+        }
+
+        return $model;
     }
 
     /**
@@ -1071,13 +1568,44 @@ class Form implements Renderable
 
         $this->html($fieldset->end())->plain();
 
-        return $this;
+        return $fieldset;
     }
+
+    /**
+     * Don't snake case attributes.
+     *
+     * @param Model $model
+     *
+     * @return void
+     */
+    protected static function doNotSnakeAttributes(Model $model)
+    {
+        $class = get_class($model);
+
+        $class::$snakeAttributes = false;
+    }
+
+    /**
+     * Validate this form fields, and return redirect if has errors
+     *
+     * @param array<mixed> $input
+     *
+     * @return \Illuminate\Http\RedirectResponse|true
+     */
+    public function validateRedirect($input)
+    {
+        $message = $this->validationMessages($input);
+        if($message !== false){
+            return back()->withInput()->withErrors($message);
+        }
+        return true;
+    }
+    
 
     /**
      * Get validation messages.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
      * @return MessageBag|bool
      */
@@ -1086,10 +1614,11 @@ class Form implements Renderable
         $failedValidators = [];
 
         /** @var Field $field */
-        foreach ($this->fields() as $field) {
+        foreach ($this->builder->fields() as $field) {
             if (!$validator = $field->getValidator($input)) {
                 continue;
             }
+
             if (($validator instanceof Validator) && !$validator->passes()) {
                 $failedValidators[] = $validator;
             }
@@ -1097,8 +1626,20 @@ class Form implements Renderable
 
         $message = $this->mergeValidationMessages($failedValidators);
 
+        if($this->validatorSavingCallback){
+            $func = $this->validatorSavingCallback;
+            $func($input, $message, $this);
+        }
+        // if contains function 'validatorSaving' in model, call
+        if(method_exists($this->model, 'validatorSaving')){
+            if(is_array($validateResult = $this->model->validatorSaving($input))){
+                $message = $message->merge($validateResult);
+            }
+        }
+
         return $message->any() ? $message : false;
     }
+
 
     /**
      * Merge validation messages from input validators.
@@ -1107,7 +1648,7 @@ class Form implements Renderable
      *
      * @return MessageBag
      */
-    protected function mergeValidationMessages($validators): MessageBag
+    protected function mergeValidationMessages($validators)
     {
         $messageBag = new MessageBag();
 
@@ -1121,14 +1662,14 @@ class Form implements Renderable
     /**
      * Get all relations of model from callable.
      *
-     * @return array
+     * @return array<mixed>
      */
-    public function getRelations(): array
+    public function getRelations()
     {
         $relations = $columns = [];
 
         /** @var Field $field */
-        foreach ($this->fields() as $field) {
+        foreach ($this->builder->fields() as $field) {
             $columns[] = $field->column();
         }
 
@@ -1136,22 +1677,19 @@ class Form implements Renderable
             if (Str::contains($column, '.')) {
                 list($relation) = explode('.', $column);
 
-                if (method_exists($this->model, $relation)
-                    && !method_exists(Model::class, $relation)
-                    && $this->model->$relation() instanceof Relations\Relation
+                if (method_exists($this->model, $relation) &&
+                    $this->model->$relation() instanceof Relations\Relation
                 ) {
                     $relations[] = $relation;
                 }
-            } elseif (method_exists($this->model, $column)
-                && !method_exists(Model::class, $column)
+            } elseif (method_exists($this->model, $column) &&
+                !method_exists(Model::class, $column)
             ) {
                 $relations[] = $column;
             }
         }
 
-        $this->relation_fields = array_unique($relations);
-
-        return $this->relation_fields;
+        return array_unique($relations);
     }
 
     /**
@@ -1161,7 +1699,7 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function setAction($action): self
+    public function setAction($action)
     {
         $this->builder()->setAction($action);
 
@@ -1176,9 +1714,9 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function setWidth($fieldWidth = 8, $labelWidth = 2): self
+    public function setWidth($fieldWidth = 8, $labelWidth = 2)
     {
-        $this->fields()->each(function ($field) use ($fieldWidth, $labelWidth) {
+        $this->builder()->fields()->each(function ($field) use ($fieldWidth, $labelWidth) {
             /* @var Field $field  */
             $field->setWidth($fieldWidth, $labelWidth);
         });
@@ -1195,7 +1733,7 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function setView($view): self
+    public function setView($view)
     {
         $this->builder()->setView($view);
 
@@ -1209,7 +1747,7 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function setTitle($title = ''): self
+    public function setTitle($title = '')
     {
         $this->builder()->setTitle($title);
 
@@ -1217,28 +1755,15 @@ class Form implements Renderable
     }
 
     /**
-     * Set a submit confirm.
+     * Set Force delete
      *
-     * @param string $message
-     * @param string $on
+     * @param bool $val
      *
      * @return $this
      */
-    public function confirm(string $message, $on = null)
+    public function setIsForceDelete(bool $val = true)
     {
-        if ($on && !in_array($on, ['create', 'edit'])) {
-            throw new \InvalidArgumentException("The second paramater `\$on` must be one of ['create', 'edit']");
-        }
-
-        if ($on == 'create' && !$this->isCreating()) {
-            return;
-        }
-
-        if ($on == 'edit' && !$this->isEditing()) {
-            return;
-        }
-
-        $this->builder()->confirm($message);
+        $this->isForceDelete = $val;
 
         return $this;
     }
@@ -1250,7 +1775,7 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function row(Closure $callback): self
+    public function row(Closure $callback)
     {
         $this->rows[] = new Row($callback, $this);
 
@@ -1261,6 +1786,8 @@ class Form implements Renderable
      * Tools setting for form.
      *
      * @param Closure $callback
+     *
+     * @return void
      */
     public function tools(Closure $callback)
     {
@@ -1270,11 +1797,11 @@ class Form implements Renderable
     /**
      * @param Closure|null $callback
      *
-     * @return Form\Tools
+     * @return Form\Tools|void
      */
     public function header(Closure $callback = null)
     {
-        if (func_num_args() === 0) {
+        if (func_num_args() == 0) {
             return $this->builder->getTools();
         }
 
@@ -1282,23 +1809,51 @@ class Form implements Renderable
     }
 
     /**
-     * Indicates if current form page is creating.
+     * Set submit label.
      *
-     * @return bool
+     * @return $this
      */
-    public function isCreating(): bool
+    public function submitLabel(string $submitLabel)
     {
-        return Str::endsWith(\request()->route()->getName(), ['.create', '.store']);
+        $this->builder()->getFooter()->submitLabel($submitLabel);
+
+        return $this;
     }
 
     /**
-     * Indicates if current form page is editing.
+     * Set submit label as save.
      *
-     * @return bool
+     * @return $this
      */
-    public function isEditing(): bool
+    public function submitLabelSave()
     {
-        return Str::endsWith(\request()->route()->getName(), ['.edit', '.update']);
+        $this->builder()->getFooter()->submitLabelSave();
+
+        return $this;
+    }
+
+    /**
+     * Disable Pjax.
+     *
+     * @return $this
+     */
+    public function disablePjax()
+    {
+        $this->builder()->disablePjax();
+
+        return $this;
+    }
+
+    /**
+     * Disable Validate.
+     *
+     * @return $this
+     */
+    public function disableValidate()
+    {
+        $this->builder()->disableValidate();
+
+        return $this;
     }
 
     /**
@@ -1310,7 +1865,7 @@ class Form implements Renderable
      *
      * @deprecated
      */
-    public function disableSubmit(bool $disable = true): self
+    public function disableSubmit(bool $disable = true)
     {
         $this->builder()->getFooter()->disableSubmit($disable);
 
@@ -1326,7 +1881,7 @@ class Form implements Renderable
      *
      * @deprecated
      */
-    public function disableReset(bool $disable = true): self
+    public function disableReset(bool $disable = true)
     {
         $this->builder()->getFooter()->disableReset($disable);
 
@@ -1340,7 +1895,7 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function disableViewCheck(bool $disable = true): self
+    public function disableViewCheck(bool $disable = true)
     {
         $this->builder()->getFooter()->disableViewCheck($disable);
 
@@ -1354,7 +1909,7 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function disableEditingCheck(bool $disable = true): self
+    public function disableEditingCheck(bool $disable = true)
     {
         $this->builder()->getFooter()->disableEditingCheck($disable);
 
@@ -1368,9 +1923,43 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function disableCreatingCheck(bool $disable = true): self
+    public function disableCreatingCheck(bool $disable = true)
     {
         $this->builder()->getFooter()->disableCreatingCheck($disable);
+
+        return $this;
+    }
+
+    /**
+     * Disable Redirect to List.
+     *
+     * @param bool $disable
+     *
+     * @return $this
+     */
+    public function disableRedirectList(bool $disable = true)
+    {
+        $this->redirectList = $disable;
+
+        return $this;
+    }
+
+    /**
+     * add footer check item.
+     *
+     * $footerCheck : 
+     *     [
+     *         'value': 'foo', // this check value name
+     *         'label': 'FOO', // this check label
+     *         'redirect': \Closure, //set callback. Please redirect.
+     *     ]
+     *
+     * @param array<mixed> $submitRedirect
+     * @return $this
+     */
+    public function submitRedirect(array $submitRedirect)
+    {
+        $this->builder()->getFooter()->submitRedirect($submitRedirect);
 
         return $this;
     }
@@ -1380,15 +1969,27 @@ class Form implements Renderable
      *
      * @param Closure $callback
      *
-     * @return \OpenAdminCore\Admin\Form\Footer
+     * @return \Encore\Admin\Form\Footer|void
      */
     public function footer(Closure $callback = null)
     {
-        if (func_num_args() === 0) {
+        if (func_num_args() == 0) {
             return $this->builder()->getFooter();
         }
 
-        $callback($this->builder()->getFooter());
+        call_user_func($callback, $this->builder()->getFooter());
+    }
+
+    /**
+     * Set if true, not call default renderException, and \Closure.
+     *
+     * @return  self
+     */ 
+    public function renderException(\Closure $renderException)
+    {
+        $this->renderException = $renderException;
+
+        return $this;
     }
 
     /**
@@ -1398,15 +1999,9 @@ class Form implements Renderable
      *
      * @return string
      */
-    public function resource($slice = -2): string
+    public function resource($slice = -2)
     {
-        $segments = explode('/', trim(\request()->getUri(), '/'));
-
-        if ($slice !== 0) {
-            $segments = array_slice($segments, 0, $slice);
-        }
-
-        return implode('/', $segments);
+        return $this->getResource($slice);
     }
 
     /**
@@ -1419,6 +2014,10 @@ class Form implements Renderable
         try {
             return $this->builder->render();
         } catch (\Exception $e) {
+            if($this->renderException){
+                return call_user_func($this->renderException, $e);
+            }
+
             return Handler::renderException($e);
         }
     }
@@ -1427,13 +2026,13 @@ class Form implements Renderable
      * Get or set input data.
      *
      * @param string $key
-     * @param null   $value
+     * @param mixed   $value
      *
-     * @return array|mixed
+     * @return array<mixed>|mixed
      */
     public function input($key, $value = null)
     {
-        if ($value === null) {
+        if (is_null($value)) {
             return Arr::get($this->inputs, $key);
         }
 
@@ -1441,28 +2040,157 @@ class Form implements Renderable
     }
 
     /**
-     * Add a new layout column.
+     * Register builtin fields.
      *
-     * @param int      $width
-     * @param \Closure $closure
-     *
-     * @return $this
+     * @return void
      */
-    public function column($width, Closure $closure): self
+    public static function registerBuiltinFields()
     {
-        $width = $width < 1 ? round(12 * $width) : $width;
+        $map = [
+            'button'         => Field\Button::class,
+            'checkbox'       => Field\Checkbox::class,
+            'color'          => Field\Color::class,
+            'currency'       => Field\Currency::class,
+            'date'           => Field\Date::class,
+            'dateRange'      => Field\DateRange::class,
+            'datetime'       => Field\Datetime::class,
+            'dateTimeRange'  => Field\DatetimeRange::class,
+            'datetimeRange'  => Field\DatetimeRange::class,
+            'decimal'        => Field\Decimal::class,
+            'display'        => Field\Display::class,
+            'divider'        => Field\Divider::class,
+            'embeds'         => Field\Embeds::class,
+            'email'          => Field\Email::class,
+            'file'           => Field\File::class,
+            'hasMany'        => Field\HasMany::class,
+            'hidden'         => Field\Hidden::class,
+            'id'             => Field\Id::class,
+            'image'          => Field\Image::class,
+            'ip'             => Field\Ip::class,
+            'mobile'         => Field\Mobile::class,
+            'month'          => Field\Month::class,
+            'multipleSelect' => Field\MultipleSelect::class,
+            'number'         => Field\Number::class,
+            'password'       => Field\Password::class,
+            'radio'          => Field\Radio::class,
+            'rate'           => Field\Rate::class,
+            'select'         => Field\Select::class,
+            'slider'         => Field\Slider::class,
+            'switch'         => Field\SwitchField::class,
+            'text'           => Field\Text::class,
+            'textarea'       => Field\Textarea::class,
+            'time'           => Field\Time::class,
+            'timeRange'      => Field\TimeRange::class,
+            'url'            => Field\Url::class,
+            'year'           => Field\Year::class,
+            'html'           => Field\Html::class,
+            'tags'           => Field\Tags::class,
+            'icon'           => Field\Icon::class,
+            'multipleFile'   => Field\MultipleFile::class,
+            'multipleImage'  => Field\MultipleImage::class,
+            'captcha'        => Field\Captcha::class,
+            'listbox'        => Field\Listbox::class,
+            'table'          => Field\Table::class,
+            'timezone'       => Field\Timezone::class,
+            'keyValue'       => Field\KeyValue::class,
+            'list'           => Field\ListField::class,
+        ];
 
-        $this->layout->column($width, $closure);
-
-        return $this;
+        foreach ($map as $abstract => $class) {
+            static::extend($abstract, $class);
+        }
     }
 
     /**
-     * Initialize filter layout.
+     * Register custom field.
+     *
+     * @param string $abstract
+     * @param string $class
+     *
+     * @return void
      */
-    protected function initLayout()
+    public static function extend($abstract, $class)
     {
-        $this->layout = new Layout($this);
+        static::$availableFields[$abstract] = $class;
+    }
+
+    /**
+     * Set form field alias.
+     *
+     * @param string $field
+     * @param string $alias
+     *
+     * @return void
+     */
+    public static function alias($field, $alias)
+    {
+        static::$fieldAlias[$alias] = $field;
+    }
+
+    /**
+     * Remove registered field.
+     *
+     * @param array<mixed>|string $abstract
+     *
+     * @return void
+     */
+    public static function forget($abstract)
+    {
+        Arr::forget(static::$availableFields, $abstract);
+    }
+
+    /**
+     * Find field class.
+     *
+     * @param string $method
+     *
+     * @return bool|mixed
+     */
+    public static function findFieldClass($method)
+    {
+        // If alias exists.
+        if (isset(static::$fieldAlias[$method])) {
+            $method = static::$fieldAlias[$method];
+        }
+
+        $class = Arr::get(static::$availableFields, $method);
+
+        if (class_exists($class)) {
+            return $class;
+        }
+
+        return false;
+    }
+
+    /**
+     * Collect assets required by registered field.
+     *
+     * @return array<mixed>
+     */
+    public static function collectFieldAssets()
+    {
+        if (!empty(static::$collectedAssets)) {
+            return static::$collectedAssets;
+        }
+
+        $css = collect();
+        $js = collect();
+
+        foreach (static::$availableFields as $field) {
+            if (!method_exists($field, 'getAssets')) {
+                continue;
+            }
+
+            $assets = call_user_func([$field, 'getAssets']);
+
+            $css->push(Arr::get($assets, 'css'));
+            $js->push(Arr::get($assets, 'js'));
+        }
+
+        return static::$collectedAssets = [
+            'css' => $css->flatten()->unique()->filter()->toArray(),
+            'js'  => $js->flatten()->unique()->filter()->toArray(),
+        ];
     }
 
     /**
@@ -1470,7 +2198,7 @@ class Form implements Renderable
      *
      * @param string $name
      *
-     * @return array|mixed
+     * @return array<mixed>|mixed
      */
     public function __get($name)
     {
@@ -1482,31 +2210,18 @@ class Form implements Renderable
      *
      * @param string $name
      * @param mixed  $value
-     *
-     * @return array
      */
     public function __set($name, $value)
     {
+        /** @phpstan-ignore-next-line should delete return */
         return Arr::set($this->inputs, $name, $value);
-    }
-
-    /**
-     * __isset.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function __isset($name)
-    {
-        return isset($this->inputs[$name]);
     }
 
     /**
      * Generate a Field object and add to form builder if Field exists.
      *
      * @param string $method
-     * @param array  $arguments
+     * @param array<mixed>  $arguments
      *
      * @return Field
      */
@@ -1525,13 +2240,5 @@ class Form implements Renderable
         admin_error('Error', "Field type [$method] does not exist.");
 
         return new Field\Nullable();
-    }
-
-    /**
-     * @return Layout
-     */
-    public function getLayout(): Layout
-    {
-        return $this->layout;
     }
 }

@@ -1,37 +1,92 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
-use  OpenAdminCore\Admin\Form\Field\Traits\HasNumberModifiers;
+use Encore\Admin\Validator\DigitBetweenRule;
+use Encore\Admin\Validator\DigitMinRule;
+use Encore\Admin\Validator\DigitMaxRule;
 
 class Number extends Text
 {
-    use HasNumberModifiers;
+    protected $rules = ['nullable', 'numeric'];
 
     protected static $js = [
-        '/vendor/open-admin/fields/number-input.js',
+        '/vendor/open-admin/number-input/bootstrap-number-input.js',
     ];
-
-    protected $view = 'admin::form.number';
 
     public function render()
     {
-        $this->defaultAttribute('type', 'number');
-        $this->append("<i class='icon-plus plus'></i>");
-        $this->prepend("<i class='icon-minus minus'></i>");
         $this->default($this->default);
 
-        if (
-            empty($this->attributes['readonly']) &&
-            empty($this->attributes['disabled'])
-        ) {
-            $this->script = <<<JS
-            new NumberInput(document.querySelector('{$this->getElementClassSelector()}'));
-            JS;
-        }
+        $this->script = <<<EOT
 
-        $this->style('max-width', '120px');
+$('{$this->getElementClassSelector()}:not(.initialized)')
+    .addClass('initialized')
+    .bootstrapNumber({
+        upClass: 'success',
+        downClass: 'primary',
+        center: true
+    });
+
+EOT;
+
+        $this->prepend('')->defaultAttribute('style', 'width: 100px');
 
         return parent::render();
     }
+
+    /**
+     * Set min value of number field.
+     *
+     * @param int $value
+     *
+     * @return $this
+     */
+    public function min($value)
+    {
+        $this->attribute('min', $value);
+
+        $this->rules([new DigitMinRule($value)]);
+
+        return $this;
+    }
+
+    /**
+     * Set max value of number field.
+     *
+     * @param int $value
+     *
+     * @return $this
+     */
+    public function max($value)
+    {
+        $this->attribute('max', $value);
+
+        $this->rules([new DigitMaxRule($value)]);
+
+        return $this;
+    }
+
+    
+
+    /**
+     * Set min and max value of number field. 
+     * *And set validation.*
+     *
+     * @param int $min
+     * @param int $max
+     *
+     * @return $this
+     */
+    public function between($min, $max)
+    {
+        $this->attribute('min', $min);
+        $this->attribute('max', $max);
+
+        $this->rules([new DigitBetweenRule($min,$max)]);
+
+        return $this;
+    }
+
+    
 }

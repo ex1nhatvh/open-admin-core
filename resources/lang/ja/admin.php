@@ -20,7 +20,7 @@ return [
     'edit'                  => '編集',
     'view'                  => '表示',
     'continue_editing'      => '編集を続ける',
-    'continue_creating'     => '作成を続行する',
+    'continue_creating'     => '新規作成する',
     'detail'                => '詳細',
     'browse'                => '参照',
     'reset'                 => 'リセット',
@@ -55,7 +55,7 @@ return [
     'refresh_succeeded'     => '更新しました！',
     'login_successful'      => 'ログインしました！',
     'choose'                => '選択',
-    'choose_file'           => 'ファイルを選択',
+    'choose_file'           => 'ファイル選択',
     'choose_image'          => '画像を選択',
     'more'                  => '続き',
     'deny'                  => '権限がありません。',
@@ -98,5 +98,13 @@ return [
         'filter_clear'       => '全て表示',
         'filter_placeholder' => 'フィルタ',
     ],
+    'grid_items_selected'    => '{n} 行選択',
     'menu_titles'           => [],
+    'prev'                   => '前へ',
+    'next'                   => '次へ',
+    'empty'                  => '空',
+
+    'validation' => [
+        'not_in_option' => '選択肢に含まれない値が選択されています。',
+    ],
 ];

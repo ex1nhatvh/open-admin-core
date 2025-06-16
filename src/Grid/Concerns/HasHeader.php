@@ -1,14 +1,14 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Concerns;
+namespace Encore\Admin\Grid\Concerns;
 
 use Closure;
-use OpenAdminCore\Admin\Grid\Tools\Header;
+use Encore\Admin\Grid\Tools\Header;
 
 trait HasHeader
 {
     /**
-     * @var Closure
+     * @var Closure|null
      */
     protected $header;
 

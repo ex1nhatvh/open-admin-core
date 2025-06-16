@@ -1,7 +1,9 @@
 <?php
 
-namespace OpenAdminCore\Admin\Show;
+namespace Encore\Admin\Show;
 
+use Encore\Admin\Show;
+use Encore\Admin\Widgets\Carousel;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Eloquent\Model;
@@ -9,18 +11,13 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
-use OpenAdminCore\Admin\Form\Field\Traits\UploadField;
-use OpenAdminCore\Admin\Show;
-use OpenAdminCore\Admin\Widgets\Carousel;
 
 class Field implements Renderable
 {
     use Macroable {
         __call as macroCall;
     }
-    use UploadField;
 
     /**
      * @var string
@@ -44,12 +41,19 @@ class Field implements Renderable
     /**
      * Width for label and field.
      *
-     * @var array
+     * @var array<string, int>
      */
     protected $width = [
         'label' => 2,
         'field' => 8,
     ];
+
+    /**
+     * If the form horizontal layout.
+     *
+     * @var bool
+     */
+    protected $horizontal = true;
 
     /**
      * Escape field value or not.
@@ -66,7 +70,7 @@ class Field implements Renderable
     protected $value;
 
     /**
-     * @var Collection
+     * @var Collection<int|string, mixed>|array<mixed>
      */
     protected $showAs = [];
 
@@ -85,16 +89,22 @@ class Field implements Renderable
     protected $relation;
 
     /**
+     * Whether disable label.
+     *
+     * @var bool
+     */
+    protected $disableLabel = false;
+
+    /**
      * If show contents in box.
      *
      * @var bool
      */
-    public $border = false;
+    public $border = true;
 
     /**
-     * @var array
+     * @var array<string, string>
      */
-    /*
     protected $fileTypes = [
         'image'      => 'png|jpg|jpeg|tmp|gif',
         'word'       => 'doc|docx',
@@ -107,13 +117,14 @@ class Field implements Renderable
         'audio'      => 'mp3|wav|flac|3pg|aa|aac|ape|au|m4a|mpc|ogg',
         'video'      => 'mkv|rmvb|flv|mp4|avi|wmv|rm|asf|mpeg',
     ];
-    */
 
     /**
      * Field constructor.
      *
      * @param string $name
      * @param string $label
+     *
+     * @return void
      */
     public function __construct($name = '', $label = '')
     {
@@ -151,13 +162,13 @@ class Field implements Renderable
     /**
      * Format label.
      *
-     * @param $label
+     * @param string $label
      *
      * @return mixed
      */
     protected function formatLabel($label)
     {
-        $label = $label ?: ucfirst($this->name);
+        $label = $label ?: ucfirst_ex($this->name);
 
         return str_replace(['.', '_'], ' ', $label);
     }
@@ -170,6 +181,24 @@ class Field implements Renderable
     public function getLabel()
     {
         return $this->label;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getHorizontal()
+    {
+        return $this->horizontal;
+    }
+
+    /**
+     * @return $this
+     */
+    public function disableHorizontal()
+    {
+        $this->horizontal = false;
+
+        return $this;
     }
 
     /**
@@ -189,7 +218,7 @@ class Field implements Renderable
     /**
      * Display field using array value map.
      *
-     * @param array $values
+     * @param array<mixed> $values
      * @param null  $default
      *
      * @return $this
@@ -209,14 +238,14 @@ class Field implements Renderable
      * Show field as a image.
      *
      * @param string $server
-     * @param int    $width
-     * @param int    $height
-     *
-     * @return $this
+     * @param int $width
+     * @param int $height
+     * @return Field
      */
     public function image($server = '', $width = 200, $height = 200)
     {
         return $this->unescape()->as(function ($images) use ($server, $width, $height) {
+            /** @var array<mixed> $images */
             return collect($images)->map(function ($path) use ($server, $width, $height) {
                 if (empty($path)) {
                     return '';
@@ -253,7 +282,8 @@ class Field implements Renderable
     public function carousel($width = 300, $height = 200, $server = '')
     {
         return $this->unescape()->as(function ($images) use ($server, $width, $height) {
-            $items = collect($images)->map(function ($path) use ($server, $width, $height) {
+            /** @var  array<mixed> $images */
+            $items = collect($images)->map(function ($path) use ($server) {
                 if (empty($path)) {
                     return '';
                 }
@@ -319,18 +349,20 @@ class Field implements Renderable
             $download = $download ? "download='$name'" : '';
 
             return <<<HTML
-<div class="card mailbox-arttachment clearfix">
-      <span class="mailbox-attachment-icon"><i class="{$field->getFileIcon($name)}"></i></span>
-      <div class="card-body">
+<ul class="mailbox-attachments clearfix">
+    <li style="margin-bottom: 0;">
+      <span class="mailbox-attachment-icon"><i class="fa {$field->getFileIcon($name)}"></i></span>
+      <div class="mailbox-attachment-info">
         <div class="mailbox-attachment-name">
-            <i class="icon-paperclip"></i> {$name}
+            <i class="fa fa-paperclip"></i> {$name}
             </div>
             <span class="mailbox-attachment-size">
               {$size}&nbsp;
-              <a href="{$url}" class="btn btn-light btn-xs float-end" target="_blank" $download><i class="icon-download"></i></a>
+              <a href="{$url}" class="btn btn-default btn-xs pull-right" target="_blank" $download><i class="fa fa-cloud-download"></i></a>
             </span>
       </div>
-</div>
+    </li>
+  </ul>
 HTML;
         });
     }
@@ -367,7 +399,7 @@ HTML;
             }
 
             return collect((array) $value)->map(function ($name) use ($style) {
-                return "<span class='badge bg-{$style}'>$name</span>";
+                return "<span class='label label-{$style}'>$name</span>";
             })->implode('&nbsp;');
         });
     }
@@ -379,7 +411,7 @@ HTML;
      *
      * @return Field
      */
-    public function badge($style = 'primary')
+    public function badge($style = 'blue')
     {
         return $this->unescape()->as(function ($value) use ($style) {
             if ($value instanceof Arrayable) {
@@ -402,11 +434,7 @@ HTML;
         $field = $this;
 
         return $this->unescape()->as(function ($value) use ($field) {
-            if (is_string($value)) {
-                $content = json_decode($value, true);
-            } else {
-                $content = $value;
-            }
+            $content = json_decode($value, true);
 
             if (json_last_error() == 0) {
                 $field->border = false;
@@ -439,17 +467,15 @@ HTML;
      */
     public function getFileIcon($file = '')
     {
-        $ext = File::extension($file);
+        $extension = File::extension($file);
 
-        $filetype = 'file';
-        foreach ($this->fileTypes as $type => $pattern) {
-            if (preg_match($pattern, $ext) === 1) {
-                $filetype = $type;
-                break;
+        foreach ($this->fileTypes as $type => $regex) {
+            if (preg_match("/^($regex)$/i", $extension) !== 0) {
+                return "fa-file-{$type}-o";
             }
         }
 
-        return $this->fileTypesIcons[$filetype];
+        return 'fa-file-o';
     }
 
     /**
@@ -477,6 +503,18 @@ HTML;
     }
 
     /**
+     * disable label.
+     *
+     * @return $this
+     */
+    public function disableLabel()
+    {
+        $this->disableLabel = true;
+
+        return $this;
+    }
+
+    /**
      * Set value for this field.
      *
      * @param Model $model
@@ -492,11 +530,7 @@ HTML;
 
             $this->value = $relationValue;
         } else {
-            if (Str::contains($this->name, '.')) {
-                $this->value = $this->getRelationValue($model, $this->name);
-            } else {
-                $this->value = $model->getAttribute($this->name);
-            }
+            $this->value = $model->getAttribute($this->name);
         }
 
         return $this;
@@ -514,21 +548,6 @@ HTML;
         $this->relation = $relation;
 
         return $this;
-    }
-
-    /**
-     * @param Model  $model
-     * @param string $name
-     *
-     * @return mixed
-     */
-    protected function getRelationValue($model, $name)
-    {
-        list($relation, $key) = explode('.', $name);
-
-        if ($related = $model->getRelationValue($relation)) {
-            return $related->getAttribute($key);
-        }
     }
 
     /**
@@ -553,7 +572,7 @@ HTML;
      * Call extended field.
      *
      * @param string|AbstractField|\Closure $abstract
-     * @param array                         $arguments
+     * @param array<mixed>                         $arguments
      *
      * @return Field
      */
@@ -598,9 +617,9 @@ HTML;
 
     /**
      * @param string $method
-     * @param array  $arguments
+     * @param array<mixed>  $arguments
      *
-     * @return $this
+     * @return $this|Field
      */
     public function __call($method, $arguments = [])
     {
@@ -623,17 +642,33 @@ HTML;
     /**
      * Get all variables passed to field view.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     protected function variables()
     {
-        return [
+        $variables = [
             'content'   => $this->value,
             'escape'    => $this->escape,
-            'label'     => $this->getLabel(),
+            'label'     => !$this->disableLabel ? $this->getLabel() : null,
             'wrapped'   => $this->border,
-            'width'     => $this->width,
         ];
+
+        if($this->horizontal){
+            $variables['width'] = [
+                'label' => "col-md-{$this->width['label']}",
+                'field' => "col-md-{$this->width['field']}",
+            ];
+            $variables['form_group'] = 'form-group';
+        }
+        else{
+            $variables['width'] = [
+                'label' => "",
+                'field' => "",
+            ];
+            $variables['form_group'] = 'form-group-vertical';
+        }
+        
+        return $variables;
     }
 
     /**
@@ -647,7 +682,8 @@ HTML;
             $this->showAs->each(function ($callable) {
                 $this->value = $callable->call(
                     $this->parent->getModel(),
-                    $this->value
+                    $this->value,
+                    $this->parent->getModel()
                 );
             });
         }

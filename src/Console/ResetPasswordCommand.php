@@ -1,9 +1,8 @@
 <?php
 
-namespace OpenAdminCore\Admin\Console;
+namespace Encore\Admin\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
 
 class ResetPasswordCommand extends Command
 {
@@ -23,15 +22,20 @@ class ResetPasswordCommand extends Command
 
     /**
      * Execute the console command.
+     * @return void
      */
     public function handle()
     {
         $userModel = config('admin.database.users_model');
 
-        askForUserName:
-        $username = $this->ask('Please enter a username who needs to reset his password');
+        $users = $userModel::all();
 
-        $user = $userModel::query()->where('username', $username)->first();
+        askForUserName:
+        $username = $this->askWithCompletion('Please enter a username who needs to reset his password', $users->pluck('username')->toArray());
+
+        $user = $users->first(function ($user) use ($username) {
+            return $user->username == $username;
+        });
 
         if (is_null($user)) {
             $this->error('The user you entered is not exists');
@@ -46,7 +50,7 @@ class ResetPasswordCommand extends Command
             goto enterPassword;
         }
 
-        $user->password = Hash::make($password);
+        $user->password = bcrypt($password);
 
         $user->save();
 

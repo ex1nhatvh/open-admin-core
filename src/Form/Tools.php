@@ -1,7 +1,8 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form;
+namespace Encore\Admin\Form;
 
+use Encore\Admin\Facades\Admin;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Collection;
@@ -16,23 +17,30 @@ class Tools implements Renderable
     /**
      * Collection of tools.
      *
-     * @var array
+     * @var array<string>
      */
-    protected $tools = ['list', 'view', 'delete'];
+    protected $tools = ['delete', 'view', 'list'];
 
     /**
      * Tools should be appends to default tools.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $appends;
 
     /**
      * Tools should be prepends to default tools.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $prepends;
+
+    /**
+     * list path Expressly
+     *
+     * @var string|null
+     */
+    protected $listPath;
 
     /**
      * Create a new Tools instance.
@@ -76,6 +84,7 @@ class Tools implements Renderable
 
     /**
      * Disable `list` tool.
+     * @param bool $disable
      *
      * @return $this
      */
@@ -92,6 +101,7 @@ class Tools implements Renderable
 
     /**
      * Disable `delete` tool.
+     * @param bool $disable
      *
      * @return $this
      */
@@ -108,6 +118,7 @@ class Tools implements Renderable
 
     /**
      * Disable `edit` tool.
+     * @param bool $disable
      *
      * @return $this
      */
@@ -123,12 +134,30 @@ class Tools implements Renderable
     }
 
     /**
+     * Set request path for resource list Expressly.
+     * @param string $listPath
+     *
+     * @return $this
+     */
+    public function setListPath($listPath)
+    {
+        $this->listPath = $listPath;
+
+        return $this;
+    }
+
+    /**
      * Get request path for resource list.
+     * @param bool $directList
      *
      * @return string
      */
-    protected function getListPath()
+    protected function getListPath(bool $directList = false)
     {
+        if($directList && !is_null($this->listPath)){
+            return $this->listPath;
+        }
+
         return $this->form->getResource();
     }
 
@@ -176,12 +205,13 @@ class Tools implements Renderable
     protected function renderList()
     {
         $text = trans('admin.list');
+        $url = url($this->getListPath(true));
 
-        return <<<HTML
-<div class="btn-group">
-    <a href="{$this->getListPath()}" class="btn btn-sm btn-default btn-light me-2" title="{$text}"><i class="icon-list"></i><span class="hidden-xs">&nbsp;{$text}</span></a>
+        return <<<EOT
+<div class="btn-group pull-right" style="margin-right: 5px">
+    <a href="{$url}" class="btn btn-sm btn-default d-flex align-items-center p-2" title="$text"><i class="fa fa-list p-1"></i><span class="d-none d-md-inline">&nbsp;$text</span></a>
 </div>
-HTML;
+EOT;
     }
 
     /**
@@ -192,11 +222,12 @@ HTML;
     protected function renderView()
     {
         $view = trans('admin.view');
+        $url = url($this->getViewPath());
 
         return <<<HTML
-<div class="btn-group">
-    <a href="{$this->getViewPath()}" class="btn btn-sm btn-primary me-2" title="{$view}">
-        <i class="icon-eye"></i><span class="hidden-xs"> {$view}</span>
+<div class="btn-group pull-right" style="margin-right: 5px">
+    <a href="{$url}" class="btn btn-sm btn-primary d-flex align-items-center p-2" title="{$view}">
+        <i class="fa fa-eye p-1"></i><span class="d-none d-md-inline"> {$view}</span>
     </a>
 </div>
 HTML;
@@ -209,14 +240,68 @@ HTML;
      */
     protected function renderDelete()
     {
+        $url = url($this->getDeletePath());
+        $listUrl = url($this->getListPath(true));
         $trans = [
+            'delete_confirm' => trans('admin.delete_confirm'),
+            'confirm'        => trans('admin.confirm'),
+            'cancel'         => trans('admin.cancel'),
             'delete'         => trans('admin.delete'),
         ];
 
+        $class = uniqid();
+
+        $script = <<<SCRIPT
+
+$('.{$class}-delete').unbind('click').click(function() {
+
+    swal({
+        title: "{$trans['delete_confirm']}",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "{$trans['confirm']}",
+        showLoaderOnConfirm: true,
+        allowOutsideClick: false,
+        cancelButtonText: "{$trans['cancel']}",
+        preConfirm: function() {
+            $('.swal2-cancel').hide();
+            return new Promise(function(resolve) {
+                $.ajax({
+                    method: 'post',
+                    url: '{$url}',
+                    data: {
+                        _method:'delete',
+                        _token:LA.token,
+                    },
+                    success: function (data) {
+                        $.pjax({container:'#pjax-container', url: '{$listUrl}' });
+
+                        resolve(data);
+                    }
+                });
+            });
+        }
+    }).then(function(result) {
+        var data = result.value;
+        if (typeof data === 'object') {
+            if (data.status) {
+                swal(data.message, '', 'success');
+            } else {
+                swal(data.message, '', 'error');
+            }
+        }
+    });
+});
+
+SCRIPT;
+
+        Admin::script($script);
+
         return <<<HTML
-<div class="btn-group">
-    <a  onclick="admin.resource.delete(event,this)" data-url="{$this->getDeletePath()}" data-list_url="{$this->getListPath()}" class="btn btn-sm btn-danger delete" title="{$trans['delete']}">
-        <i class="icon-trash"></i><span class="hidden-xs">  {$trans['delete']}</span>
+<div class="btn-group pull-right" style="margin-right: 5px">
+    <a href="javascript:void(0);" class="btn p-1 btn-sm btn-danger d-flex align-items-center {$class}-delete" title="{$trans['delete']}">
+        <i class="fa fa-trash p-1"></i><span class="d-none d-md-inline p-1">  {$trans['delete']}</span>
     </a>
 </div>
 HTML;
@@ -239,8 +324,7 @@ HTML;
     /**
      * Disable back button.
      *
-     * @return $this
-     *
+     * @return void
      * @deprecated
      */
     public function disableBackButton()
@@ -262,7 +346,7 @@ HTML;
     /**
      * Render custom tools.
      *
-     * @param Collection $tools
+     * @param Collection<int|string, mixed>|null $tools
      *
      * @return mixed
      */

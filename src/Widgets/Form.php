@@ -1,19 +1,17 @@
 <?php
 
-namespace OpenAdminCore\Admin\Widgets;
+namespace Encore\Admin\Widgets;
 
 use Closure;
+use Encore\Admin\Form as BaseForm;
+use Encore\Admin\Form\Field;
+use Encore\Admin\Traits\FormTrait;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Validator;
-use OpenAdminCore\Admin\Facades\Admin;
-use OpenAdminCore\Admin\Form as BaseForm;
-use OpenAdminCore\Admin\Form\Concerns\HasFormAttributes;
-use OpenAdminCore\Admin\Form\Field;
-use OpenAdminCore\Admin\Layout\Content;
 
 /**
  * Class Form.
@@ -21,11 +19,7 @@ use OpenAdminCore\Admin\Layout\Content;
  * @method Field\Text           text($name, $label = '')
  * @method Field\Password       password($name, $label = '')
  * @method Field\Checkbox       checkbox($name, $label = '')
- * @method Field\CheckboxButton checkboxButton($name, $label = '')
- * @method Field\CheckboxCard   checkboxCard($name, $label = '')
  * @method Field\Radio          radio($name, $label = '')
- * @method Field\RadioButton    radioButton($name, $label = '')
- * @method Field\RadioCard      radioCard($name, $label = '')
  * @method Field\Select         select($name, $label = '')
  * @method Field\MultipleSelect multipleSelect($name, $label = '')
  * @method Field\Textarea       textarea($name, $label = '')
@@ -35,7 +29,7 @@ use OpenAdminCore\Admin\Layout\Content;
  * @method Field\Url            url($name, $label = '')
  * @method Field\Color          color($name, $label = '')
  * @method Field\Email          email($name, $label = '')
- * @method Field\PhoneNumber    phonenumber($name, $label = '')
+ * @method Field\Mobile         mobile($name, $label = '')
  * @method Field\Slider         slider($name, $label = '')
  * @method Field\File           file($name, $label = '')
  * @method Field\Image          image($name, $label = '')
@@ -67,8 +61,7 @@ use OpenAdminCore\Admin\Layout\Content;
  */
 class Form implements Renderable
 {
-    use BaseForm\Concerns\HandleCascadeFields;
-    use HasFormAttributes;
+    use FormTrait;
 
     /**
      * The title of form.
@@ -78,33 +71,62 @@ class Form implements Renderable
     public $title;
 
     /**
-     * The description of form.
-     *
-     * @var string
-     */
-    public $description;
-
-    /**
      * @var Field[]
      */
-    public $fields = [];
+    protected $fields = [];
 
     /**
-     * @var array
+     * @var array<mixed>
      */
-    public $data = [];
+    protected $data = [];
+
+    /**
+     * Submit label.
+     *
+     * @var string|null
+     */
+    protected $submitLabel;
 
     /**
      * Available buttons.
      *
-     * @var array
+     * @var array<string>
      */
     protected $buttons = ['reset', 'submit'];
 
     /**
+     * Available footer checks.
+     * 
+     * $submitRedirects : [
+     *     [
+     *         'key': 'list', // this check key name. Use default check etc
+     *         'value': 'foo', // this check value name
+     *         'label': 'FOO', // this check label
+     *         'default': true, // if this flow is checked, set true
+     *     ],
+     *     [
+     *         'key': 'edit', // this check key name. Use default check etc
+     *         'value': 'bar', // this check value name
+     *         'label': 'BAR', // this check label
+     *         'default': true, // if this flow is checked, set true
+     *     ],
+     * ]
+     *
+     * @var array<mixed>
+     */
+    protected $submitRedirects = [];
+
+    /**
+     * Default Submit label.
+     *
+     * @var string|null
+     */
+    public static $defaultSubmitLabel;
+
+    /**
      * Width for label and submit field.
      *
-     * @var array
+     * @var array<string,int>
      */
     protected $width = [
         'label' => 2,
@@ -117,25 +139,29 @@ class Form implements Renderable
     public $inbox = true;
 
     /**
-     * @var string
+     * Validation closure.
+     *
+     * @var Closure|null
      */
-    public $confirm = '';
+    protected $validatorSavingCallback;
 
     /**
-     * @var Form
+     * Whether only render fields.
+     *
+     * @var bool
      */
-    protected $form;
+    protected $onlyRenderFields = false;
 
     /**
      * Form constructor.
      *
-     * @param array $data
+     * @param array<mixed> $data
      */
     public function __construct($data = [])
     {
         $this->fill($data);
+
         $this->initFormAttributes();
-        $this->form_classes[] = 'card';
     }
 
     /**
@@ -143,25 +169,13 @@ class Form implements Renderable
      *
      * @return mixed
      */
-    public function title($title)
+    protected function title()
     {
-        $this->title = $title;
-
-        return $this;
+        return $this->title;
     }
 
     /**
-     * Get form description.
-     *
-     * @return mixed
-     */
-    public function description()
-    {
-        return $this->description ?: ' ';
-    }
-
-    /**
-     * @return array
+     * @return array<mixed>
      */
     public function data()
     {
@@ -169,19 +183,9 @@ class Form implements Renderable
     }
 
     /**
-     * @return array
-     */
-    public function confirm($message)
-    {
-        $this->confirm = $message;
-
-        return $this;
-    }
-
-    /**
      * Fill data to form fields.
      *
-     * @param array $data
+     * @param array<mixed>|mixed $data
      *
      * @return $this
      */
@@ -211,6 +215,113 @@ class Form implements Renderable
     }
 
     /**
+     * Initialize the form attributes.
+     *
+     * @return void
+     */
+    protected function initFormAttributes()
+    {
+        $this->attributes = [
+            'method'         => 'POST',
+            'action'         => '',
+            'class'          => 'form-horizontal ' . $this->getUniqueName(),
+            'accept-charset' => 'UTF-8',
+            'pjax-container' => true,
+            'data-form_uniquename' => $this->getUniqueName(),
+        ];
+    }
+
+
+    /**
+     * Format form attributes form array to html.
+     *
+     * @param array<string, mixed> $attributes
+     *
+     * @return string
+     */
+    public function formatAttribute($attributes = [])
+    {
+        $attributes = $attributes ?: $this->attributes;
+
+        if ($this->hasFile()) {
+            $attributes['enctype'] = 'multipart/form-data';
+        }
+
+        $html = [];
+        foreach ($attributes as $key => $val) {
+            $html[] = "$key=\"$val\"";
+        }
+
+        return implode(' ', $html) ?: '';
+    }
+
+    /**
+     * Action uri of the form.
+     *
+     * @param string $action
+     *
+     * @return $this
+     */
+    public function action($action)
+    {
+        return $this->attribute('action', $action);
+    }
+
+    /**
+     * Method of the form.
+     *
+     * @param string $method
+     *
+     * @return $this
+     */
+    public function method($method = 'POST')
+    {
+        if (strtolower($method) == 'put') {
+            $this->hidden('_method')->default($method);
+
+            return $this;
+        }
+
+        return $this->attribute('method', strtoupper($method));
+    }
+
+    /**
+     * Set submit label.
+     *
+     * @return $this
+     */
+    public function submitLabel(string $submitLabel)
+    {
+        $this->submitLabel = $submitLabel;
+
+        return $this;
+    }
+
+    /**
+     * Set submit label as save.
+     *
+     * @return $this
+     */
+    public function submitLabelSave()
+    {
+        $this->submitLabel = trans('admin.save');
+
+        return $this;
+    }
+
+    /**
+     * Disable Pjax.
+     *
+     * @return $this
+     */
+    public function disablePjax()
+    {
+        Arr::forget($this->attributes, 'pjax-container');
+
+        return $this;
+    }
+
+    /**
      * Disable reset button.
      *
      * @return $this
@@ -230,6 +341,42 @@ class Form implements Renderable
     public function disableSubmit()
     {
         array_delete($this->buttons, 'submit');
+
+        return $this;
+    }
+
+    /**
+     * Set default Checkbox.
+     * @param mixed $key
+     *
+     * @return $this
+     */
+    public function defaultCheck($key)
+    {
+        foreach($this->submitRedirects as &$submitRedirect){
+            if(Arr::get($submitRedirect, 'key') == $key){
+                $submitRedirect['default'] = true;
+            }
+        }
+        
+        return $this;
+    }
+
+    /**
+     * add footer check item.
+     *
+     * $footerCheck : 
+     *     [
+     *         'value': 'foo', // this check value name
+     *         'label': 'FOO', // this check label
+     *         'redirect': \Closure, //set callback. Please redirect.
+     *     ]
+     * @param array<mixed> $submitRedirect
+     * @return $this
+     */
+    public function submitRedirect(array $submitRedirect)
+    {
+        $this->submitRedirects[] = $submitRedirect;
 
         return $this;
     }
@@ -277,9 +424,9 @@ class Form implements Renderable
      *
      * @return $this
      */
-    public function pushField(Field $field)
+    public function pushField(Field &$field)
     {
-        $field->setWidgetForm($this);
+        $field->setForm($this);
 
         array_push($this->fields, $field);
 
@@ -293,25 +440,50 @@ class Form implements Renderable
      */
     public function fields()
     {
-        return collect($this->fields);
+        return $this->fields;
+    }
+
+    /**
+     * @return $this
+     */
+    public function onlyRenderFields(){
+        $this->onlyRenderFields = true;
+        return $this;
+    }
+
+    /**
+     * Get form's script
+     *
+     * @return array<string>
+     */
+    public function getScript()
+    {
+        return collect($this->fields)->map(function ($field) {
+            /* @var Field $field  */
+            return $field->getScript();
+        })->filter()->values()->toArray();
     }
 
     /**
      * Get variables for render form.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     protected function getVariables()
     {
-        $this->fields()->each->fill($this->data());
+        foreach ($this->fields as $field) {
+            $field->fill($this->data());
+        }
 
         return [
-            'title'      => $this->title,
-            'fields'     => $this->fields,
-            'attributes' => $this->formatAttribute(),
-            'method'     => $this->attributes['method'],
-            'buttons'    => $this->buttons,
-            'width'      => $this->width,
+            'fields'      => $this->fields,
+            'attributes'  => $this->formatAttribute(),
+            'method'      => $this->attributes['method'],
+            'buttons'     => $this->buttons,
+            'submitRedirects'=> $this->submitRedirects,
+            'width'       => $this->width,
+            'submitLabel' => $this->submitLabel ?? static::$defaultSubmitLabel ?? trans('admin.submit'),
+            'default_check'    => $this->getDefaultCheck(),
         ];
     }
 
@@ -323,7 +495,7 @@ class Form implements Renderable
     public function hasFile()
     {
         foreach ($this->fields as $field) {
-            if ($field instanceof Field\File) {
+            if ($field instanceof Field\File || $field instanceof Field\MultipleFile) {
                 return true;
             }
         }
@@ -331,6 +503,58 @@ class Form implements Renderable
         return false;
     }
 
+    
+    /**
+     * validatorSavingCallback
+     *
+     * @param Closure $callback
+     * @return $this
+     */
+    public function validatorSavingCallback(Closure $callback){
+        $this->validatorSavingCallback = $callback;
+
+        return $this;
+    }
+    
+    /**
+     * Validate this form fields, and return redirect if has errors
+     *
+     * @param Request $request
+     *
+     * @return \Illuminate\Http\RedirectResponse|true
+     */
+    public function validateRedirect(Request $request)
+    {
+        $message = $this->validate($request);
+        if($message !== false){
+            return back()->withInput()->withErrors($message);
+        }
+        return true;
+    }
+    
+
+    /**
+     * Get default check value
+     *
+     * @return ?string
+     */
+    protected function getDefaultCheck(){
+        if(!is_null($result = old('after-save'))){
+            return $result;
+        }
+        if(!is_null($result = request()->get('after-save'))){
+            return $result;
+        }
+
+        foreach ($this->submitRedirects as $submitRedirect) {
+            if(boolval(Arr::get($submitRedirect, 'default'))){
+                return Arr::get($submitRedirect, 'value');
+            }
+        }
+
+        return null;
+    }
+    
     /**
      * Validate this form fields.
      *
@@ -340,6 +564,33 @@ class Form implements Renderable
      */
     public function validate(Request $request)
     {
+        return $this->validationMessages($request->all());
+    }
+    
+
+    /**
+     * Get validation messages.
+     *
+     * @param array<mixed> $input
+     *
+     * @return MessageBag|bool
+     */
+    public function validationMessages(array $input)
+    {
+        $message = $this->validationMessageArray($input);
+
+        return $message->any() ? $message : false;
+    }
+
+    /**
+     * Get validation messages.
+     *
+     * @param array<mixed> $input
+     *
+     * @return MessageBag|bool
+     */
+    public function validationMessageArray(array $input)
+    {
         if (method_exists($this, 'form')) {
             $this->form();
         }
@@ -348,7 +599,7 @@ class Form implements Renderable
 
         /** @var Field $field */
         foreach ($this->fields() as $field) {
-            if (!$validator = $field->getValidator($request->all())) {
+            if (!$validator = $field->getValidator($input)) {
                 continue;
             }
 
@@ -359,8 +610,14 @@ class Form implements Renderable
 
         $message = $this->mergeValidationMessages($failedValidators);
 
-        return $message->any() ? $message : false;
+        if($this->validatorSavingCallback){
+            $func = $this->validatorSavingCallback;
+            $func($input, $message, $this);
+        }
+
+        return $message;
     }
+
 
     /**
      * Merge validation messages from input validators.
@@ -411,81 +668,50 @@ class Form implements Renderable
         return $this;
     }
 
-    protected function addConfirmScript()
+    /**
+     * @return null
+     */
+    public function model()
     {
-        $id = $this->attributes['id'];
-
-        $trans = [
-            'cancel' => trans('admin.cancel'),
-            'submit' => trans('admin.submit'),
-        ];
-
-        $settings = [
-            'type'                => 'question',
-            'showCancelButton'    => true,
-            'confirmButtonText'   => $trans['submit'],
-            'cancelButtonText'    => $trans['cancel'],
-            'title'               => $this->confirm,
-            'text'                => '',
-        ];
-
-        $settings = trim(json_encode($settings, JSON_PRETTY_PRINT));
-
-        $script = <<<JS
-
-        var confirmSubmit = function(e) {
-            e.preventDefault();
-
-            var form = e.target.closest('form');
-            Swal.fire($settings).then(function (result) {
-                if (result.value == true) {
-                    if (admin.form.validate(form)){
-                        form.dispatchEvent(new Event('submit', { cancelable: true }));
-                    }
-                }
-            });
-            return false;
-
-        };
-        document.querySelector('form#{$id} button[type=submit]').removeEventListener("click", confirmSubmit);
-        document.querySelector('form#{$id} button[type=submit]').addEventListener("click", confirmSubmit);
-
-JS;
-
-        Admin::script($script);
+        return null;
     }
 
-    protected function addCascadeScript()
-    {
-        $id = $this->attributes['id'];
-
-        $script = <<<SCRIPT
-        admin.form.disable_cascaded_forms("form#{$id}");
-SCRIPT;
-
-        Admin::script($script);
-    }
-
+    /**
+     * @return void
+     */
     protected function prepareForm()
     {
         if (method_exists($this, 'form')) {
             $this->form();
         }
-
-        if (!empty($this->confirm)) {
-            $this->addConfirmScript();
-        }
-
-        $this->addCascadeScript();
     }
 
+    /**
+     * @return void
+     */
     protected function prepareHandle()
     {
         if (method_exists($this, 'handle')) {
             $this->method('POST');
-            $this->action(admin_url('_handle_form_'));
+            $this->action(route('admin.handle-form'));
             $this->hidden('_form_')->default(get_called_class());
         }
+    }
+
+    /**
+     * Setup scripts.
+     *
+     * @return void
+     */
+    protected function setupScript()
+    {
+        $script = <<<'EOT'
+$('.after-submit').iCheck({checkboxClass:'icheckbox_minimal-blue'}).on('ifChecked', function () {
+    $('.after-submit').not(this).iCheck('uncheck');
+});
+EOT;
+
+        \Admin::script($script);
     }
 
     /**
@@ -499,20 +725,30 @@ SCRIPT;
 
         $this->prepareHandle();
 
-        $form = view('admin::widgets.form', $this->getVariables())->render();
+        $this->setupScript();
 
-        if (!$this->title || !$this->inbox) {
+        // if only render fields, set view, and set unique name
+        if($this->onlyRenderFields){
+            $valiables = $this->getVariables();
+            $valiables['uniqueName'] = $this->getUniqueName();
+            $form = view('admin::widgets.fields', $valiables);
+        }
+        else{
+            $form = view('admin::widgets.form', $this->getVariables())->render();
+        }
+
+        if (!($title = $this->title()) || !$this->inbox) {
             return $form;
         }
 
-        return (new Box($this->title, $form))->render();
+        return (new Box($title, $form))->render();
     }
 
     /**
      * Generate a Field object and add to form builder if Field exists.
      *
      * @param string $method
-     * @param array  $arguments
+     * @param array<int, mixed>  $arguments
      *
      * @return Field|$this
      */
@@ -529,17 +765,5 @@ SCRIPT;
         return tap($field, function ($field) {
             $this->pushField($field);
         });
-    }
-
-    /**
-     * @param Content $content
-     *
-     * @return Content
-     */
-    public function __invoke(Content $content)
-    {
-        return $content->title($this->title())
-            ->description($this->description())
-            ->body($this);
     }
 }

@@ -1,8 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Traits;
-
-use Illuminate\Support\Str;
+namespace Encore\Admin\Traits;
 
 trait Resizable
 {
@@ -43,7 +41,7 @@ trait Resizable
         $ext = pathinfo($image, PATHINFO_EXTENSION);
 
         // We remove extension from file name so we can append thumbnail type
-        $name = Str::replaceLast('.'.$ext, '', $image);
+        $name = str_replace_last('.'.$ext, '', $image);
 
         // We merge original name + type + extension
         return $name.'-'.$type.'.'.$ext;

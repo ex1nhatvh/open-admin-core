@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Filter;
+namespace Encore\Admin\Grid\Filter;
 
 use Illuminate\Support\Arr;
 
@@ -8,6 +8,10 @@ class NotEqual extends AbstractFilter
 {
     /**
      * {@inheritdoc}
+     *
+     * @param array<mixed> $inputs
+     *
+     * @return mixed
      */
     public function condition($inputs)
     {

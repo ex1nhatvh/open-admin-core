@@ -1,9 +1,9 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Concerns;
+namespace Encore\Admin\Grid\Concerns;
 
 use Closure;
-use OpenAdminCore\Admin\Grid\Tools;
+use Encore\Admin\Grid\Tools;
 
 trait HasTools
 {
@@ -52,12 +52,13 @@ trait HasTools
 
     /**
      * Render custom tools.
+     * @param string $position
      *
      * @return string
      */
-    public function renderHeaderTools()
+    public function renderHeaderTools($position = 'left')
     {
-        return $this->tools->render();
+        return $this->tools->renderPosition($position);
     }
 
     /**

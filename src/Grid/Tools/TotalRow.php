@@ -1,11 +1,11 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Tools;
+namespace Encore\Admin\Grid\Tools;
 
+use Encore\Admin\Grid\Column;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Grid\Column;
 
 class TotalRow extends AbstractTool
 {
@@ -15,20 +15,15 @@ class TotalRow extends AbstractTool
     protected $query;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $columns;
 
     /**
-     * @var Collection
-     */
-    protected $visibleColumns;
-
-    /**
      * TotalRow constructor.
      *
-     * @param Builder $query
-     * @param array   $columns
+     * @param Builder|\Illuminate\Database\Eloquent\Builder<Model> $query
+     * @param array<mixed>   $columns
      */
     public function __construct($query, array $columns)
     {
@@ -61,33 +56,11 @@ class TotalRow extends AbstractTool
     }
 
     /**
-     * @param Collection $columns
-     */
-    public function setVisibleColumns($columns)
-    {
-        $this->visibleColumns = $columns;
-    }
-
-    /**
-     * @return Collection|static
-     */
-    public function getVisibleColumns()
-    {
-        if ($this->visibleColumns) {
-            return $this->visibleColumns;
-        }
-
-        return $this->getGrid()->visibleColumns();
-    }
-
-    /**
      * Render total-row.
-     *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function render()
     {
-        $columns = $this->getVisibleColumns()->map(function (Column $column) {
+        $columns = $this->getGrid()->visibleColumns()->flatMap(function (Column $column) {
             $name = $column->getName();
 
             $total = '';
@@ -96,11 +69,8 @@ class TotalRow extends AbstractTool
                 $total = $this->total($name, Arr::get($this->columns, $name));
             }
 
-            return [
-                'class' => $column->getClassName(),
-                'value' => $total,
-            ];
-        });
+            return [$name => $total];
+        })->toArray();
 
         return view('admin::grid.total-row', compact('columns'));
     }

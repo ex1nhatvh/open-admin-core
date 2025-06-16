@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Exception;
+namespace Encore\Admin\Exception;
 
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
@@ -16,6 +16,7 @@ class Handler
      */
     public static function renderException(\Exception $exception)
     {
+        \Log::error($exception);
         $error = new MessageBag([
             'type'    => get_class($exception),
             'message' => $exception->getMessage(),
@@ -27,7 +28,10 @@ class Handler
         $errors = new ViewErrorBag();
         $errors->put('exception', $error);
 
-        return view('admin::partials.exception', compact('errors'))->render();
+        return view('admin::partials.exception', [
+            'errors' => $errors,
+            'isShowDetail' => boolval(config('app.debug', false)),
+        ])->render();
     }
 
     /**
@@ -36,12 +40,12 @@ class Handler
      * @param string $title
      * @param string $message
      *
-     * @return mixed
+     * @return void
      */
     public static function error($title = '', $message = '')
     {
         $error = new MessageBag(compact('title', 'message'));
 
-        return session()->flash('error', $error);
+        session()->flash('error', $error);
     }
 }

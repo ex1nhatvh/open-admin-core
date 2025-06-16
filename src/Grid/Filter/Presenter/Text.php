@@ -1,8 +1,8 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Filter\Presenter;
+namespace Encore\Admin\Grid\Filter\Presenter;
 
-use OpenAdminCore\Admin\Admin;
+use Encore\Admin\Admin;
 
 class Text extends Presenter
 {
@@ -14,7 +14,7 @@ class Text extends Presenter
     /**
      * @var string
      */
-    protected $icon = 'pencil-alt';
+    protected $icon = 'pencil';
 
     /**
      * @var string
@@ -34,9 +34,9 @@ class Text extends Presenter
     /**
      * Get variables for field template.
      *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function variables(): array
+    public function variables() : array
     {
         return [
             'placeholder' => $this->placeholder,
@@ -53,7 +53,7 @@ class Text extends Presenter
      *
      * @return $this
      */
-    public function placeholder($placeholder = ''): self
+    public function placeholder($placeholder = '') : self
     {
         $this->placeholder = $placeholder;
 
@@ -63,15 +63,15 @@ class Text extends Presenter
     /**
      * @return Text
      */
-    public function url(): self
+    public function url() : self
     {
-        return $this->inputmask(['alias' => 'url'], 'link');
+        return $this->inputmask(['alias' => 'url'], 'internet-explorer');
     }
 
     /**
      * @return Text
      */
-    public function email(): self
+    public function email() : self
     {
         return $this->inputmask(['alias' => 'email'], 'envelope');
     }
@@ -79,31 +79,31 @@ class Text extends Presenter
     /**
      * @return Text
      */
-    public function integer(): self
+    public function integer() : self
     {
         return $this->inputmask(['alias' => 'integer']);
     }
 
     /**
-     * @param array $options
+     * @param array<mixed> $options
      *
      * @see https://github.com/RobinHerbots/Inputmask/blob/4.x/README_numeric.md
      *
      * @return Text
      */
-    public function decimal($options = []): self
+    public function decimal($options = []) : self
     {
         return $this->inputmask(array_merge($options, ['alias' => 'decimal']));
     }
 
     /**
-     * @param array $options
+     * @param array<mixed> $options
      *
      * @see https://github.com/RobinHerbots/Inputmask/blob/4.x/README_numeric.md
      *
      * @return Text
      */
-    public function currency($options = []): self
+    public function currency($options = []) : self
     {
         return $this->inputmask(array_merge($options, [
             'alias'              => 'currency',
@@ -113,7 +113,7 @@ class Text extends Presenter
     }
 
     /**
-     * @param array $options
+     * @param array<mixed> $options
      *
      * @see https://github.com/RobinHerbots/Inputmask/blob/4.x/README_numeric.md
      *
@@ -129,7 +129,7 @@ class Text extends Presenter
     /**
      * @return Text
      */
-    public function ip(): self
+    public function ip() : self
     {
         return $this->inputmask(['alias' => 'ip'], 'laptop');
     }
@@ -137,7 +137,7 @@ class Text extends Presenter
     /**
      * @return Text
      */
-    public function mac(): self
+    public function mac() : self
     {
         return $this->inputmask(['alias' => 'mac'], 'laptop');
     }
@@ -147,22 +147,22 @@ class Text extends Presenter
      *
      * @return Text
      */
-    public function phonenumber($mask = '19999999999'): self
+    public function mobile($mask = '19999999999') : self
     {
         return $this->inputmask(compact('mask'), 'phone');
     }
 
     /**
-     * @param array  $options
+     * @param array<mixed>  $options
      * @param string $icon
      *
      * @return $this
      */
-    public function inputmask($options = [], $icon = 'pencil-alt'): self
+    public function inputmask($options = [], $icon = 'pencil') : self
     {
         $options = json_encode($options);
 
-        Admin::script("Inputmask({$options}).mask(document.querySelector(\"#{$this->filter->getFilterBoxId()} input.{$this->filter->getId()}\"));");
+        Admin::script("$('#filter-box input.{$this->filter->getId()}').inputmask($options);");
 
         $this->icon = $icon;
 

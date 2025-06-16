@@ -1,9 +1,8 @@
 <?php
 
-namespace OpenAdminCore\Admin\Console;
+namespace Encore\Admin\Console;
 
 use Illuminate\Console\Command;
-use OpenAdminCore\Admin\Auth\Database\AdminTablesSeeder;
 
 class InstallCommand extends Command
 {
@@ -52,7 +51,7 @@ class InstallCommand extends Command
         $userModel = config('admin.database.users_model');
 
         if ($userModel::count() == 0) {
-            $this->call('db:seed', ['--class' => AdminTablesSeeder::class]);
+            $this->call('db:seed', ['--class' => \Encore\Admin\Auth\Database\AdminTablesSeeder::class]);
         }
     }
 
@@ -166,7 +165,7 @@ class InstallCommand extends Command
     /**
      * Get stub contents.
      *
-     * @param $name
+     * @param string $name
      *
      * @return string
      */
@@ -179,6 +178,8 @@ class InstallCommand extends Command
      * Make new directory.
      *
      * @param string $path
+     *
+     * @return void
      */
     protected function makeDir($path = '')
     {

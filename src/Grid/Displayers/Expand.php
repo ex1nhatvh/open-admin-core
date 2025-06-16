@@ -1,51 +1,60 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Displayers;
+namespace Encore\Admin\Grid\Displayers;
 
-use Illuminate\Contracts\Support\Renderable;
-use OpenAdminCore\Admin\Admin;
-use OpenAdminCore\Admin\Grid\Simple;
+use Encore\Admin\Admin;
 
 class Expand extends AbstractDisplayer
 {
-    protected $renderable;
-
-    public function display($callback = null, $isExpand = false)
+    /**
+     * @param null|\Closure $callback
+     * @return string
+     */
+    public function display($callback = null)
     {
-        $html = '';
-        $async = false;
-        $loadGrid = false;
+        $callback = $callback->bindTo($this->row);
 
-        if (is_subclass_of($callback, Renderable::class)) {
-            $this->renderable = $callback;
-            $async = true;
-            $loadGrid = is_subclass_of($callback, Simple::class);
-        } else {
-            $html = call_user_func_array($callback->bindTo($this->row), [$this->row]);
-        }
+        $html = call_user_func_array($callback, [$this->row]);
 
-        return Admin::component('admin::components.column-expand', [
-            'key'           => $this->getKey(),
-            'url'           => $this->getLoadUrl(),
-            'name'          => str_replace('.', '-', $this->getName()).'-'.$this->getKey(),
-            'html'          => $html,
-            'value'         => $this->value,
-            'async'         => $async,
-            'expand'        => $isExpand,
-            'loadGrid'      => $loadGrid,
-            'elementClass'  => "grid-expand-{$this->grid->getGridRowName()}",
-        ]);
+        $this->setupScript();
+
+        $key = $this->column->getName().'-'.$this->getKey();
+
+        return <<<EOT
+<span class="grid-expand" data-inserted="0" data-key="{$key}" data-toggle="collapse" data-target="#grid-collapse-{$key}">
+   <a href="javascript:void(0)"><i class="fa fa-angle-double-down"></i>&nbsp;&nbsp;{$this->value}</a>
+</span>
+<template class="grid-expand-{$key}">
+    <div id="grid-collapse-{$key}" class="collapse">
+        <div  style="padding: 10px 10px 0 10px;">$html</div>
+    </div>
+</template>
+EOT;
     }
 
     /**
-     * @param int $multiple
-     *
-     * @return string
+     * @return void
      */
-    protected function getLoadUrl()
+    protected function setupScript()
     {
-        $renderable = str_replace('\\', '_', $this->renderable);
+        $script = <<<'EOT'
 
-        return route('admin.handle-renderable', compact('renderable'));
+$('.grid-expand').on('click', function () {
+    
+    if ($(this).data('inserted') == '0') {
+    
+        var key = $(this).data('key');
+        var row = $(this).closest('tr');
+        var html = $('template.grid-expand-'+key).html();
+
+        row.after("<tr style='background-color: #ecf0f5;'><td colspan='"+(row.find('td').length)+"' style='padding:0 !important; border:0;'>"+html+"</td></tr>");
+
+        $(this).data('inserted', 1);
+    }
+    
+    $("i", this).toggleClass("fa-angle-double-down fa-angle-double-up");
+});
+EOT;
+        Admin::script($script);
     }
 }

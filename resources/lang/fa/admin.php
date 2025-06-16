@@ -15,7 +15,7 @@ return [
     'list'                  => 'لیست',
     'new'                   => 'جدید',
     'create'                => 'جدید',
-    'delete'                => 'حذف کردن',
+    'delete'                => 'خذف کردن',
     'remove'                => 'پاک کردن',
     'edit'                  => 'ویرایش کردن',
     'view'                  => 'نمایش',
@@ -98,13 +98,5 @@ return [
         'filter_clear'       => 'نمایش همه',
         'filter_placeholder' => 'فیلتر کردن',
     ],
-    'menu_titles'           => [
-        'dashboard'          => 'داشبورد',
-        'admin'              => 'ادمین',
-        'users'              => 'کاربران',
-        'roles'              => 'نقش ها',
-        'permission'         => 'دسترسی ها',
-        'menu'               => 'منو',
-        'operation_log'      => 'گزارش عملیات',
-    ],
+    'menu_titles'           => [],
 ];

@@ -1,12 +1,16 @@
 <?php
 
-namespace OpenAdminCore\Admin\Controllers;
+namespace Encore\Admin\Controllers;
 
+use Encore\Admin\Form;
+use Encore\Admin\Grid;
+use Encore\Admin\Show;
 use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Form;
-use OpenAdminCore\Admin\Grid;
-use OpenAdminCore\Admin\Show;
 
+/**
+ * @property mixed $http_method
+ */
+#[\AllowDynamicProperties]
 class PermissionController extends AdminController
 {
     /**
@@ -29,8 +33,8 @@ class PermissionController extends AdminController
         $grid = new Grid(new $permissionModel());
 
         $grid->column('id', 'ID')->sortable();
-        $grid->column('slug', trans('admin.slug'))->sortable();
-        $grid->column('name', trans('admin.name'))->sortable();
+        $grid->column('slug', trans('admin.slug'));
+        $grid->column('name', trans('admin.name'));
 
         $grid->column('http_path', trans('admin.route'))->display(function ($path) {
             return collect(explode("\n", $path))->map(function ($path) {
@@ -40,11 +44,11 @@ class PermissionController extends AdminController
                     list($method, $path) = explode(':', $path);
                     $method = explode(',', $method);
                 }
-
+                /** @phpstan-ignore-next-line Unable to resolve the template type TKey in call to function collect */
                 $method = collect($method)->map(function ($name) {
                     return strtoupper($name);
                 })->map(function ($name) {
-                    return "<span class='badge bg-primary'>{$name}</span>";
+                    return "<span class='label label-primary'>{$name}</span>";
                 })->implode('&nbsp;');
 
                 if (!empty(config('admin.route.prefix'))) {
@@ -55,8 +59,8 @@ class PermissionController extends AdminController
             })->implode('');
         });
 
-        $grid->column('created_at', trans('admin.created_at'))->sortable();
-        $grid->column('updated_at', trans('admin.updated_at'))->sortable();
+        $grid->column('created_at', trans('admin.created_at'));
+        $grid->column('updated_at', trans('admin.updated_at'));
 
         $grid->tools(function (Grid\Tools $tools) {
             $tools->batch(function (Grid\Tools\BatchActions $actions) {
@@ -93,10 +97,11 @@ class PermissionController extends AdminController
                     $method = explode(',', $method);
                 }
 
+                /** @phpstan-ignore-next-line Unable to resolve the template type TKey in call to function collect */
                 $method = collect($method)->map(function ($name) {
                     return strtoupper($name);
                 })->map(function ($name) {
-                    return "<span class='badge bg-primary'>{$name}</span>";
+                    return "<span class='label label-primary'>{$name}</span>";
                 })->implode('&nbsp;');
 
                 if (!empty(config('admin.route.prefix'))) {
@@ -143,7 +148,7 @@ class PermissionController extends AdminController
     /**
      * Get options of HTTP methods select field.
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function getHttpMethodsOptions()
     {

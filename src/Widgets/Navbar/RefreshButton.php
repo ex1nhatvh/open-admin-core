@@ -1,14 +1,31 @@
 <?php
 
-namespace OpenAdminCore\Admin\Widgets\Navbar;
+namespace Encore\Admin\Widgets\Navbar;
 
+use Encore\Admin\Admin;
 use Illuminate\Contracts\Support\Renderable;
-use OpenAdminCore\Admin\Admin;
 
 class RefreshButton implements Renderable
 {
     public function render()
     {
-        return Admin::component('admin::components.refresh-btn');
+        $message = __('admin.refresh_succeeded');
+
+        $script = <<<SCRIPT
+$('.refresh-button').off('click').on('click', function() {
+    $.admin.reload();
+    $.admin.toastr.success('{$message}', '', {positionClass:"toast-top-center"});
+});
+SCRIPT;
+
+        Admin::script($script);
+
+        return <<<'EOT'
+<li>
+    <a href="javascript:void(0);" class="refresh-button d-none d-md-block" style="padding:15.5px 11.5px;">
+      <i class="fa fa-refresh"></i>
+    </a>
+</li>
+EOT;
     }
 }

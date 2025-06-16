@@ -1,12 +1,16 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Displayers;
+namespace Encore\Admin\Grid\Displayers;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 
 class Label extends AbstractDisplayer
 {
+    /**
+     * @param string|Arrayable<int|string, mixed>|array<mixed> $style
+     * @return mixed|string
+     */
     public function display($style = 'success')
     {
         if ($this->value instanceof Arrayable) {
@@ -15,14 +19,10 @@ class Label extends AbstractDisplayer
 
         return collect((array) $this->value)->map(function ($item) use ($style) {
             if (is_array($style)) {
-                if (is_string($this->getColumn()->getOriginal()) || is_int($this->getColumn()->getOriginal())) {
-                    $style = Arr::get($style, $this->getColumn()->getOriginal(), 'success');
-                } else {
-                    $style = Arr::get($style, $item, 'success');
-                }
+                $style = Arr::get($style, $this->getColumn()->getOriginal(), 'success');
             }
 
-            return "<span class='badge bg-{$style}'>$item</span>";
+            return "<span class='label label-{$style}'>$item</span>";
         })->implode('&nbsp;');
     }
 }

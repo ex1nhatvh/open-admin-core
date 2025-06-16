@@ -1,24 +1,22 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
+use Encore\Admin\Admin;
+use Encore\Admin\Form;
+use Encore\Admin\Form\Field;
+use Encore\Admin\Form\NestedForm;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany as Relation;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Admin;
-use OpenAdminCore\Admin\Form;
-use OpenAdminCore\Admin\Form\Field;
-use OpenAdminCore\Admin\Form\Field\Traits\Sortable;
-use OpenAdminCore\Admin\Form\NestedForm;
-use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
 
 /**
  * Class HasMany.
  */
 class HasMany extends Field
 {
-    use Sortable;
     /**
      * Relation name.
      *
@@ -34,9 +32,16 @@ class HasMany extends Field
     protected $builder = null;
 
     /**
+     * relatedValue.
+     *
+     * @var array<mixed>|null
+     */
+    protected $relatedValue = null;
+
+    /**
      * Form data.
      *
-     * @var array
+     * @var array<mixed>|null
      */
     protected $value = [];
 
@@ -50,18 +55,9 @@ class HasMany extends Field
     protected $viewMode = 'default';
 
     /**
-     * verticalAlign.
-     *
-     * Supports `middle`, `top` and `bottom`
-     *
-     * @var string
-     */
-    protected $verticalAlign = 'middle';
-
-    /**
      * Available views for HasMany field.
      *
-     * @var array
+     * @var array<string, string>
      */
     protected $views = [
         'default' => 'admin::form.hasmany',
@@ -72,26 +68,23 @@ class HasMany extends Field
     /**
      * Options for template.
      *
-     * @var array
+     * @var array<string, bool>
      */
     protected $options = [
         'allowCreate' => true,
         'allowDelete' => true,
-        'sortable'    => false,
     ];
 
     /**
-     * Distinct fields.
-     *
-     * @var array
+     * @var bool
      */
-    protected $distinctFields = [];
+    protected $enableHeader = true;
 
     /**
      * Create a new HasMany field instance.
      *
-     * @param $relationName
-     * @param array $arguments
+     * @param string $relationName
+     * @param array<mixed> $arguments
      */
     public function __construct($relationName, $arguments = [])
     {
@@ -112,7 +105,7 @@ class HasMany extends Field
     /**
      * Get validator for this field.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
      * @return bool|\Illuminate\Contracts\Validation\Validator
      */
@@ -123,13 +116,6 @@ class HasMany extends Field
         }
 
         $input = Arr::only($input, $this->column);
-
-        /** unset item that contains remove flag */
-        foreach ($input[$this->column] as $key => $value) {
-            if ($value[NestedForm::REMOVE_FLAG_NAME]) {
-                unset($input[$this->column][$key]);
-            }
-        }
 
         $form = $this->buildNestedForm($this->column, $this->builder);
 
@@ -184,45 +170,17 @@ class HasMany extends Field
             $newInput = $input;
         }
 
-        $this->appendDistinctRules($newRules);
-
         return \validator($newInput, $newRules, $this->getValidationMessages(), $attributes);
-    }
-
-    /**
-     * Set distinct fields.
-     *
-     * @param array $fields
-     *
-     * @return $this
-     */
-    public function distinctFields(array $fields)
-    {
-        $this->distinctFields = $fields;
-
-        return $this;
-    }
-
-    /**
-     * Append distinct rules.
-     *
-     * @param array $rules
-     */
-    protected function appendDistinctRules(array &$rules)
-    {
-        foreach ($this->distinctFields as $field) {
-            $rules["{$this->column}.*.$field"] = 'distinct';
-        }
     }
 
     /**
      * Format validation attributes.
      *
-     * @param array  $input
+     * @param array<mixed>  $input
      * @param string $label
-     * @param string $column
+     * @param string|array<mixed> $column
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function formatValidationAttribute($input, $label, $column)
     {
@@ -252,10 +210,20 @@ class HasMany extends Field
     }
 
     /**
+     * @param mixed $relatedValue
+     * @return $this
+     */
+    public function setRelatedValue($relatedValue){
+        $this->relatedValue = $relatedValue;
+
+        return $this;
+    }
+
+    /**
      * Reset input key for validation.
      *
-     * @param array $input
-     * @param array $column $column is the column name array set
+     * @param array<mixed> $input
+     * @param array<mixed> $column $column is the column name array set
      *
      * @return void.
      */
@@ -282,6 +250,7 @@ class HasMany extends Field
          * in the HasMany relation, has many data/field set, $set is field set in the below
          */
         foreach ($input[$this->column] as $index => $set) {
+
             /*
              * foreach the field set to find the corresponding $column
              */
@@ -317,9 +286,9 @@ class HasMany extends Field
     /**
      * Prepare input data for insert or update.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
-     * @return array
+     * @return mixed
      */
     public function prepare($input)
     {
@@ -329,27 +298,75 @@ class HasMany extends Field
     }
 
     /**
+     * Prepare input data for Confirm.
+     *
+     * @param array<mixed> $input
+     *
+     * @return mixed
+     */
+    public function prepareConfirm($input)
+    {
+        $form = $this->buildNestedForm($this->column, $this->builder);
+
+        return $form->setOriginal($this->original, $this->getKeyName())->prepareConfirm($input);
+    }
+
+    /**
+     * Determine if form fields has files.
+     *
+     * @return bool
+     */
+    public function hasFile()
+    {
+        $form = $this->buildNestedForm($this->column, $this->builder);
+
+        foreach ($form->fields() as $field) {
+            if(method_exists($field, 'hasFile')){
+                if($field->hasFile()){
+                    return true;
+                }
+            }
+            elseif ($field instanceof Field\File || $field instanceof Field\MultipleFile) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return $this
+     */
+    public function disableHeader()
+    {
+        $this->enableHeader = false;
+
+        return $this;
+    }
+    
+    /**
      * Build a Nested form.
      *
      * @param string   $column
      * @param \Closure $builder
-     * @param null     $model
+     * @param null|Model     $model
+     * @param null|int       $index
      *
      * @return NestedForm
      */
-    protected function buildNestedForm($column, \Closure $builder, $model = null)
+    protected function buildNestedForm($column, \Closure $builder, $model = null, $index = null)
     {
         $form = new Form\NestedForm($column, $model);
 
-        if ($this->form instanceof WidgetForm) {
-            $form->setWidgetForm($this->form);
-        } else {
-            $form->setForm($this->form);
+        $form->setIndex($index);
+
+        $form->setForm($this->form);
+
+        call_user_func_array($builder, [$form, $model]);
+
+        if(!is_null($key = $this->getKeyName())){
+            $form->hidden($key);
         }
-
-        call_user_func($builder, $form);
-
-        $form->hidden($this->getKeyName());
 
         $form->hidden(NestedForm::REMOVE_FLAG_NAME)->default(0)->addElementClass(NestedForm::REMOVE_FLAG_CLASS);
 
@@ -358,12 +375,11 @@ class HasMany extends Field
 
     /**
      * Get the HasMany relation key name.
-     *
-     * @return string
+     * @return void|string
      */
     protected function getKeyName()
     {
-        if (is_null($this->form)) {
+        if (is_null($this->form) || is_null($this->form->model())) {
             return;
         }
 
@@ -371,17 +387,13 @@ class HasMany extends Field
     }
 
     /**
-     * Set view mode.
+     * Get relation name.
      *
-     * @param string $mode currently support `tab` mode.
-     *
-     * @return $this
+     * @return string
      */
-    public function mode($mode)
+    public function getRelationName()
     {
-        $this->viewMode = $mode;
-
-        return $this;
+        return $this->relationName;
     }
 
     /**
@@ -390,10 +402,12 @@ class HasMany extends Field
      * @param string $mode currently support `tab` mode.
      *
      * @return $this
+     *
+     * @author Edwin Hui
      */
-    public function verticalAlign($align)
+    public function mode($mode)
     {
-        $this->verticalAlign = $align;
+        $this->viewMode = $mode;
 
         return $this;
     }
@@ -423,12 +437,21 @@ class HasMany extends Field
      *
      * @throws \Exception
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function buildRelatedForms()
     {
-        if (is_null($this->form)) {
-            return [];
+        $forms = [];
+
+        if(!is_null($this->relatedValue)){
+            foreach ($this->relatedValue as $index => $data) {
+                $forms[$index] = $this->buildNestedForm($this->column, $this->builder, null, $index)
+                    ->fill($data, $index);
+            }
+        }
+
+        if (is_null($this->form) || is_null($this->form->model())) {
+            return $forms;
         }
 
         $model = $this->form->model();
@@ -439,8 +462,6 @@ class HasMany extends Field
             throw new \Exception('hasMany field must be a HasMany or MorphMany relation.');
         }
 
-        $forms = [];
-
         /*
          * If redirect from `exception` or `validation error` page.
          *
@@ -449,28 +470,46 @@ class HasMany extends Field
          * Else get data from database.
          */
         if ($values = old($this->column)) {
+            $index = 0;
             foreach ($values as $key => $data) {
                 if ($data[NestedForm::REMOVE_FLAG_NAME] == 1) {
+                    $index++;
                     continue;
                 }
 
+                // If has value, reset forms
+                if($index === 0){
+                    $forms = [];
+                }
+                
                 $model = $relation->getRelated()->replicate()->forceFill($data);
 
-                $forms[$key] = $this->buildNestedForm($this->column, $this->builder, $model)
-                    ->fill($data);
+                $formIndex = $index;
+                // if new_ key, 
+                if(strpos($key, 'new_') !== false){
+                    $formIndex = str_replace('new_', '', $key);
+                }
+                $forms[$key] = $this->buildNestedForm($this->column, $this->builder, $model, $formIndex)
+                    ->fill($data, $formIndex);
+                    $index++;
             }
         } else {
-            if (empty($this->value)) {
-                return [];
-            }
-
-            foreach ($this->value as $data) {
+            foreach ($this->value as $index => $data) {
                 $key = Arr::get($data, $relation->getRelated()->getKeyName());
 
+                if(!isset($key)){
+                    $key = 'new_' . ($index + 1);
+                }
+
+                // If has value, reset forms
+                if($index === 0){
+                    $forms = [];
+                }
+                
                 $model = $relation->getRelated()->replicate()->forceFill($data);
 
-                $forms[$key] = $this->buildNestedForm($this->column, $this->builder, $model)
-                    ->fill($data);
+                $forms[$key] = $this->buildNestedForm($this->column, $this->builder, $model, $index)
+                    ->fill($data, $index);
             }
         }
 
@@ -482,13 +521,13 @@ class HasMany extends Field
      *
      * @param string $script
      *
-     * @return void
+     * @return mixed
      */
     protected function setupScript($script)
     {
         $method = 'setupScriptFor'.ucfirst($this->viewMode).'View';
 
-        call_user_func([$this, $method], $script);
+        return call_user_func([$this, $method], $script);
     }
 
     /**
@@ -502,6 +541,8 @@ class HasMany extends Field
     {
         $removeClass = NestedForm::REMOVE_FLAG_CLASS;
         $defaultKey = NestedForm::DEFAULT_KEY_NAME;
+        $count = !isset($this->value) ? 0 : count($this->value);
+        $indexName = "index_{$this->column}";
 
         /**
          * When add a new sub form, replace all element key in new sub form.
@@ -510,45 +551,27 @@ class HasMany extends Field
          *
          * {count} is increment number of current sub form count.
          */
-        $script = <<<JS
+        $script = <<<EOT
 var index = 0;
-document.querySelector('#has-many-{$this->column} .add').addEventListener("click", function () {
-    index++;
+$('#has-many-{$this->column}').off('click.admin_add', '.add').on('click.admin_add', '.add', function () {
 
-    var tpl = document.querySelector('template.{$this->column}-tpl').innerHTML;
-    tpl = tpl.replace(/{$defaultKey}/g, index);
-    var clone = htmlToElement(tpl);
-    addRemoveHasManyListener{$this->column}(clone.querySelector('.remove'));
-    document.querySelector('.has-many-{$this->column}-forms').appendChild(clone);
+    var tpl = $('template.{$this->column}-tpl');
 
-    if (typeof(addHasManyTab{$this->column}) == 'function'){
-        addHasManyTab{$this->column}(index);
-    }
+    $indexName++;
 
+    var template = tpl.html().replace(/{$defaultKey}/g, $indexName);
+    $('.has-many-{$this->column}-forms').append(template);
     {$templateScript}
     return false;
-
 });
 
-document.querySelectorAll('#has-many-{$this->column} .remove').forEach(remove => {
-    addRemoveHasManyListener{$this->column}(remove);
+$('#has-many-{$this->column}').off('click.admin_remove', '.remove').on('click.admin_remove', '.remove', function () {
+    $(this).closest('.has-many-{$this->column}-form').hide();
+    $(this).closest('.has-many-{$this->column}-form').find('.$removeClass').val(1);
+    return false;
 });
 
-function addRemoveHasManyListener{$this->column}(remove){
-    remove.addEventListener("click", function () {
-        let form = this.closest('.has-many-{$this->column}-form');
-        if (typeof(removeHasManyTab{$this->column}) == 'function'){
-            removeHasManyTab{$this->column}();
-        }
-        form.querySelectorAll('input').forEach(input => input.removeAttribute('required'));
-        hide(this.closest('.has-many-{$this->column}-form'));
-        this.closest('.has-many-{$this->column}-form').querySelector('.$removeClass').value = 1;
-
-        return false;
-    });
-}
-
-JS;
+EOT;
 
         Admin::script($script);
     }
@@ -564,27 +587,46 @@ JS;
     {
         $removeClass = NestedForm::REMOVE_FLAG_CLASS;
         $defaultKey = NestedForm::DEFAULT_KEY_NAME;
-
-        $this->setupScriptForDefaultView($templateScript);
+        $count = !isset($this->value) ? 0 : count($this->value);
 
         $script = <<<EOT
-        function removeHasManyTab{$this->column}(){
-            document.querySelector('#has-many-{$this->column} .nav-link.active').parentNode.remove();
-            let trigger = document.querySelector('#has-many-{$this->column} .nav-link:first-child');
-            console.log(trigger);
-            if (trigger){
-                bootstrap.Tab.getOrCreateInstance(trigger).show();
-            }
-        }
-        function addHasManyTab{$this->column}(index){
-            let tpl = document.querySelector('template.{$this->column}-tab-tpl').innerHTML;
-            tpl = tpl.replace(/{$defaultKey}/g, index);
-            let clone = htmlToElement(tpl);
-            let addTab = document.querySelector('.has-many-{$this->column} .add-tab')
-            document.querySelector('.has-many-{$this->column} > .nav').insertBefore(clone,addTab);
-            bootstrap.Tab.getOrCreateInstance(clone.querySelector("a")).show();
-        }
 
+$('#has-many-{$this->column} > .nav').off('click', 'i.close-tab').on('click', 'i.close-tab', function(){
+    var \$navTab = $(this).siblings('a');
+    var \$pane = $(\$navTab.attr('href'));
+    if( \$pane.hasClass('new') ){
+        \$pane.remove();
+    }else{
+        \$pane.removeClass('active').find('.$removeClass').val(1);
+    }
+    if(\$navTab.closest('li').hasClass('active')){
+        \$navTab.closest('li').remove();
+        $('#has-many-{$this->column} > .nav > li:nth-child(1) > a').tab('show');
+    }else{
+        \$navTab.closest('li').remove();
+    }
+});
+
+var index = {$count};
+$('#has-many-{$this->column} > .header').off('click', '.add').on('click', '.add', function(){
+    index++;
+    var navTabHtml = $('#has-many-{$this->column} > template.nav-tab-tpl').html().replace(/{$defaultKey}/g, index);
+    var paneHtml = $('#has-many-{$this->column} > template.pane-tpl').html().replace(/{$defaultKey}/g, index);
+    $('#has-many-{$this->column} > .nav').append(navTabHtml);
+    $('#has-many-{$this->column} > .tab-content').append(paneHtml);
+    $('#has-many-{$this->column} > .nav > li:last-child a').tab('show');
+    {$templateScript}
+});
+
+if ($('.has-error').length) {
+    $('.has-error').parent('.tab-pane').each(function () {
+        var tabId = '#'+$(this).attr('id');
+        $('li a[href="'+tabId+'"] i').removeClass('hide');
+    });
+    
+    var first = $('.has-error:first').parent().attr('id');
+    $('li a[href="#'+first+'"]').tab('show');
+}
 EOT;
 
         Admin::script($script);
@@ -602,10 +644,36 @@ EOT;
         $removeClass = NestedForm::REMOVE_FLAG_CLASS;
         $defaultKey = NestedForm::DEFAULT_KEY_NAME;
 
-        $this->setupScriptForDefaultView($templateScript);
+        /**
+         * When add a new sub form, replace all element key in new sub form.
+         *
+         * @example comments[new___key__][title]  => comments[new_{index}][title]
+         *
+         * {count} is increment number of current sub form count.
+         */
+        $script = <<<EOT
+var index = 0;
+$('#has-many-{$this->column}').off('click.admin_add').on('click.admin_add', '.add', function () {
 
-        // can use the same as the default
-        // no extra's needed
+    var tpl = $('template.{$this->column}-tpl');
+
+    index++;
+
+    var template = tpl.html().replace(/{$defaultKey}/g, index);
+    $('.has-many-{$this->column}-forms').append(template);
+    {$templateScript}
+    return false;
+});
+
+$('#has-many-{$this->column}').off('click.admin_remove').on('click.admin_remove', '.remove', function () {
+    $(this).closest('.has-many-{$this->column}-form').hide();
+    $(this).closest('.has-many-{$this->column}-form').find('.$removeClass').val(1);
+    return false;
+});
+
+EOT;
+
+        Admin::script($script);
     }
 
     /**
@@ -636,16 +704,9 @@ EOT;
      * Render the `HasMany` field.
      *
      * @throws \Exception
-     *
-     * @return \Illuminate\View\View
      */
     public function render()
     {
-        if (!$this->shouldRender()) {
-            return '';
-        }
-        $this->addSortable('.has-many-', '-forms');
-
         if ($this->viewMode == 'table') {
             return $this->renderTable();
         }
@@ -658,21 +719,18 @@ EOT;
 
         $this->setupScript($script);
 
-        return parent::fieldRender([
-            'forms'         => $this->buildRelatedForms(),
-            'template'      => $template,
-            'relationName'  => $this->relationName,
-            'verticalAlign' => $this->verticalAlign,
-            'options'       => $this->options,
+        return parent::render()->with([
+            'forms'        => $this->buildRelatedForms(),
+            'template'     => $template,
+            'relationName' => $this->relationName,
+            'options'      => $this->options,
         ]);
     }
 
     /**
      * Render the `HasMany` field for table style.
-     *
+     * @return string
      * @throws \Exception
-     *
-     * @return mixed
      */
     protected function renderTable()
     {
@@ -680,8 +738,6 @@ EOT;
         $fields = [];
         $hidden = [];
         $scripts = [];
-
-        $this->addSortable('.has-many-', '-forms');
 
         /* @var Field $field */
         foreach ($this->buildNestedForm($this->column, $this->builder)->fields() as $field) {
@@ -718,13 +774,13 @@ EOT;
         // specify a view to render.
         $this->view = $this->views[$this->viewMode];
 
-        return parent::fieldRender([
-            'headers'       => $headers,
-            'forms'         => $this->buildRelatedForms(),
-            'template'      => $template,
-            'relationName'  => $this->relationName,
-            'verticalAlign' => $this->verticalAlign,
-            'options'       => $this->options,
+        return parent::render()->with([
+            'headers'      => $headers,
+            'forms'        => $this->buildRelatedForms(),
+            'template'     => $template,
+            'relationName' => $this->relationName,
+            'options'      => $this->options,
+            'enableHeader' => $this->enableHeader,
         ]);
     }
 }

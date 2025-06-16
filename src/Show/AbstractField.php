@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Show;
+namespace Encore\Admin\Show;
 
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Eloquent\Model;
@@ -48,7 +48,7 @@ abstract class AbstractField implements Renderable
     }
 
     /**
-     * @param Model $model
+     * @param Model|Field $model
      *
      * @return AbstractField $this
      */

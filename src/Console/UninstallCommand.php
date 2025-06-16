@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Console;
+namespace Encore\Admin\Console;
 
 use Illuminate\Console\Command;
 
@@ -27,13 +27,13 @@ class UninstallCommand extends Command
      */
     public function handle()
     {
-        if (!$this->confirm('Are you sure to uninstall open-admin?')) {
+        if (!$this->confirm('Are you sure to uninstall laravel-admin?')) {
             return;
         }
 
         $this->removeFilesAndDirectories();
 
-        $this->line('<info>Uninstalling open-admin!</info>');
+        $this->line('<info>Uninstalling laravel-admin!</info>');
     }
 
     /**

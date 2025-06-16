@@ -1,31 +1,31 @@
 <?php
 
-namespace OpenAdminCore\Admin\Auth\Database;
+namespace Encore\Admin\Auth\Database;
 
+use Encore\Admin\Traits\AdminBuilder;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
-use OpenAdminCore\Admin\Traits\DefaultDatetimeFormat;
 
 /**
  * Class Administrator.
  *
- * @property Role[] $roles
+ * @property Collection $roles
+ * @phpstan-consistent-constructor
  */
 class Administrator extends Model implements AuthenticatableContract
 {
-    use Authenticatable;
-    use HasPermissions;
-    use DefaultDatetimeFormat;
+    use Authenticatable, AdminBuilder, HasPermissions;
 
     protected $fillable = ['username', 'password', 'name', 'avatar'];
 
     /**
      * Create a new Eloquent model instance.
      *
-     * @param array $attributes
+     * @param array<mixed> $attributes
      */
     public function __construct(array $attributes = [])
     {
@@ -57,7 +57,7 @@ class Administrator extends Model implements AuthenticatableContract
             return Storage::disk(config('admin.upload.disk'))->url($avatar);
         }
 
-        $default = config('admin.default_avatar') ?: '/vendor/open-admin/open-admin/gfx/user.svg';
+        $default = config('admin.default_avatar') ?: '/vendor/open-admin/AdminLTE/dist/img/user2-160x160.jpg';
 
         return admin_asset($default);
     }
@@ -67,7 +67,7 @@ class Administrator extends Model implements AuthenticatableContract
      *
      * @return BelongsToMany
      */
-    public function roles(): BelongsToMany
+    public function roles() : BelongsToMany
     {
         $pivotTable = config('admin.database.role_users_table');
 
@@ -81,7 +81,7 @@ class Administrator extends Model implements AuthenticatableContract
      *
      * @return BelongsToMany
      */
-    public function permissions(): BelongsToMany
+    public function permissions() : BelongsToMany
     {
         $pivotTable = config('admin.database.user_permissions_table');
 

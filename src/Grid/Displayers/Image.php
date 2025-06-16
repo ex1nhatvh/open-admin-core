@@ -1,12 +1,18 @@
 <?php
 
-namespace OpenAdminCore\Admin\Grid\Displayers;
+namespace Encore\Admin\Grid\Displayers;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Facades\Storage;
 
 class Image extends AbstractDisplayer
 {
+    /**
+     * @param string $server
+     * @param int $width
+     * @param int $height
+     * @return mixed
+     */
     public function display($server = '', $width = 200, $height = 200)
     {
         if ($this->value instanceof Arrayable) {

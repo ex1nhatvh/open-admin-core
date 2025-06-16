@@ -1,24 +1,9 @@
 <?php
 
-namespace OpenAdminCore\Admin\Controllers;
+namespace Encore\Admin\Controllers;
 
 trait HasResourceActions
 {
-    /**
-     * Returns the form with possible callback hooks.
-     *
-     * @return \OpenAdminCore\Admin\Form;
-     */
-    public function getForm()
-    {
-        $form = $this->form();
-        if (method_exists($this, 'hasHooks') && $this->hasHooks('alterForm')) {
-            $form = $this->callHooks('alterForm', $form);
-        }
-
-        return $form;
-    }
-
     /**
      * Update the specified resource in storage.
      *
@@ -28,7 +13,7 @@ trait HasResourceActions
      */
     public function update($id)
     {
-        return $this->getForm()->update($id);
+        return $this->form()->update($id);
     }
 
     /**
@@ -38,7 +23,7 @@ trait HasResourceActions
      */
     public function store()
     {
-        return $this->getForm()->store();
+        return $this->form()->store();
     }
 
     /**
@@ -50,6 +35,6 @@ trait HasResourceActions
      */
     public function destroy($id)
     {
-        return $this->getForm()->destroy($id);
+        return $this->form()->destroy($id);
     }
 }

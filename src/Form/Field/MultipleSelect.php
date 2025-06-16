@@ -1,10 +1,10 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
+use Encore\Admin\Validator\CheckboxRequiredRule;
 
 class MultipleSelect extends Select
 {
@@ -14,13 +14,6 @@ class MultipleSelect extends Select
      * @var string
      */
     protected $otherKey;
-
-    public function __construct($column, $arguments = [])
-    {
-        $this->config['removeItemButton'] = true;
-
-        parent::__construct($column, $arguments);
-    }
 
     /**
      * Get other key for this many-to-many relation.
@@ -53,24 +46,15 @@ class MultipleSelect extends Select
      */
     public function fill($data)
     {
-        if ($this->form && $this->form->shouldSnakeAttributes()) {
-            $key = Str::snake($this->column);
-        } else {
-            $key = $this->column;
-        }
-
-        $relations = Arr::get($data, $key);
+        $this->data = $data;
+        
+        $relations = Arr::get($data, $this->column);
 
         if (is_string($relations)) {
-            $this->value = json_decode($relations);
-            if (!is_array($this->value)) {
-                $this->value = explode(',', $relations);
-            }
+            $this->value = explode(',', $relations);
         }
 
         if (!is_array($relations)) {
-            $this->applyCascadeConditions();
-
             return;
         }
 
@@ -85,12 +69,10 @@ class MultipleSelect extends Select
                 $this->value[] = Arr::get($relation, "pivot.{$this->getOtherKey()}");
             }
 
-        // MultipleSelect value store as a column.
+            // MultipleSelect value store as a column.
         } else {
             $this->value = $relations;
         }
-
-        $this->applyCascadeConditions();
     }
 
     /**
@@ -105,6 +87,7 @@ class MultipleSelect extends Select
         }
 
         if (!is_array($relations)) {
+            $this->original = null;
             return;
         }
 
@@ -119,17 +102,34 @@ class MultipleSelect extends Select
                 $this->original[] = Arr::get($relation, "pivot.{$this->getOtherKey()}");
             }
 
-        // MultipleSelect value store as a column.
+            // MultipleSelect value store as a column.
         } else {
             $this->original = $relations;
         }
     }
 
+    /**
+     * Get field validation rules.
+     */
+    protected function getRules()
+    {
+        $rules = parent::getRules();
+
+        // if contains required rule, set select option rule
+        foreach($rules as $rule){
+            if(is_string($rule) && $rule == 'required'){
+                $rules[] = new CheckboxRequiredRule;
+            }
+        }
+
+        return $rules;
+    }
+
     public function prepare($value)
     {
-        $value = parent::prepare($value);
         $value = (array) $value;
 
-        return array_filter($value, 'strlen');
+        /** @phpstan-ignore-next-line Parameter #2 $callback of function array_filter expects (callable(mixed): bool)|null, 'strlen_ex' given. */
+        return array_filter($value, 'strlen_ex');
     }
 }

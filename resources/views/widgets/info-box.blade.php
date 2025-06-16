@@ -1,16 +1,14 @@
 <div {!! $attributes !!}>
-    <div class="card-body d-flex align-items-center">
-        <div class="icon float-start">
-            <i class="icon-{{ $icon }}"></i>
-        </div>
-        <div class="inner">
-            <h3>{{ $info }}</h3>
-            <p>{{ $name }}</p>
-        </div>
+    <div class="inner">
+        <h3>{{ $info }}</h3>
 
+        <p>{{ $name }}</p>
     </div>
-    <a href="{{ $link }}" class="card-footer text-{{$color}}">
-        {{ $link_text }}
-        <i class="icon-arrow-circle-right"></i>
+    <div class="icon">
+        <i class="fa fa-{{ $icon }}"></i>
+    </div>
+    <a href="{{ $link }}" class="small-box-footer">
+        {{ trans('admin.more') }}&nbsp;
+        <i class="fa fa-arrow-circle-right"></i>
     </a>
 </div>

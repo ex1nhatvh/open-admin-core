@@ -1,8 +1,8 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form\Field;
+namespace Encore\Admin\Form\Field;
 
-use OpenAdminCore\Admin\Form;
+use Encore\Admin\Form;
 
 class Captcha extends Text
 {
@@ -10,6 +10,12 @@ class Captcha extends Text
 
     protected $view = 'admin::form.captcha';
 
+    /**
+     * @param $column
+     * @param $arguments
+     * @throws \Exception
+     * @phpstan-ignore-next-line
+     */
     public function __construct($column, $arguments = [])
     {
         if (!class_exists(\Mews\Captcha\Captcha::class)) {
@@ -20,7 +26,7 @@ class Captcha extends Text
         $this->label = trans('admin.captcha');
     }
 
-    public function setForm(Form $form = null)
+    public function setForm($form = null)
     {
         $this->form = $form;
 
@@ -31,11 +37,13 @@ class Captcha extends Text
 
     public function render()
     {
-        $this->script = <<<JS
-document.querySelector('#{$this->column}-captcha').addEventlistener("click",function () {
-    this.setAttribute('src', this.getAttribute('src')+'?'+Math.random());
+        $this->script = <<<EOT
+
+$('#{$this->column}-captcha').click(function () {
+    $(this).attr('src', $(this).attr('src')+'?'+Math.random());
 });
-JS;
+
+EOT;
 
         return parent::render();
     }

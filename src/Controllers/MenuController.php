@@ -1,14 +1,15 @@
 <?php
 
-namespace OpenAdminCore\Admin\Controllers;
+namespace Encore\Admin\Controllers;
 
+use Encore\Admin\Auth\Database\Menu;
+use Encore\Admin\Form;
+use Encore\Admin\Layout\Column;
+use Encore\Admin\Layout\Content;
+use Encore\Admin\Layout\Row;
+use Encore\Admin\Tree;
+use Encore\Admin\Widgets\Box;
 use Illuminate\Routing\Controller;
-use OpenAdminCore\Admin\Form;
-use OpenAdminCore\Admin\Layout\Column;
-use OpenAdminCore\Admin\Layout\Content;
-use OpenAdminCore\Admin\Layout\Row;
-use OpenAdminCore\Admin\Tree;
-use OpenAdminCore\Admin\Widgets\Box;
 
 class MenuController extends Controller
 {
@@ -30,7 +31,7 @@ class MenuController extends Controller
                 $row->column(6, $this->treeView()->render());
 
                 $row->column(6, function (Column $column) {
-                    $form = new \OpenAdminCore\Admin\Widgets\Form();
+                    $form = new \Encore\Admin\Widgets\Form();
                     $form->action(admin_url('auth/menu'));
 
                     $menuModel = config('admin.database.menu_model');
@@ -61,37 +62,37 @@ class MenuController extends Controller
      */
     public function show($id)
     {
-        return redirect()->route('admin.auth.menu.edit', ['menu' => $id]);
+        return redirect()->route('admin.auth.menu.edit', ['id' => $id]);
     }
 
     /**
-     * @return \OpenAdminCore\Admin\Tree
+     * @return \Encore\Admin\Tree
      */
     protected function treeView()
     {
         $menuModel = config('admin.database.menu_model');
 
-        $tree = new Tree(new $menuModel());
+        return $menuModel::tree(function (Tree $tree) {
+            $tree->disableCreate();
 
-        $tree->disableCreate();
+            $tree->branch(function ($branch) {
+                $payload = "<i class='fa {$branch['icon']}'></i>&nbsp;<strong>{$branch['title']}</strong>";
 
-        $tree->branch(function ($branch) {
-            $payload = "<i class='{$branch['icon']}'></i>&nbsp;<strong>{$branch['title']}</strong>";
+                if (!isset($branch['children'])) {
+                    if (url()->isValidUrl($branch['uri'])) {
+                        $uri = $branch['uri'];
+                        $label = $branch['uri'];
+                    } else {
+                        $uri = admin_url($branch['uri']);
+                        $label = admin_base_path($branch['uri']);
+                    }
 
-            if (!isset($branch['children'])) {
-                if (url()->isValidUrl($branch['uri'])) {
-                    $uri = $branch['uri'];
-                } else {
-                    $uri = admin_url($branch['uri']);
+                    $payload .= "&nbsp;&nbsp;&nbsp;<a href=\"$uri\" class=\"dd-nodrag\">$label</a>";
                 }
 
-                $payload .= "&nbsp;&nbsp;&nbsp;<a href=\"$uri\" class=\"dd-nodrag\">$uri</a>";
-            }
-
-            return $payload;
+                return $payload;
+            });
         });
-
-        return $tree;
     }
 
     /**
@@ -130,7 +131,9 @@ class MenuController extends Controller
         $form->icon('icon', trans('admin.icon'))->default('fa-bars')->rules('required')->help($this->iconHelp());
         $form->text('uri', trans('admin.uri'));
         $form->multipleSelect('roles', trans('admin.roles'))->options($roleModel::all()->pluck('name', 'id'));
-        if ($form->model()->withPermission()) {
+        /** @var Menu $menu */
+        $menu = $form->model();
+        if ($menu->withPermission()) {
             $form->select('permission', trans('admin.permission'))->options($permissionModel::pluck('name', 'slug'));
         }
 

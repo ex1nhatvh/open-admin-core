@@ -49,7 +49,7 @@
                 }
             })
 
-            el.addEventListener('inserted.bs.popover', function (event) { // 'show.bs.popover' меняем на 'inserted.bs.popover'
+            el.addEventListener('show.bs.popover', function (event) {
                 let popover = bootstrap.Popover.getInstance(this);
                 admin.grid.inline_edit.trigger = this;
                 admin.grid.inline_edit.popover = popover;
@@ -119,36 +119,20 @@
             }
             obj.data[trigger.dataset.name] = valueObject.val;
 
-            // - замена обработки AJAX на вставленный ниже этого
-            // admin.ajax.request(url,obj,function(result){
-            //     if (result.status){
-            //         trigger.dataset.original = valueObject.val;
-            //         trigger.querySelector(".ie-display").innerHTML = valueObject.label;
-            //         admin.toastr.success(result.data);
-            //         popover.hide();
-            //     }else{
-            //         admin.toastr.warning(result.data);
-            //         /* // old  jquery code
-            //         var errors = xhr.responseJSON.errors;
-            //         for (var key in errors) {
-            //             $popover.find('.error').append('<div><i class="icon-times-circle-o"></i> '+errors[key]+'</div>')
-            //         }
-            //         */
-            //     }
-            // });
-
-            admin.ajax.request(url,obj,function(result)
-            {
-                let response_data = result.data;
-
-                if(response_data.status)
-                {
+            admin.ajax.request(url,obj,function(result){
+                if (result.status){
                     trigger.dataset.original = valueObject.val;
                     trigger.querySelector(".ie-display").innerHTML = valueObject.label;
-                    admin.toastr.success(response_data.message);
+                    admin.toastr.success(result.data);
                     popover.hide();
                 }else{
-                    admin.toastr.warning(response_data.message);
+                    admin.toastr.warning(result.data);
+                    /* // old  jquery code
+                    var errors = xhr.responseJSON.errors;
+                    for (var key in errors) {
+                        $popover.find('.error').append('<div><i class="icon-times-circle-o"></i> '+errors[key]+'</div>')
+                    }
+                    */
                 }
             });
         },

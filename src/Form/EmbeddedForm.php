@@ -1,11 +1,10 @@
 <?php
 
-namespace OpenAdminCore\Admin\Form;
+namespace Encore\Admin\Form;
 
+use Encore\Admin\Form;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Form;
-use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
 
 /**
  * Class EmbeddedForm.
@@ -22,7 +21,7 @@ use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
  * @method Field\Url            url($column, $label = '')
  * @method Field\Color          color($column, $label = '')
  * @method Field\Email          email($column, $label = '')
- * @method Field\PhoneNumber    phonenumber($column, $label = '')
+ * @method Field\Mobile         mobile($column, $label = '')
  * @method Field\Slider         slider($column, $label = '')
  * @method Field\Map            map($latitude, $longitude, $label = '')
  * @method Field\Editor         editor($column, $label = '')
@@ -53,21 +52,21 @@ use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
 class EmbeddedForm
 {
     /**
-     * @var Form|WidgetForm
+     * @var Form
      */
     protected $parent = null;
 
     /**
      * Fields in form.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $fields;
 
     /**
      * Original data for this field.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $original = [];
 
@@ -93,7 +92,7 @@ class EmbeddedForm
     /**
      * Get all fields in current form.
      *
-     * @return Collection
+     * @return Collection<int|string, mixed>
      */
     public function fields()
     {
@@ -115,23 +114,9 @@ class EmbeddedForm
     }
 
     /**
-     * Set parent form for this form.
-     *
-     * @param WidgetForm $parent
-     *
-     * @return $this
-     */
-    public function setParentWidgetForm(WidgetForm $parent)
-    {
-        $this->parent = $parent;
-
-        return $this;
-    }
-
-    /**
      * Set original values for fields.
      *
-     * @param array $data
+     * @param array<mixed>|string $data
      *
      * @return $this
      */
@@ -153,16 +138,34 @@ class EmbeddedForm
     /**
      * Prepare for insert or update.
      *
-     * @param array $input
+     * @param array<mixed> $input
      *
      * @return mixed
      */
-    public function prepare($input)
+    public function prepare($input, bool $asConfirm = false)
     {
         foreach ($input as $key => $record) {
             $this->setFieldOriginalValue($key);
-            $input[$key] = $this->prepareValue($key, $record);
+            $input[$key] = $this->prepareValue($key, $record, $asConfirm);
         }
+
+        // Append internal value
+        foreach($this->fields as $field){
+            if (!$field->getInternal()) {
+                continue;
+            }
+            $key = $field->column();
+            $this->setFieldOriginalValue($key);
+            $input[$key] = $this->prepareValue($key, null, $asConfirm);
+        }
+        
+        // remove non exists column's values.
+        $keys = collect($this->fields)->map(function(Field $field){
+            return $field->column();
+        });
+        $input = array_filter($input, function($i, $k) use($keys){
+            return $keys->flatten()->contains($k);
+        }, ARRAY_FILTER_USE_BOTH);
 
         return $input;
     }
@@ -171,17 +174,24 @@ class EmbeddedForm
      * Do prepare work for each field.
      *
      * @param string $key
-     * @param string $record
+     * @param string|null $record
      *
      * @return mixed
      */
-    protected function prepareValue($key, $record)
+    protected function prepareValue($key, $record, bool $asConfirm = false)
     {
         $field = $this->fields->first(function (Field $field) use ($key) {
             return in_array($key, (array) $field->column());
         });
 
-        if ($field && method_exists($field, 'prepare')) {
+        if (is_null($field)) {
+            return $record;
+        }
+
+        if($asConfirm && method_exists($field, 'prepareConfirm')){
+            return $field->prepareConfirm($record);
+        }
+        if (method_exists($field, 'prepare')) {
             return $field->prepare($record);
         }
 
@@ -198,10 +208,12 @@ class EmbeddedForm
     protected function setFieldOriginalValue($key)
     {
         if (array_key_exists($key, $this->original)) {
-            $values = $this->original[$key];
-
-            $this->fields->each(function (Field $field) use ($values) {
-                $field->setOriginal($values);
+            
+            $this->fields->each(function (Field $field) use ($key) {
+                if($field->column() === $key){
+                    $field->setOriginal($this->original);
+                    return false;
+                }
             });
         }
     }
@@ -209,7 +221,7 @@ class EmbeddedForm
     /**
      * Fill data to all fields in form.
      *
-     * @param array $data
+     * @param array<mixed> $data
      *
      * @return $this
      */
@@ -235,16 +247,20 @@ class EmbeddedForm
 
         $elementName = $elementClass = $errorKey = [];
 
+        // get name
+        $formatName = $field->formatName($this->column);
+        $formatClass = $field->formatId($this->column);
+        
         if (is_array($jsonKey)) {
             foreach ($jsonKey as $index => $name) {
-                $elementName[$index] = "{$this->column}[$name]";
+                $elementName[$index] = "{$formatName}[$name]";
                 $errorKey[$index] = "{$this->column}.$name";
-                $elementClass[$index] = "{$this->column}_$name";
+                $elementClass[$index] = "{$formatClass}_$name";
             }
         } else {
-            $elementName = "{$this->column}[$jsonKey]";
+            $elementName = "{$formatName}[$jsonKey]";
             $errorKey = "{$this->column}.$jsonKey";
-            $elementClass = "{$this->column}_$jsonKey";
+            $elementClass = "{$formatClass}_$jsonKey";
         }
 
         $field->setElementName($elementName)
@@ -265,6 +281,9 @@ class EmbeddedForm
     {
         $field = $this->formatField($field);
 
+        // set $parent form to $field
+        $field->setForm($this->parent);
+
         $this->fields->push($field);
 
         return $this;
@@ -274,7 +293,7 @@ class EmbeddedForm
      * Add nested-form fields dynamically.
      *
      * @param string $method
-     * @param array  $arguments
+     * @param array<mixed>  $arguments
      *
      * @return Field|$this
      */
@@ -286,11 +305,7 @@ class EmbeddedForm
             /** @var Field $field */
             $field = new $className($column, array_slice($arguments, 1));
 
-            if ($this->parent instanceof WidgetForm) {
-                $field->setWidgetForm($this->parent);
-            } else {
-                $field->setForm($this->parent);
-            }
+            $field->setForm($this->parent);
 
             $this->pushField($field);
 

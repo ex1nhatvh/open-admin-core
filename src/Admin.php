@@ -1,17 +1,17 @@
 <?php
 
-namespace OpenAdminCore\Admin;
+namespace Encore\Admin;
 
 use Closure;
+use Encore\Admin\Auth\Database\Menu;
+use Encore\Admin\Controllers\AuthController;
+use Encore\Admin\Layout\Content;
+use Encore\Admin\Traits\HasAssets;
+use Encore\Admin\Widgets\Navbar;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
-use OpenAdminCore\Admin\Auth\Database\Menu;
-use OpenAdminCore\Admin\Controllers\AuthController;
-use OpenAdminCore\Admin\Layout\Content;
-use OpenAdminCore\Admin\Traits\HasAssets;
-use OpenAdminCore\Admin\Widgets\Navbar;
 
 /**
  * Class Admin.
@@ -21,19 +21,19 @@ class Admin
     use HasAssets;
 
     /**
-     * The Open-admin version.
+     * The Laravel admin version.
      *
      * @var string
      */
-    public const VERSION = '1.0.01';
+    const VERSION = '1.7.0';
 
     /**
-     * @var Navbar
+     * @var Navbar|null
      */
     protected $navbar;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $menu = [];
 
@@ -48,35 +48,40 @@ class Admin
     public static $favicon;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     public static $extensions = [];
 
     /**
-     * @var []Closure
+     * @var Closure[]
      */
     protected static $bootingCallbacks = [];
 
     /**
-     * @var []Closure
+     * @var Closure[]
+     */
+    protected static $registeredCallbacks = [];
+
+    /**
+     * @var Closure[]
      */
     protected static $bootedCallbacks = [];
 
     /**
-     * Returns the long version of Open-admin.
+     * Returns the long version of Laravel-admin.
      *
      * @return string The long application version
      */
     public static function getLongVersion()
     {
-        return sprintf('Open-admin <comment>version</comment> <info>%s</info>', self::VERSION);
+        return sprintf('Laravel-admin <comment>version</comment> <info>%s</info>', self::VERSION);
     }
 
     /**
-     * @param $model
+     * @param mixed $model
      * @param Closure $callable
      *
-     * @return \OpenAdminCore\Admin\Grid
+     * @return \Encore\Admin\Grid
      *
      * @deprecated since v1.6.1
      */
@@ -86,10 +91,10 @@ class Admin
     }
 
     /**
-     * @param $model
+     * @param mixed $model
      * @param Closure $callable
      *
-     * @return \OpenAdminCore\Admin\Form
+     * @return \Encore\Admin\Form
      *
      *  @deprecated since v1.6.1
      */
@@ -101,10 +106,10 @@ class Admin
     /**
      * Build a tree.
      *
-     * @param $model
+     * @param mixed $model
      * @param Closure|null $callable
      *
-     * @return \OpenAdminCore\Admin\Tree
+     * @return \Encore\Admin\Tree
      */
     public function tree($model, Closure $callable = null)
     {
@@ -114,10 +119,12 @@ class Admin
     /**
      * Build show page.
      *
-     * @param $model
+     * @param mixed $model
      * @param mixed $callable
      *
      * @return Show
+     *
+     * @deprecated since v1.6.1
      */
     public function show($model, $callable = null)
     {
@@ -127,7 +134,9 @@ class Admin
     /**
      * @param Closure $callable
      *
-     * @return \OpenAdminCore\Admin\Layout\Content
+     * @return \Encore\Admin\Layout\Content
+     *
+     * @deprecated since v1.6.1
      */
     public function content(Closure $callable = null)
     {
@@ -135,7 +144,7 @@ class Admin
     }
 
     /**
-     * @param $model
+     * @param mixed $model
      *
      * @return mixed
      */
@@ -155,7 +164,7 @@ class Admin
     /**
      * Left sider-bar menu.
      *
-     * @return array
+     * @return array<mixed>
      */
     public function menu()
     {
@@ -172,9 +181,9 @@ class Admin
     }
 
     /**
-     * @param array $menu
+     * @param array<mixed> $menu
      *
-     * @return array
+     * @return array<mixed>
      */
     public function menuLinks($menu = [])
     {
@@ -218,6 +227,17 @@ class Admin
     }
 
     /**
+     * Set favicon.
+     * TODO:remove
+     * @param string $favicon
+     * @return void
+     */
+    public static function setFavicon($favicon)
+    {
+        self::$favicon = $favicon;
+    }
+
+    /**
      * @param null|string $favicon
      *
      * @return string|void
@@ -232,33 +252,13 @@ class Admin
     }
 
     /**
-     * Get the currently authenticated user.
+     * Get current login user.
      *
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
+     * @return mixed
      */
     public function user()
     {
-        return static::guard()->user();
-    }
-
-    /**
-     * Get the guard name.
-     *
-     * @return string
-     */
-    public function guardName()
-    {
-        return config('admin.auth.guard') ?: 'admin';
-    }
-
-    /**
-     * Attempt to get the guard from the local cache.
-     *
-     * @return \Illuminate\Contracts\Auth\Guard|\Illuminate\Contracts\Auth\StatefulGuard
-     */
-    public function guard()
-    {
-        return Auth::guard(static::guardName());
+        return Auth::guard('admin')->user();
     }
 
     /**
@@ -266,7 +266,7 @@ class Admin
      *
      * @param Closure|null $builder
      *
-     * @return Navbar
+     * @return Navbar|void
      */
     public function navbar(Closure $builder = null)
     {
@@ -280,7 +280,7 @@ class Admin
     /**
      * Get navbar object.
      *
-     * @return \OpenAdminCore\Admin\Widgets\Navbar
+     * @return \Encore\Admin\Widgets\Navbar
      */
     public function getNavbar()
     {
@@ -292,7 +292,7 @@ class Admin
     }
 
     /**
-     * Register the open-admin builtin routes.
+     * Register the laravel-admin builtin routes.
      *
      * @return void
      *
@@ -304,7 +304,7 @@ class Admin
     }
 
     /**
-     * Register the open-admin builtin routes.
+     * Register the laravel-admin builtin routes.
      *
      * @return void
      */
@@ -316,8 +316,10 @@ class Admin
         ];
 
         app('router')->group($attributes, function ($router) {
+
             /* @var \Illuminate\Support\Facades\Route $router */
-            $router->namespace('\OpenAdminCore\Admin\Controllers')->group(function ($router) {
+            $router->namespace('\Encore\Admin\Controllers')->group(function ($router) {
+
                 /* @var \Illuminate\Routing\Router $router */
                 $router->resource('auth/users', 'UserController')->names('admin.auth.users');
                 $router->resource('auth/roles', 'RoleController')->names('admin.auth.roles');
@@ -326,9 +328,6 @@ class Admin
                 $router->resource('auth/logs', 'LogController', ['only' => ['index', 'destroy']])->names('admin.auth.logs');
 
                 $router->post('_handle_form_', 'HandleController@handleForm')->name('admin.handle-form');
-                $router->post('_handle_action_', 'HandleController@handleAction')->name('admin.handle-action');
-                $router->get('_handle_selectable_', 'HandleController@handleSelectable')->name('admin.handle-selectable');
-                $router->get('_handle_renderable_', 'HandleController@handleRenderable')->name('admin.handle-renderable');
             });
 
             $authController = config('admin.auth.controller', AuthController::class);
@@ -357,6 +356,7 @@ class Admin
 
     /**
      * @param callable $callback
+     * @return void
      */
     public static function booting(callable $callback)
     {
@@ -365,6 +365,16 @@ class Admin
 
     /**
      * @param callable $callback
+     * @return void
+     */
+    public static function registered(callable $callback)
+    {
+        static::$registeredCallbacks[] = $callback;
+    }
+
+    /**
+     * @param callable $callback
+     * @return void
      */
     public static function booted(callable $callback)
     {
@@ -373,31 +383,38 @@ class Admin
 
     /**
      * Bootstrap the admin application.
+     * @return void
      */
     public function bootstrap()
     {
         $this->fireBootingCallbacks();
 
-        require config('admin.bootstrap', admin_path('bootstrap.php'));
+        Form::registerBuiltinFields();
 
-        $this->addAdminAssets();
+        Grid::registerColumnDisplayer();
+
+        Grid\Filter::registerFilters();
+
+        $this->fireRegisteredCallbacks();
+
+        
+        $file = config('admin.bootstrap', admin_path('bootstrap.php'));
+        if (\File::exists($file)) {
+            require_once $file;
+        }
+
+        $assets = Form::collectFieldAssets();
+
+        self::css($assets['css']);
+        self::js($assets['js']);
 
         $this->fireBootedCallbacks();
     }
 
     /**
-     * Add JS & CSS assets to pages.
-     */
-    protected function addAdminAssets()
-    {
-        $assets = Form::collectFieldAssets();
-
-        self::css($assets['css']);
-        self::js($assets['js']);
-    }
-
-    /**
      * Call the booting callbacks for the admin application.
+     *
+     * @return void
      */
     protected function fireBootingCallbacks()
     {
@@ -407,7 +424,21 @@ class Admin
     }
 
     /**
+     * Call the registered callbacks for the admin application.
+     *
+     * @return void
+     */
+    protected function fireRegisteredCallbacks()
+    {
+        foreach (static::$registeredCallbacks as $callable) {
+            call_user_func($callable);
+        }
+    }
+
+    /**
      * Call the booted callbacks for the admin application.
+     *
+     * @return void
      */
     protected function fireBootedCallbacks()
     {
@@ -416,15 +447,16 @@ class Admin
         }
     }
 
-    public static function asset($asset)
+    /**
+     * Disable Pjax for current Request
+     *
+     * @return void
+     */
+    public function disablePjax()
     {
-        return url('/vendor/open-admin/'.$asset);
-    }
-
-    public static function js_trans()
-    {
-        $lang_array = json_encode(__('admin'));
-
-        return '<script>var admin_lang_arr = '.$lang_array.'</script>';
+        if (request()->pjax()) {
+            /** @phpstan-ignore-next-line Parameter #2 $values of method Symfony\Component\HttpFoundation\HeaderBag::set() expects array<string>|string|null, false given.   */
+            request()->headers->set('X-PJAX', false);
+        }
     }
 }

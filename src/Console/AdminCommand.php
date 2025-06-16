@@ -1,11 +1,11 @@
 <?php
 
-namespace OpenAdminCore\Admin\Console;
+namespace Encore\Admin\Console;
 
+use Encore\Admin\Admin;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Admin;
 
 class AdminCommand extends Command
 {
@@ -27,16 +27,18 @@ class AdminCommand extends Command
      * @var string
      */
     public static $logo = <<<LOGO
-   ____                             ___       __          _
-  / __ \____  ___  ____            /   | ____/ /___ ___  (_)___
- / / / / __ \/ _ \/ __ \   ____   / /| |/ __  / __ `__ \/ / __ \
-/ /_/ / /_/ /  __/ / / /  /___/  / ___ / /_/ / / / / / / / / / /
-\____/ .___/\___/_/ /_/         /_/  |_\__,_/_/ /_/ /_/_/_/ /_/
-    /_/
+    __                                __                __          _     
+   / /   ____ __________ __   _____  / /     ____ _____/ /___ ___  (_)___ 
+  / /   / __ `/ ___/ __ `/ | / / _ \/ /_____/ __ `/ __  / __ `__ \/ / __ \
+ / /___/ /_/ / /  / /_/ /| |/ /  __/ /_____/ /_/ / /_/ / / / / / / / / / /
+/_____/\__,_/_/   \__,_/ |___/\___/_/      \__,_/\__,_/_/ /_/ /_/_/_/ /_/ 
+                                                                          
 LOGO;
 
     /**
      * Execute the console command.
+     *
+     * @return void
      */
     public function handle()
     {

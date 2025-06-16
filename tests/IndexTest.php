@@ -1,10 +1,10 @@
 <?php
 
-use OpenAdminCore\Admin\Auth\Database\Administrator;
+use Encore\Admin\Auth\Database\Administrator;
 
 class IndexTest extends TestCase
 {
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -22,9 +22,9 @@ class IndexTest extends TestCase
             ->see('Laravel version')
 
             ->see('Available extensions')
-            ->seeLink('open-admin-ext/helpers', 'https://github.com/open-admin-extensions/helpers')
-            ->seeLink('open-admin-ext/backup', 'https://github.com/open-admin-extensions/backup')
-            ->seeLink('open-admin-ext/media-manager', 'https://github.com/open-admin-extensions/media-manager')
+            ->seeLink('laravel-admin-ext/helpers', 'https://github.com/laravel-admin-extensions/helpers')
+            ->seeLink('laravel-admin-ext/backup', 'https://github.com/laravel-admin-extensions/backup')
+            ->seeLink('laravel-admin-ext/media-manager', 'https://github.com/laravel-admin-extensions/media-manager')
 
             ->see('Dependencies')
             ->see('php')

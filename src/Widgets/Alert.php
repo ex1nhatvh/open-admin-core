@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenAdminCore\Admin\Widgets;
+namespace Encore\Admin\Widgets;
 
 use Illuminate\Contracts\Support\Renderable;
 
@@ -76,7 +76,7 @@ class Alert extends Widget implements Renderable
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
     protected function variables()
     {
