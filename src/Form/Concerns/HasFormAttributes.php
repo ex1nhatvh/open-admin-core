@@ -41,20 +41,58 @@ trait HasFormAttributes
     /**
      * Add form attributes.
      *
-     * @param string|array $attr
-     * @param string       $value
+     * @param string|array<mixed> $attr
+     * @param string|int       $value
      *
      * @return $this
      */
     public function attribute($attr, $value = '')
     {
         if (is_array($attr)) {
-            foreach ($attr as $key => $value) {
-                $this->attribute($key, $value);
+            foreach ($attr as $key => $val) {
+                $this->attribute($key, $val);
             }
         } else {
-            $this->attributes[$attr] = $value;
+            if ($attr === 'class') {
+                $this->setClass($value);
+            } else {
+                $this->attributes[$attr] = $value;
+            }
         }
+
+        return $this;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getAttributes()
+    {
+        return $this->attributes;
+    }
+
+    /**
+     * set class
+     *
+     * @param string|array<mixed> $value
+     * @return $this
+     */
+    public function setClass($value)
+    {
+        $result = explode_ex(' ', Arr::get($this->attributes, 'class'));
+
+        if (is_string($value)) {
+            $value = explode_ex(' ', $value);
+        }
+        foreach ($value as $v) {
+            if (empty($v)) {
+                continue;
+            }
+            $result[] = $v;
+        }
+
+        $result = implode(' ', array_unique($result));
+        $this->attributes['class'] = $result;
 
         return $this;
     }
