@@ -2,8 +2,8 @@
 
 namespace OpenAdminCore\Admin\Form\Field;
 
-use Illuminate\Support\Arr;
 use OpenAdminCore\Admin\Form\Field;
+use Illuminate\Support\Arr;
 
 class Html extends Field
 {
@@ -28,7 +28,7 @@ class Html extends Field
      * Create a new Html instance.
      *
      * @param mixed $html
-     * @param array $arguments
+     * @param array<mixed> $arguments
      */
     public function __construct($html, $arguments)
     {
@@ -65,9 +65,9 @@ class Html extends Field
         $viewClass = $this->getViewElementClasses();
 
         return <<<EOT
-<div class="{$viewClass['form-group']}">
-    <label class="{$viewClass['label']} form-label">{$this->label}</label>
-    <div class="{$viewClass['field']}">
+<div class="form-group row">
+    <label  class="{$viewClass['label']} control-label text-end mt-2">{$this->label}</label>
+    <div class="{$viewClass['field']} ps-3">
         {$this->html}
     </div>
 </div>

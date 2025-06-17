@@ -5,23 +5,22 @@ namespace OpenAdminCore\Admin\Layout;
 use Closure;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Arr;
-use OpenAdminCore\Admin\Facades\Admin;
 
 class Content implements Renderable
 {
     /**
      * Content title.
      *
-     * @var array
-     */
-    protected $body_classes = [];
-
-    /**
-     * Content title.
-     *
      * @var string
      */
     protected $title = ' ';
+
+    /**
+     * Content header icon.
+     *
+     * @var string
+     */
+    protected $headericon = null;
 
     /**
      * Content description.
@@ -33,33 +32,14 @@ class Content implements Renderable
     /**
      * Page breadcrumb.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $breadcrumb = [];
-
-    /**
-     * Page Css files.
-     *
-     * @var array
-     */
-    protected $css_files = [];
-
-    /**
-     * Page Css string inline.
-     *
-     * @var string
-     */
-    protected $css = '';
 
     /**
      * @var Row[]
      */
     protected $rows = [];
-
-    /**
-     * @var array
-     */
-    protected $view;
 
     /**
      * Content constructor.
@@ -98,6 +78,19 @@ class Content implements Renderable
     }
 
     /**
+     * Set header icon of content.
+     *
+     * @param string|null $headericon
+     * @return $this
+     */
+    public function headericon($headericon = null)
+    {
+        $this->headericon = $headericon;
+
+        return $this;
+    }
+
+    /**
      * Set description of content.
      *
      * @param string $description
@@ -114,7 +107,7 @@ class Content implements Renderable
     /**
      * Set breadcrumb of content.
      *
-     * @param array ...$breadcrumb
+     * @param array<mixed> ...$breadcrumb
      *
      * @return $this
      */
@@ -130,7 +123,7 @@ class Content implements Renderable
     /**
      * Validate content breadcrumb.
      *
-     * @param array $breadcrumb
+     * @param array<mixed> $breadcrumb
      *
      * @throws \Exception
      *
@@ -148,57 +141,11 @@ class Content implements Renderable
     }
 
     /**
-     * Set css_files for content.
-     *
-     * @param array $css_file
-     *
-     * @return $this
-     */
-    public function addBodyClass($class)
-    {
-        if (is_array($class)) {
-            $this->body_classes = array_merge($this->body_classes, $class);
-        } else {
-            $this->body_classes[] = $class;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set css_files for content.
-     *
-     * @param array $css_file
-     *
-     * @return $this
-     */
-    public function css_file(string $css_file)
-    {
-        $this->css_files[] = $css_file;
-
-        return $this;
-    }
-
-    /**
-     * Set css for content.
-     *
-     * @param array $css
-     *
-     * @return $this
-     */
-    public function css(string $css)
-    {
-        $this->css .= $css;
-
-        return $this;
-    }
-
-    /**
      * Alias of method row.
      *
      * @param mixed $content
      *
-     * @return $this
+     * @return Content
      */
     public function body($content)
     {
@@ -208,7 +155,7 @@ class Content implements Renderable
     /**
      * Add one row for content body.
      *
-     * @param $content
+     * @param mixed $content
      *
      * @return $this
      */
@@ -218,7 +165,11 @@ class Content implements Renderable
             $row = new Row();
             call_user_func($content, $row);
             $this->addRow($row);
-        } else {
+        }
+        elseif ($content instanceof Row) {
+            $this->addRow($content);
+        }
+        else {
             $this->addRow(new Row($content));
         }
 
@@ -229,30 +180,19 @@ class Content implements Renderable
      * Render giving view as content body.
      *
      * @param string $view
-     * @param array  $data
+     * @param array<mixed>  $data
      *
-     * @return $this
+     * @return Content
      */
-    public function view($view, $data = [])
+    public function view($view, $data)
     {
-        $this->view = compact('view', 'data');
-
-        return $this;
+        return $this->body(view($view, $data));
     }
 
     /**
-     * @param string $view
-     * @param array  $data
-     */
-    public function component($view, $data = [])
-    {
-        return $this->body(Admin::component($view, $data));
-    }
-
-    /**
-     * @param $var
+     * @param mixed $var
      *
-     * @return $this
+     * @return Content
      */
     public function dump($var)
     {
@@ -263,6 +203,8 @@ class Content implements Renderable
      * Add Row.
      *
      * @param Row $row
+     *
+     * @return void
      */
     protected function addRow(Row $row)
     {
@@ -350,18 +292,6 @@ class Content implements Renderable
     }
 
     /**
-     * @return array
-     */
-    protected function getUserData()
-    {
-        if (!$user = Admin::user()) {
-            return [];
-        }
-
-        return Arr::only($user->toArray(), ['id', 'username', 'email', 'name', 'avatar']);
-    }
-
-    /**
      * Render this content.
      *
      * @return string
@@ -369,15 +299,11 @@ class Content implements Renderable
     public function render()
     {
         $items = [
-            'body_classes'      => implode(' ', $this->body_classes),
-            'header'            => $this->title,
-            'description'       => $this->description,
-            'breadcrumb'        => $this->breadcrumb,
-            'css'               => $this->css,
-            'css_files'         => $this->css_files,
-            '_content_'         => $this->build(),
-            '_view_'            => $this->view,
-            '_user_'            => $this->getUserData(),
+            'header'      => $this->title,
+            'headericon'  => $this->headericon,
+            'description' => $this->description,
+            'breadcrumb'  => $this->breadcrumb,
+            'content'     => $this->build(),
         ];
 
         return view('admin::content', $items)->render();

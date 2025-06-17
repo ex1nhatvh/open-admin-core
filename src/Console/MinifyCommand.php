@@ -2,11 +2,11 @@
 
 namespace OpenAdminCore\Admin\Console;
 
+use OpenAdminCore\Admin\Admin;
+use OpenAdminCore\Admin\Facades\Admin as AdminFacade;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use MatthiasMullie\Minify;
-use OpenAdminCore\Admin\Admin;
-use OpenAdminCore\Admin\Facades\Admin as AdminFacade;
 
 class MinifyCommand extends Command
 {
@@ -25,7 +25,7 @@ class MinifyCommand extends Command
     protected $description = 'Minify the CSS and JS';
 
     /**
-     * @var array
+     * @var array<string, array<mixed>>
      */
     protected $assets = [
         'css' => [],
@@ -33,12 +33,14 @@ class MinifyCommand extends Command
     ];
 
     /**
-     * @var array
+     * @var array<string>
      */
     protected $excepts = [];
 
     /**
      * Execute the console command.
+     *
+     * @return void|null
      */
     public function handle()
     {
@@ -49,12 +51,13 @@ class MinifyCommand extends Command
         }
 
         if ($this->option('clear')) {
+            /** @phpstan-ignore-next-line  Result of method OpenAdminCore\Admin\Console\MinifyCommand::clearMinifiedFiles() (void) is used */
             return $this->clearMinifiedFiles();
         }
 
-        AdminFacade::bootstrap();
-
         $this->loadExcepts();
+
+        AdminFacade::bootstrap();
 
         $this->minifyCSS();
         $this->minifyJS();
@@ -71,13 +74,21 @@ class MinifyCommand extends Command
         $this->line('  '.Admin::$manifest);
     }
 
+    /**
+     * @return void
+     */
     protected function loadExcepts()
     {
-        $excepts = config('admin.minify_assets.excepts', []);
+        $excepts = config('admin.minify_assets.excepts');
 
-        $this->excepts = array_merge($excepts, Admin::$minifyIgnoresCss, Admin::$minifyIgnoresJs);
+        if (is_array($excepts)) {
+            $this->excepts = array_filter($excepts);
+        }
     }
 
+    /**
+     * @return void
+     */
     protected function clearMinifiedFiles()
     {
         @unlink(public_path(Admin::$manifest));
@@ -91,8 +102,12 @@ class MinifyCommand extends Command
         $this->line('  '.Admin::$manifest);
     }
 
+    /**
+     * @return void
+     */
     protected function minifyCSS()
     {
+        /** @phpstan-ignore-next-line  Unable to resolve the template type TValue in call to function collect  */
         $css = collect(array_merge(Admin::$css, Admin::baseCss()))
             ->unique()->map(function ($css) {
                 if (url()->isValidUrl($css)) {
@@ -121,8 +136,12 @@ class MinifyCommand extends Command
         $minifier->minify(public_path(Admin::$min['css']));
     }
 
+    /**
+     * @return void
+     */
     protected function minifyJS()
     {
+        /** @phpstan-ignore-next-line  Unable to resolve the template type TValue in call to function collect  */
         $js = collect(array_merge(Admin::$js, Admin::baseJs()))
             ->unique()->map(function ($js) {
                 if (url()->isValidUrl($js)) {
@@ -151,6 +170,9 @@ class MinifyCommand extends Command
         $minifier->minify(public_path(Admin::$min['js']));
     }
 
+    /**
+     * @return void
+     */
     protected function generateManifest()
     {
         $min = collect(Admin::$min)->mapWithKeys(function ($path, $type) {

@@ -31,26 +31,17 @@ class TestCase extends BaseTestCase
         return $app;
     }
 
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
 
         $adminConfig = require __DIR__.'/config/admin.php';
 
-//        $this->app['config']->set('database.default', env('DB_CONNECTION', 'pgsql'));
-//        $this->app['config']->set('database.connections.mysql.host', env('MYSQL_HOST', '127.0.0.1'));
-//        $this->app['config']->set('database.connections.mysql.database', env('MYSQL_DATABASE', 'open_test'));
-//        $this->app['config']->set('database.connections.mysql.username', env('MYSQL_USER', 'postgres'));
-//        $this->app['config']->set('database.connections.mysql.password', env('MYSQL_PASSWORD', 'Pbh@p#&3w5!e'));
-//        $this->app['config']->set('app.key', 'AckfSECXIvnK5r28GVIWUAxmbBSjTsmF');
-//        $this->app['config']->set('filesystems', require __DIR__.'/config/filesystems.php');
-//        $this->app['config']->set('admin', $adminConfig);
-
-        $this->app['config']->set('database.default', 'pgsql');
-        $this->app['config']->set('database.connections.pgsql.host', '127.0.0.1');
-        $this->app['config']->set('database.connections.pgsql.database', 'open_test');
-        $this->app['config']->set('database.connections.pgsql.username', 'postgres');
-        $this->app['config']->set('database.connections.pgsql.password', 'Pbh@p#&3w5!e');
+        $this->app['config']->set('database.default', 'mysql');
+        $this->app['config']->set('database.connections.mysql.host', env('MYSQL_HOST', '127.0.0.1'));
+        $this->app['config']->set('database.connections.mysql.database', 'laravel_admin_test');
+        $this->app['config']->set('database.connections.mysql.username', 'root');
+        $this->app['config']->set('database.connections.mysql.password', 'password');
         $this->app['config']->set('app.key', 'AckfSECXIvnK5r28GVIWUAxmbBSjTsmF');
         $this->app['config']->set('filesystems', require __DIR__.'/config/filesystems.php');
         $this->app['config']->set('admin', $adminConfig);
@@ -72,15 +63,9 @@ class TestCase extends BaseTestCase
         }
 
         require __DIR__.'/routes.php';
-
-        require __DIR__.'/seeds/factory.php';
-
-//        \OpenAdminCore\Admin\Admin::$css = [];
-//        \OpenAdminCore\Admin\Admin::$js = [];
-//        \OpenAdminCore\Admin\Admin::$script = [];
     }
 
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         (new CreateAdminTables())->down();
 

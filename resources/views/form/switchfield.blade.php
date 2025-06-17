@@ -1,8 +1,15 @@
-@include("admin::form._header")
+<div class="{{$viewClass['form-group']}} {!! !$errors->has($errorKey) ? '' : 'has-error' !!}">
 
-    <div class="form-check form-switch">
-        <input type="hidden" name="{{$name}}" id="{{$id}}" value="{{ old($column, $value) }}" />
-        <input class="form-check-input {{$class}}" name="{{$name}}_cb" type="checkbox" id="{{$name}}_cb" {{ !empty(old($column, $value)) ? 'checked' : '' }} {!! $attributes !!} onchange="document.querySelector('#{{$id}}').value = (this.checked ? 'on' : 'off')" />
+    <label for="{{$id}}" class="{{$viewClass['label']}} control-label text-lg-end pt-2">{{$label}}</label>
+
+    <div class="{{$viewClass['field']}}">
+
+        @include('admin::form.error')
+
+        <input type="checkbox" class="{{$class}} la_checkbox" {{ $old == 'on' ? 'checked' : '' }} {!! $attributes !!} />
+        <input type="hidden" class="{{$class}}" name="{{$name}}" value="{{ $old }}" />
+
+        @include('admin::form.help-block')
+
     </div>
-
-@include("admin::form._footer")
+</div>

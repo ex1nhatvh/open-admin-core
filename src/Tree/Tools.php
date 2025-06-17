@@ -2,10 +2,10 @@
 
 namespace OpenAdminCore\Admin\Tree;
 
+use OpenAdminCore\Admin\Tree;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Tree;
 
 class Tools implements Renderable
 {
@@ -19,14 +19,13 @@ class Tools implements Renderable
     /**
      * Collection of tools.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $tools;
 
     /**
      * Create a new Tools instance.
-     *
-     * @param Builder $builder
+     * @param Tree $tree
      */
     public function __construct(Tree $tree)
     {

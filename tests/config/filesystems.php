@@ -68,6 +68,28 @@ return [
             'visibility' => 'public',
             'url'        => 'http://localhost:8000/uploads/',
         ],
+
+        'qiniu' => [
+            'driver'  => 'qiniu',
+            'domains' => [
+                'default' => 'of8kfibjo.bkt.clouddn.com', //你的七牛域名
+                'https'   => 'dn-yourdomain.qbox.me',         //你的HTTPS域名
+                'custom'  => 'static.abc.com',                //你的自定义域名
+            ],
+            'access_key' => 'access_key',  //AccessKey
+            'secret_key' => 'secret_key',  //SecretKey
+            'bucket'     => 'laravel',  //Bucket名字
+            'notify_url' => '',  //持久化处理回调地址
+        ],
+
+        'aliyun' => [
+            'driver'     => 'oss',
+            'access_id'  => 'access_id',
+            'access_key' => 'access_key',
+            'bucket'     => 'laravel-admin',
+            'endpoint'   => 'oss-cn-shanghai.aliyuncs.com',
+        ],
+
     ],
 
 ];

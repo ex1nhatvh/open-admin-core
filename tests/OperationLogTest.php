@@ -5,7 +5,7 @@ use OpenAdminCore\Admin\Auth\Database\OperationLog;
 
 class OperationLogTest extends TestCase
 {
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
 

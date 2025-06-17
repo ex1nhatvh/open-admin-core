@@ -98,9 +98,5 @@ return [
         'filter_clear'      => 'Показати все',
         'filter_placeholder'=> 'Фільтр',
     ],
-    'grid_items_selected'    => '{n} елементів вибрано',
-
-    'menu_titles'            => [],
-    'prev'                   => 'Попередня',
-    'next'                   => 'Наступна',
+    'menu_titles'           => [],
 ];

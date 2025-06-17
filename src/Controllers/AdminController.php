@@ -2,14 +2,17 @@
 
 namespace OpenAdminCore\Admin\Controllers;
 
-use Illuminate\Routing\Controller;
 use OpenAdminCore\Admin\Layout\Content;
-use OpenAdminCore\Admin\Traits\HasCustomHooks;
+use Illuminate\Routing\Controller;
 
+/**
+ * @method mixed grid()
+ * @method mixed detail($id)
+ * @method mixed form()
+ */
 class AdminController extends Controller
 {
     use HasResourceActions;
-    use HasCustomHooks;
 
     /**
      * Title for current resource.
@@ -21,13 +24,13 @@ class AdminController extends Controller
     /**
      * Set description for following 4 action pages.
      *
-     * @var array
+     * @var array<string, string>
      */
     protected $description = [
-        //        'index'  => 'Index',
-        //        'show'   => 'Show',
-        //        'edit'   => 'Edit',
-        //        'create' => 'Create',
+//        'index'  => 'Index',
+//        'show'   => 'Show',
+//        'edit'   => 'Edit',
+//        'create' => 'Create',
     ];
 
     /**
@@ -49,15 +52,10 @@ class AdminController extends Controller
      */
     public function index(Content $content)
     {
-        $grid = $this->grid();
-        if ($this->hasHooks('alterGrid')) {
-            $grid = $this->callHooks('alterGrid', $grid);
-        }
-
         return $content
             ->title($this->title())
             ->description($this->description['index'] ?? trans('admin.list'))
-            ->body($grid);
+            ->body($this->grid());
     }
 
     /**
@@ -70,15 +68,10 @@ class AdminController extends Controller
      */
     public function show($id, Content $content)
     {
-        $detail = $this->detail($id);
-        if ($this->hasHooks('alterDetail')) {
-            $detail = $this->callHooks('alterDetail', $detail);
-        }
-
         return $content
             ->title($this->title())
             ->description($this->description['show'] ?? trans('admin.show'))
-            ->body($detail);
+            ->body($this->detail($id));
     }
 
     /**
@@ -91,15 +84,10 @@ class AdminController extends Controller
      */
     public function edit($id, Content $content)
     {
-        $form = $this->form();
-        if ($this->hasHooks('alterForm')) {
-            $form = $this->callHooks('alterForm', $form);
-        }
-
         return $content
             ->title($this->title())
             ->description($this->description['edit'] ?? trans('admin.edit'))
-            ->body($form->edit($id));
+            ->body($this->form()->edit($id));
     }
 
     /**
@@ -111,14 +99,9 @@ class AdminController extends Controller
      */
     public function create(Content $content)
     {
-        $form = $this->form();
-        if ($this->hasHooks('alterForm')) {
-            $form = $this->callHooks('alterForm', $form);
-        }
-
         return $content
             ->title($this->title())
             ->description($this->description['create'] ?? trans('admin.create'))
-            ->body($form);
+            ->body($this->form());
     }
 }

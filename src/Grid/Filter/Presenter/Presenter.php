@@ -12,9 +12,20 @@ abstract class Presenter
     protected $filter;
 
     /**
+     * Get filter.
+     * @return AbstractFilter
+     */
+    public function getFilter()
+    {
+        return $this->filter;
+    }
+
+    /**
      * Set parent filter.
      *
      * @param AbstractFilter $filter
+     *
+     * @return void
      */
     public function setParent(AbstractFilter $filter)
     {
@@ -26,7 +37,7 @@ abstract class Presenter
      *
      * @return string
      */
-    public function view(): string
+    public function view() : string
     {
         $reflect = new \ReflectionClass(get_called_class());
 
@@ -36,7 +47,7 @@ abstract class Presenter
     /**
      * Set default value for filter.
      *
-     * @param $default
+     * @param array<mixed>|string|null $default
      *
      * @return $this
      */
@@ -50,9 +61,9 @@ abstract class Presenter
     /**
      * Blade template variables for this presenter.
      *
-     * @return array
+     * @return array<mixed>
      */
-    public function variables(): array
+    public function variables() : array
     {
         return [];
     }

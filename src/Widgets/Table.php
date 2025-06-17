@@ -5,6 +5,7 @@ namespace OpenAdminCore\Admin\Widgets;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Arr;
 
+
 class Table extends Widget implements Renderable
 {
     /**
@@ -13,26 +14,36 @@ class Table extends Widget implements Renderable
     protected $view = 'admin::widgets.table';
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $headers = [];
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $rows = [];
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $style = [];
 
     /**
+     * @var array<mixed>
+     */
+    protected $columnStyle = [];
+
+    /**
+     * @var array<mixed>
+     */
+    protected $columnClasses = [];
+
+    /**
      * Table constructor.
      *
-     * @param array $headers
-     * @param array $rows
-     * @param array $style
+     * @param array<mixed> $headers
+     * @param array<mixed> $rows
+     * @param array<mixed> $style
      */
     public function __construct($headers = [], $rows = [], $style = [])
     {
@@ -46,7 +57,7 @@ class Table extends Widget implements Renderable
     /**
      * Set table headers.
      *
-     * @param array $headers
+     * @param array<mixed> $headers
      *
      * @return $this
      */
@@ -60,7 +71,7 @@ class Table extends Widget implements Renderable
     /**
      * Set table rows.
      *
-     * @param array $rows
+     * @param array<mixed> $rows
      *
      * @return $this
      */
@@ -82,13 +93,39 @@ class Table extends Widget implements Renderable
     /**
      * Set table style.
      *
-     * @param array $style
+     * @param array<mixed> $style
      *
      * @return $this
      */
     public function setStyle($style = [])
     {
         $this->style = $style;
+
+        return $this;
+    }
+
+    /**
+     * Set table column style.
+     *
+     * @param array<mixed> $style
+     *
+     * @return $this
+     */
+    public function setColumnStyle($style = [])
+    {
+        $this->columnStyle = $style;
+
+        return $this;
+    }
+
+    /**
+     * Set table column classes.
+     * @param array<mixed> $classes
+     * @return $this
+     */
+    public function setColumnClasses($classes = [])
+    {
+        $this->columnClasses = $classes;
 
         return $this;
     }
@@ -101,10 +138,12 @@ class Table extends Widget implements Renderable
     public function render()
     {
         $vars = [
-            'headers'    => $this->headers,
-            'rows'       => $this->rows,
-            'style'      => $this->style,
-            'attributes' => $this->formatAttributes(),
+            'headers'      => $this->headers,
+            'rows'         => $this->rows,
+            'style'        => $this->style,
+            'columnStyle'  => $this->columnStyle,
+            'columnClasses'  => $this->columnClasses,
+            'attributes'   => $this->formatAttributes(),
         ];
 
         return view($this->view, $vars)->render();

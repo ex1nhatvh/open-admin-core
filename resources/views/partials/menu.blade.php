@@ -1,4 +1,4 @@
-@if(Admin::user()->visible(\Illuminate\Support\Arr::get($item, 'roles', [])) && Admin::user()->can(\Illuminate\Support\Arr::get($item, 'permission')))
+@if(Admin::user()->visible($item['roles']) && (empty($item['permission']) ?: Admin::user()->can($item['permission'])))
     @if(!isset($item['children']))
         <li>
             @if(url()->isValidUrl($item['uri']))
@@ -6,7 +6,7 @@
             @else
                  <a href="{{ admin_url($item['uri']) }}">
             @endif
-                <i class="{{$item['icon']}}"></i>
+                <i class="fa {{$item['icon']}}"></i>
                 @if (Lang::has($titleTranslation = 'admin.menu_titles.' . trim(str_replace(' ', '_', strtolower($item['title'])))))
                     <span>{{ __($titleTranslation) }}</span>
                 @else
@@ -16,15 +16,16 @@
         </li>
     @else
         <li class="treeview">
-            <a href="#" class="has-subs" data-bs-toggle="collapse" data-bs-target="#collapse-{{$item['id']}}" aria-expanded="false">
-                <i class="{{ $item['icon'] }}"></i>
+            <a href="#">
+                <i class="fa {{ $item['icon'] }}"></i>
                 @if (Lang::has($titleTranslation = 'admin.menu_titles.' . trim(str_replace(' ', '_', strtolower($item['title'])))))
                     <span>{{ __($titleTranslation) }}</span>
                 @else
                     <span>{{ admin_trans($item['title']) }}</span>
                 @endif
+                <i class="fa fa-angle-left pull-right"></i>
             </a>
-            <ul id="collapse-{{$item['id']}}" class="btn-toggle-nav list-unstyled collapse fw-normal pb-1">
+            <ul class="treeview-menu">
                 @foreach($item['children'] as $item)
                     @include('admin::partials.menu', $item)
                 @endforeach

@@ -8,13 +8,13 @@ use OpenAdminCore\Admin\Grid\Tools\TotalRow;
 trait HasTotalRow
 {
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $totalRowColumns = [];
 
     /**
      * @param string  $column
-     * @param Closure $callback
+     * @param Closure|null $callback
      *
      * @return $this
      */
@@ -28,7 +28,7 @@ trait HasTotalRow
     /**
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View|string
      */
-    public function renderTotalRow($columns = null)
+    public function renderTotalRow()
     {
         if (empty($this->totalRowColumns)) {
             return '';
@@ -39,10 +39,6 @@ trait HasTotalRow
         $totalRow = new TotalRow($query, $this->totalRowColumns);
 
         $totalRow->setGrid($this);
-
-        if ($columns) {
-            $totalRow->setVisibleColumns($columns);
-        }
 
         return $totalRow->render();
     }

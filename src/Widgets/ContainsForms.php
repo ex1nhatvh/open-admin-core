@@ -10,22 +10,21 @@ trait ContainsForms
     protected $activeName = 'active';
 
     /**
-     * @param array $forms
-     * @param null  $active
-     *
-     * @return mixed
+     * @param array<mixed> $forms
+     * @param mixed|null $active
+     * @return $this
      */
     public static function forms($forms, $active = null)
     {
+        /** @phpstan-ignore-next-line Unsafe usage of new static().   */
         $tab = new static();
 
         return $tab->buildTabbedForms($forms, $active);
     }
 
     /**
-     * @param array $forms
-     * @param null  $active
-     *
+     * @param array<mixed> $forms
+     * @param null|mixed $active
      * @return $this
      */
     protected function buildTabbedForms($forms, $active = null)
@@ -45,8 +44,11 @@ trait ContainsForms
             /** @var Form $form */
             $form = app()->make($class);
 
-            $setActive = ($name == $active);
-            $this->add($form->title(), $form->unbox(), $setActive);
+            if ($name == $active) {
+                $this->add($form->title, $form->unbox(), true);
+            } else {
+                $this->addLink($form->title, $this->getTabUrl($name));
+            }
         }
 
         return $this;
@@ -54,7 +56,6 @@ trait ContainsForms
 
     /**
      * @param string $name
-     *
      * @return string
      */
     protected function getTabUrl($name)

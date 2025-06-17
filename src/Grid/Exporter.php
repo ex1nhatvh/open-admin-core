@@ -22,7 +22,7 @@ class Exporter
     /**
      * Available exporter drivers.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected static $drivers = [];
 
@@ -32,11 +32,6 @@ class Exporter
      * @var string
      */
     public static $queryName = '_export_';
-
-    /**
-     * @var Grid\Exporters\AbstractExporter
-     */
-    protected static $exporter;
 
     /**
      * Create a new Exporter instance.
@@ -53,7 +48,9 @@ class Exporter
     /**
      * Set export query name.
      *
-     * @param $name
+     * @param string $name
+     *
+     * @return void
      */
     public static function setQueryName($name)
     {
@@ -63,8 +60,10 @@ class Exporter
     /**
      * Extends new exporter driver.
      *
-     * @param $driver
-     * @param $extend
+     * @param mixed $driver
+     * @param  mixed $extend
+     *
+     * @return void
      */
     public static function extend($driver, $extend)
     {
@@ -74,9 +73,9 @@ class Exporter
     /**
      * Resolve export driver.
      *
-     * @param string $driver
+     * @param string|Grid\Exporters\AbstractExporter $driver
      *
-     * @return CsvExporter
+     * @return Grid\Exporters\AbstractExporter
      */
     public function resolve($driver)
     {
@@ -91,20 +90,15 @@ class Exporter
      * Get export driver.
      *
      * @param string $driver
-     *
      * @return CsvExporter
      */
     protected function getExporter($driver)
     {
-        if (static::$exporter) {
-            return static::$exporter;
-        }
-
         if (!array_key_exists($driver, static::$drivers)) {
-            return static::$exporter = $this->getDefaultExporter();
+            return $this->getDefaultExporter();
         }
 
-        return static::$exporter = new static::$drivers[$driver]($this->grid);
+        return new static::$drivers[$driver]($this->grid);
     }
 
     /**
@@ -120,10 +114,9 @@ class Exporter
     /**
      * Format query for export url.
      *
-     * @param int  $scope
+     * @param string $scope
      * @param null $args
-     *
-     * @return array
+     * @return string[]
      */
     public static function formatExportQuery($scope = '', $args = null)
     {

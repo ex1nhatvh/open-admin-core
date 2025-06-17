@@ -2,14 +2,14 @@
 
 namespace OpenAdminCore\Admin\Grid\Filter;
 
+use OpenAdminCore\Admin\Admin;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Admin;
 
 class Group extends AbstractFilter
 {
     /**
-     * @var \Closure|null
+     * @var callable|\Closure|string
      */
     protected $builder;
 
@@ -28,8 +28,8 @@ class Group extends AbstractFilter
     /**
      * Group constructor.
      *
-     * @param string        $column
-     * @param string        $label
+     * @param string $column
+     * @param string $label
      * @param \Closure|null $builder
      */
     public function __construct($column, $label = '', \Closure $builder = null)
@@ -49,6 +49,8 @@ class Group extends AbstractFilter
 
     /**
      * Initialize a group filter.
+     *
+     * @return void
      */
     protected function initialize()
     {
@@ -63,7 +65,7 @@ class Group extends AbstractFilter
      * Join a query to group.
      *
      * @param string $label
-     * @param array  $condition
+     * @param array<mixed>  $condition
      *
      * @return $this
      */
@@ -259,6 +261,9 @@ class Group extends AbstractFilter
 
     /**
      * {@inheritdoc}
+     * @param array<mixed> $inputs
+     *
+     * @return mixed
      */
     public function condition($inputs)
     {
@@ -281,28 +286,25 @@ class Group extends AbstractFilter
 
     /**
      * Inject script to current page.
+     *
+     * @return void
      */
     protected function injectScript()
     {
-        $script = <<<JS
-document.querySelectorAll(".{$this->name} li a").forEach(el=>{
-    el.addEventListener("click",function(e){
-
-        document.querySelector(".{$this->name}-label").innerText = el.innerText;
-        document.querySelector(".{$this->name}-operation").value = el.dataset.index;
-
-        e.preventDefault();
-        return false;
-    });
-
+        $script = <<<SCRIPT
+$(".{$this->name} li a").click(function(){
+    $(".{$this->name}-label").text($(this).text());
+    $(".{$this->name}-operation").val($(this).data('index'));
 });
-JS;
+SCRIPT;
 
         Admin::script($script);
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @return array<string, mixed>
      */
     public function variables()
     {

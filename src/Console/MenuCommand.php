@@ -2,8 +2,8 @@
 
 namespace OpenAdminCore\Admin\Console;
 
-use Illuminate\Console\Command;
 use OpenAdminCore\Admin\Facades\Admin;
+use Illuminate\Console\Command;
 
 class MenuCommand extends Command
 {

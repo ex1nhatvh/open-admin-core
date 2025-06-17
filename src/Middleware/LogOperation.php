@@ -2,10 +2,10 @@
 
 namespace OpenAdminCore\Admin\Middleware;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use OpenAdminCore\Admin\Auth\Database\OperationLog as OperationLogModel;
 use OpenAdminCore\Admin\Facades\Admin;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class LogOperation
 {
@@ -20,13 +20,12 @@ class LogOperation
     public function handle(Request $request, \Closure $next)
     {
         if ($this->shouldLogOperation($request)) {
-            $setProxy = $request->setTrustedProxies(request()->getClientIps(), \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR);
             $log = [
                 'user_id' => Admin::user()->id,
                 'path'    => substr($request->path(), 0, 255),
                 'method'  => $request->method(),
                 'ip'      => $request->getClientIp(),
-                'input'   => json_encode($this->filterInput((array) $request->input())),
+                'input'   => json_encode($request->input()),
             ];
 
             try {
@@ -37,18 +36,6 @@ class LogOperation
         }
 
         return $next($request);
-    }
-
-    protected function filterInput($input)
-    {
-        $filter = config('admin.operation_log.filter_input', []);
-        foreach ($filter as $key => $value) {
-            if (isset($input[$key])) {
-                $input[$key] = $value;
-            }
-        }
-
-        return $input;
     }
 
     /**
@@ -73,6 +60,7 @@ class LogOperation
      */
     protected function inAllowedMethods($method)
     {
+        /** @phpstan-ignore-next-line Unable to resolve the template type TKey in call to function collect */
         $allowedMethods = collect(config('admin.operation_log.allowed_methods'))->filter();
 
         if ($allowedMethods->isEmpty()) {

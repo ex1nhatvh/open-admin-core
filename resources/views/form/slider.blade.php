@@ -1,5 +1,14 @@
-@include("admin::form._header")
+<div class="{{$viewClass['form-group']}} {!! !$errors->has($errorKey) ? '' : 'has-error' !!}">
 
-    <input type="range" class="{{$class}} form-range" name="{{$name}}" data-from="{{ old($column, $value) }}" {!! $attributes !!} />
+    <label for="{{$id}}" class="{{$viewClass['label']}} control-label text-lg-end pt-2">{{$label}}</label>
 
-@include("admin::form._footer")
+    <div class="{{$viewClass['field']}}">
+
+        @include('admin::form.error')
+
+        <input type="text" class="{{$class}}" name="{{$name}}" data-from="{{ $old }}" {!! $attributes !!} />
+
+        @include('admin::form.help-block')
+
+    </div>
+</div>

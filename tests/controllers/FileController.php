@@ -2,14 +2,63 @@
 
 namespace Tests\Controllers;
 
-use OpenAdminCore\Admin\Controllers\AdminController;
+use App\Http\Controllers\Controller;
+use OpenAdminCore\Admin\Controllers\ModelForm;
+use OpenAdminCore\Admin\Facades\Admin;
 use OpenAdminCore\Admin\Form;
 use OpenAdminCore\Admin\Grid;
+use OpenAdminCore\Admin\Layout\Content;
 use Tests\Models\File;
 
-class FileController extends AdminController
+class FileController extends Controller
 {
-    protected $title = 'Files';
+    use ModelForm;
+
+    /**
+     * Index interface.
+     *
+     * @return Content
+     */
+    public function index()
+    {
+        return Admin::content(function (Content $content) {
+            $content->header('header');
+            $content->description('description');
+
+            $content->body($this->grid());
+        });
+    }
+
+    /**
+     * Edit interface.
+     *
+     * @param $id
+     *
+     * @return Content
+     */
+    public function edit($id)
+    {
+        return Admin::content(function (Content $content) use ($id) {
+            $content->header('header');
+            $content->description('description');
+
+            $content->body($this->form()->edit($id));
+        });
+    }
+
+    /**
+     * Create interface.
+     *
+     * @return Content
+     */
+    public function create()
+    {
+        return Admin::content(function (Content $content) {
+            $content->header('Upload file');
+
+            $content->body($this->form());
+        });
+    }
 
     /**
      * Make a grid builder.
@@ -18,14 +67,12 @@ class FileController extends AdminController
      */
     protected function grid()
     {
-        $grid = new Grid(new File());
+        return Admin::grid(File::class, function (Grid $grid) {
+            $grid->id('ID')->sortable();
 
-        $grid->id('ID')->sortable();
-
-        $grid->created_at();
-        $grid->updated_at();
-
-        return $grid;
+            $grid->created_at();
+            $grid->updated_at();
+        });
     }
 
     /**
@@ -35,20 +82,18 @@ class FileController extends AdminController
      */
     protected function form()
     {
-        $form = new Form(new File());
+        return Admin::form(File::class, function (Form $form) {
+            $form->display('id', 'ID');
 
-        $form->display('id', 'ID');
+            $form->file('file1');
+            $form->file('file2');
+            $form->file('file3');
+            $form->file('file4');
+            $form->file('file5');
+            $form->file('file6');
 
-        $form->file('file1');
-        $form->file('file2');
-        $form->file('file3');
-        $form->file('file4');
-        $form->file('file5');
-        $form->file('file6');
-
-        $form->display('created_at', 'Created At');
-        $form->display('updated_at', 'Updated At');
-
-        return $form;
+            $form->display('created_at', 'Created At');
+            $form->display('updated_at', 'Updated At');
+        });
     }
 }

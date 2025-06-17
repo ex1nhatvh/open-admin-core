@@ -6,9 +6,6 @@ use OpenAdminCore\Admin\Form;
 use OpenAdminCore\Admin\Grid;
 use OpenAdminCore\Admin\Tree;
 
-/**
- * @deprecated
- */
 trait AdminBuilder
 {
     /**
@@ -28,6 +25,8 @@ trait AdminBuilder
      */
     public static function form(\Closure $callback)
     {
+        //Form::registerBuiltinFields();
+
         return new Form(new static(), $callback);
     }
 

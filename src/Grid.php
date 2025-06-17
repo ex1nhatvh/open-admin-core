@@ -3,38 +3,33 @@
 namespace OpenAdminCore\Admin;
 
 use Closure;
-use Illuminate\Database\Eloquent\Model as Eloquent;
-use Illuminate\Database\Eloquent\Relations;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
 use OpenAdminCore\Admin\Exception\Handler;
 use OpenAdminCore\Admin\Grid\Column;
 use OpenAdminCore\Admin\Grid\Concerns;
 use OpenAdminCore\Admin\Grid\Displayers;
+use OpenAdminCore\Admin\Grid\Exporter;
+use OpenAdminCore\Admin\Grid\Exporters\AbstractExporter;
 use OpenAdminCore\Admin\Grid\Model;
 use OpenAdminCore\Admin\Grid\Row;
 use OpenAdminCore\Admin\Grid\Tools;
-use OpenAdminCore\Admin\Traits\ShouldSnakeAttributes;
+use Illuminate\Database\Eloquent\Model as Eloquent;
+use Illuminate\Database\Eloquent\Relations;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Macroable;
+//use MongoDB\Laravel\Eloquent\Model as MongodbModel;
 
 class Grid
 {
-    use Concerns\HasElementNames,
+    use Traits\Resource,
+        Concerns\HasElementNames,
         Concerns\HasHeader,
         Concerns\HasFooter,
         Concerns\HasFilter,
         Concerns\HasTools,
         Concerns\HasTotalRow,
-        Concerns\HasHotKeys,
-        Concerns\HasQuickCreate,
-        Concerns\HasActions,
-        Concerns\HasSelector,
         Concerns\CanHidesColumns,
-        Concerns\CanFixHeader,
-        Concerns\CanFixColumns,
-        Concerns\CanExportGrid,
-        Concerns\CanDoubleClick,
-        ShouldSnakeAttributes,
         Macroable {
             __call as macroCall;
         }
@@ -42,42 +37,42 @@ class Grid
     /**
      * The grid data model instance.
      *
-     * @var \OpenAdminCore\Admin\Grid\Model|\Illuminate\Database\Eloquent\Builder
+     * @var \OpenAdminCore\Admin\Grid\Model
      */
     protected $model;
 
     /**
      * Collection of all grid columns.
      *
-     * @var \Illuminate\Support\Collection
+     * @var \Illuminate\Support\Collection<int|string, mixed>
      */
     protected $columns;
 
     /**
      * Collection of all data rows.
      *
-     * @var \Illuminate\Support\Collection
+     * @var \Illuminate\Support\Collection<int|string, mixed>
      */
     protected $rows;
 
     /**
      * Rows callable fucntion.
      *
-     * @var \Closure
+     * @var \Closure|null
      */
     protected $rowsCallback;
 
     /**
      * All column names of the grid.
      *
-     * @var array
+     * @var array<mixed>
      */
     public $columnNames = [];
 
     /**
      * Grid builder.
      *
-     * @var \Closure
+     * @var \Closure|null
      */
     protected $builder;
 
@@ -89,23 +84,16 @@ class Grid
     protected $builded = false;
 
     /**
-     * Show footer fixed or not.
-     *
-     * @var bool
-     */
-    public $fixedFooter = true;
-
-    /**
      * All variables in grid view.
      *
-     * @var array
+     * @var array<string, mixed>
      */
     protected $variables = [];
 
     /**
      * Resource path of the grid.
      *
-     * @var
+     * @var mixed
      */
     protected $resourcePath;
 
@@ -117,6 +105,13 @@ class Grid
     protected $keyName = 'id';
 
     /**
+     * Export driver.
+     *
+     * @var string
+     */
+    protected $exporter;
+
+    /**
      * View for grid to render.
      *
      * @var string
@@ -126,7 +121,7 @@ class Grid
     /**
      * Per-page options.
      *
-     * @var array
+     * @var array<int>
      */
     public $perPages = [10, 20, 30, 50, 100];
 
@@ -138,14 +133,30 @@ class Grid
     public $perPage = 20;
 
     /**
-     * @var []callable
+     * Callback for grid actions.
+     *
+     * @var Closure
      */
-    protected $renderingCallbacks = [];
+    protected $actionsCallback;
+
+    /**
+     * Actions column display class.
+     *
+     * @var string
+     */
+    protected $actionsClass = Displayers\Actions::class;
+
+    /**
+     * Attributes of table header.
+     *
+     * @var array<mixed>
+     */
+    protected $headerAttributes = [];
 
     /**
      * Options for grid.
      *
-     * @var array
+     * @var array<string, bool>
      */
     protected $options = [
         'show_pagination'        => true,
@@ -156,8 +167,6 @@ class Grid
         'show_row_selector'      => true,
         'show_create_btn'        => true,
         'show_column_selector'   => true,
-        'show_define_empty_page' => true,
-        'show_perpage_selector'  => true,
     ];
 
     /**
@@ -168,9 +177,23 @@ class Grid
     /**
      * Initialization closure array.
      *
-     * @var []Closure
+     * @var Closure[]
      */
     protected static $initCallbacks = [];
+
+    /**
+     * Get data closure array.
+     *
+     * @var Closure[]
+     */
+    protected static $getDataCallbacks = [];
+
+    /**
+     * Value after getting from database.
+     *
+     * @var mixed
+     */
+    protected $originalCollection;
 
     /**
      * Create a new grid instance.
@@ -186,11 +209,15 @@ class Grid
 
         $this->initialize();
 
+        $this->handleExportRequest();
+
         $this->callInitCallbacks();
     }
 
     /**
      * Initialize.
+     *
+     * @return void
      */
     protected function initialize()
     {
@@ -207,6 +234,8 @@ class Grid
      * Initialize with user pre-defined default disables and exporter, etc.
      *
      * @param Closure $callback
+     *
+     * @return void
      */
     public static function init(Closure $callback = null)
     {
@@ -215,6 +244,8 @@ class Grid
 
     /**
      * Call the initialization closure array in sequence.
+     *
+     * @return void
      */
     protected function callInitCallbacks()
     {
@@ -225,6 +256,75 @@ class Grid
         foreach (static::$initCallbacks as $callback) {
             call_user_func($callback, $this);
         }
+    }
+
+    /**
+     * Call the get data closure array in sequence.
+     *
+     * @return void
+     */
+    protected function callGetDataCallbacks()
+    {
+        if (empty(static::$getDataCallbacks)) {
+            return;
+        }
+
+        foreach (static::$getDataCallbacks as $callback) {
+            call_user_func($callback, $this);
+        }
+    }
+
+    /**
+     * Set getdata callback
+     *
+     * @param Closure $callback
+     *
+     * @return void
+     */
+    public static function getDataCallback(Closure $callback = null)
+    {
+        static::$getDataCallbacks[] = $callback;
+    }
+
+    /**
+     * Handle export request.
+     *
+     * @param bool $forceExport
+     *
+     * @return void
+     */
+    protected function handleExportRequest($forceExport = false)
+    {
+        if (!$scope = request(Exporter::$queryName)) {
+            return;
+        }
+
+        // clear output buffer.
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $this->model()->usePaginate(false);
+
+        if ($this->builder) {
+            call_user_func($this->builder, $this);
+
+            $this->getExporter($scope)->export();
+        }
+
+        if ($forceExport) {
+            $this->getExporter($scope)->export();
+        }
+    }
+
+    /**
+     * @param string $scope
+     *
+     * @return AbstractExporter
+     */
+    protected function getExporter($scope)
+    {
+        return (new Exporter($this))->resolve($this->exporter)->withScope($scope);
     }
 
     /**
@@ -257,6 +357,15 @@ class Grid
     }
 
     /**
+     * Get original Collection
+     *
+     * @return Collection<int|string, mixed>|null
+     */
+    public function getOriginalCollection(){
+        return $this->originalCollection;
+    }
+
+    /**
      * Add a column to Grid.
      *
      * @param string $name
@@ -284,9 +393,9 @@ class Grid
      * 1.$grid->columns(['name' => 'Name', 'email' => 'Email' ...]);
      * 2.$grid->columns('name', 'email' ...)
      *
-     * @param array $columns
+     * @param array<mixed> $columns
      *
-     * @return Collection|null
+     * @return Collection<int|string,mixed>|null|void
      */
     public function columns($columns = [])
     {
@@ -326,34 +435,11 @@ class Grid
     }
 
     /**
-     * Get all columns object.
-     *
-     * @return Collection
-     */
-    public function getColumns()
-    {
-        return $this->columns;
-    }
-
-    /**
-     * Set FixedFooter.
-     *
-     * @return $this
-     */
-    public function fixedFooter($set = true)
-    {
-        $this->fixedFooter = $set;
-
-        return $this;
-    }
-
-    /**
      * Add a relation column to grid.
      *
      * @param string $name
      * @param string $label
-     *
-     * @return $this|bool|Column
+     * @return $this|Column
      */
     protected function addRelationColumn($name, $label = '')
     {
@@ -369,7 +455,7 @@ class Grid
             return $this;
         }
 
-        $name = ($this->shouldSnakeAttributes() ? Str::snake($relation) : $relation).'.'.$column;
+        $name = Str::snake($relation).'.'.$column;
 
         $this->model()->with($relation);
 
@@ -401,7 +487,7 @@ class Grid
      *
      * @return Column
      */
-    public function prependColumn($column = '', $label = '')
+    protected function prependColumn($column = '', $label = '')
     {
         $column = new Column($column, $label);
         $column->setGrid($this);
@@ -414,7 +500,7 @@ class Grid
     /**
      * Get Grid model.
      *
-     * @return Model|\Illuminate\Database\Eloquent\Builder
+     * @return Model
      */
     public function model()
     {
@@ -426,15 +512,13 @@ class Grid
      *
      * @param int $perPage
      *
-     * @return $this
+     * @return void
      */
     public function paginate($perPage = 20)
     {
         $this->perPage = $perPage;
 
         $this->model()->setPerPage($perPage);
-
-        return $this;
     }
 
     /**
@@ -444,7 +528,7 @@ class Grid
      */
     public function paginator()
     {
-        return new Tools\Paginator($this, $this->options['show_perpage_selector']);
+        return new Tools\Paginator($this);
     }
 
     /**
@@ -472,7 +556,9 @@ class Grid
     /**
      * Set per-page options.
      *
-     * @param array $perPages
+     * @param array<mixed> $perPages
+     *
+     * @return void
      */
     public function perPages(array $perPages)
     {
@@ -480,13 +566,49 @@ class Grid
     }
 
     /**
-     * @param bool $disable
+     * Disable all actions.
      *
      * @return $this
      */
-    public function disablePerPageSelector(bool $disable = true)
+    public function disableActions(bool $disable = true)
     {
-        return $this->option('show_perpage_selector', !$disable);
+        return $this->option('show_actions', !$disable);
+    }
+
+    /**
+     * Set grid action callback.
+     *
+     * @param Closure|string $actions
+     *
+     * @return $this
+     */
+    public function actions($actions)
+    {
+        if ($actions instanceof Closure) {
+            $this->actionsCallback = $actions;
+        }
+
+        if (is_string($actions) && is_subclass_of($actions, Displayers\Actions::class)) {
+            $this->actionsClass = $actions;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Add `actions` column for grid.
+     *
+     * @return void
+     */
+    protected function appendActionsColumn()
+    {
+        if (!$this->option('show_actions')) {
+            return;
+        }
+
+        $this->addColumn(Column::ACTION_COLUMN_NAME, trans('admin.action'))
+            ->displayUsing($this->actionsClass, [$this->actionsCallback])
+            ->escape(false);
     }
 
     /**
@@ -496,7 +618,9 @@ class Grid
      */
     public function disableRowSelector(bool $disable = true)
     {
-        return $this->disableBatchActions($disable);
+        $this->tools->disableBatchActions($disable);
+
+        return $this->option('show_row_selector', !$disable);
     }
 
     /**
@@ -510,57 +634,9 @@ class Grid
             return;
         }
 
-        $checkAllBox = '<input type="checkbox" class="'.$this->getSelectAllName().' form-check-input" onchange="admin.grid.select_all(event,this)" id="grid-select-all" />&nbsp;';
-
         $this->prependColumn(Column::SELECT_COLUMN_NAME, ' ')
             ->displayUsing(Displayers\RowSelector::class)
-            ->addHeader($checkAllBox);
-    }
-
-    /**
-     * Apply column filter to grid query.
-     *
-     * @return void
-     */
-    protected function applyColumnFilter()
-    {
-        $this->columns->each->bindFilterQuery($this->model());
-    }
-
-    /**
-     * Apply column search to grid query.
-     *
-     * @return void
-     */
-    protected function applyColumnSearch()
-    {
-        $this->columns->each->bindSearchQuery($this->model());
-    }
-
-    /**
-     * @return array|Collection|mixed
-     */
-    public function applyQuery()
-    {
-        $this->applyQuickSearch();
-
-        $this->applyColumnFilter();
-
-        $this->applyColumnSearch();
-
-        $this->applySelectorQuery();
-    }
-
-    /**
-     * Add row selector columns and action columns before and after the grid.
-     *
-     * @return void
-     */
-    protected function addDefaultColumns()
-    {
-        $this->prependRowSelectorColumn();
-
-        $this->appendActionsColumn();
+            ->escape(false);
     }
 
     /**
@@ -574,15 +650,19 @@ class Grid
             return;
         }
 
-        $this->applyQuery();
+        $this->applyQuickSearch();
 
         $collection = $this->applyFilter(false);
 
-        $this->addDefaultColumns();
+        $this->prependRowSelectorColumn();
+        $this->appendActionsColumn();
 
         Column::setOriginalGridModels($collection);
 
+        $this->originalCollection = $collection;
         $data = $collection->toArray();
+
+        $this->callGetDataCallbacks();
 
         $this->columns->map(function (Column $column) use (&$data) {
             $data = $column->fill($data);
@@ -590,7 +670,7 @@ class Grid
             $this->columnNames[] = $column->getName();
         });
 
-        $this->buildRows($data, $collection);
+        $this->buildRows($data);
 
         $this->builded = true;
     }
@@ -598,15 +678,14 @@ class Grid
     /**
      * Build the grid rows.
      *
-     * @param array      $data
-     * @param Collection $collection
+     * @param array<mixed> $data
      *
      * @return void
      */
-    protected function buildRows(array $data, Collection $collection)
+    protected function buildRows(array $data)
     {
-        $this->rows = collect($data)->map(function ($model, $number) use ($collection) {
-            return new Row($number, $model, $collection->get($number)->getKey());
+        $this->rows = collect($data)->map(function ($model, $number) {
+            return new Row($number, $model);
         });
 
         if ($this->rowsCallback) {
@@ -619,7 +698,7 @@ class Grid
      *
      * @param Closure $callable
      *
-     * @return Collection|null
+     * @return Collection<int|string, mixed>|null
      */
     public function rows(Closure $callable = null)
     {
@@ -628,6 +707,39 @@ class Grid
         }
 
         $this->rowsCallback = $callable;
+    }
+
+    /**
+     * Set exporter driver for Grid to export.
+     *
+     * @param string $exporter
+     *
+     * @return $this
+     */
+    public function exporter($exporter)
+    {
+        $this->exporter = $exporter;
+
+        return $this;
+    }
+
+    /**
+     * Get the export url.
+     *
+     * @param int|string  $scope
+     * @param null|string $args
+     *
+     * @return string
+     */
+    public function getExportUrl($scope = 1, $args = null)
+    {
+        $input = array_merge(Request::all(), Exporter::formatExportQuery($scope, $args));
+
+        if ($constraints = $this->model()->getConstraints()) {
+            $input = array_merge($input, $constraints);
+        }
+
+        return url($this->resource()).'?'.http_build_query($input);
     }
 
     /**
@@ -643,11 +755,40 @@ class Grid
             $queryString = http_build_query($constraints);
         }
 
-        return sprintf(
-            '%s/create%s',
-            $this->resource(),
+        return sprintf('%s/create%s',
+            url($this->resource()),
             $queryString ? ('?'.$queryString) : ''
         );
+    }
+
+    /**
+     * If grid show export btn.
+     *
+     * @return bool
+     */
+    public function showExportBtn()
+    {
+        return $this->option('show_exporter');
+    }
+
+    /**
+     * Disable export.
+     *
+     * @return $this
+     */
+    public function disableExport(bool $disable = true)
+    {
+        return $this->option('show_exporter', !$disable);
+    }
+
+    /**
+     * Render export button.
+     *
+     * @return string
+     */
+    public function renderExportButton()
+    {
+        return (new Tools\ExportButton($this))->render();
     }
 
     /**
@@ -673,26 +814,6 @@ class Grid
     }
 
     /**
-     * Remove define empty page on grid.
-     *
-     * @return $this
-     */
-    public function disableDefineEmptyPage(bool $disable = true)
-    {
-        return $this->option('show_define_empty_page', !$disable);
-    }
-
-    /**
-     * If grid show define empty page on grid.
-     *
-     * @return bool
-     */
-    public function showDefineEmptyPage()
-    {
-        return $this->option('show_define_empty_page');
-    }
-
-    /**
      * If allow creation.
      *
      * @return bool
@@ -713,11 +834,38 @@ class Grid
     }
 
     /**
-     * Get current resource url.
+     * Set table header attributes.
+     *
+     * @param array<mixed> $attributes
+     *
+     * @return void
+     */
+    public function setHeaderAttributes(array $attributes)
+    {
+        $this->headerAttributes = $attributes;
+    }
+
+    /**
+     * Get table header attributes in html format.
+     *
+     * @return string
+     */
+    public function getHeaderAttributes()
+    {
+        $attrArr = [];
+        foreach ($this->headerAttributes as $name => $val) {
+            $attrArr[] = $name.'="'.e($val).'"';
+        }
+
+        return implode(' ', $attrArr);
+    }
+
+    /**
+     * Get current resource uri.
      *
      * @param string $path
      *
-     * @return string
+     * @return $this|string
      */
     public function resource($path = null)
     {
@@ -731,7 +879,7 @@ class Grid
             return $this->resourcePath;
         }
 
-        return url(app('request')->getPathInfo());
+        return $this->getResource(0);
     }
 
     /**
@@ -777,9 +925,7 @@ class Grid
         ) {
             $this->model()->with($method);
 
-            return $this->addColumn($method, $label)->setRelation(
-                $this->shouldSnakeAttributes() ? Str::snake($method) : $method
-            );
+            return $this->addColumn($method, $label)->setRelation(Str::snake($method));
         }
 
         if ($relation instanceof Relations\HasMany
@@ -789,7 +935,7 @@ class Grid
         ) {
             $this->model()->with($method);
 
-            return $this->addColumn($this->shouldSnakeAttributes() ? Str::snake($method) : $method, $label);
+            return $this->addColumn(Str::snake($method), $label);
         }
 
         return false;
@@ -798,8 +944,8 @@ class Grid
     /**
      * Dynamically add columns to the grid view.
      *
-     * @param $method
-     * @param $arguments
+     * @param mixed $method
+     * @param mixed $arguments
      *
      * @return Column
      */
@@ -810,6 +956,10 @@ class Grid
         }
 
         $label = $arguments[0] ?? null;
+
+//        if ($this->model()->eloquent() instanceof MongodbModel) {
+//            return $this->addColumn($method, $label);
+//        }
 
         if ($column = $this->handleGetMutatorColumn($method, $label)) {
             return $column;
@@ -823,9 +973,42 @@ class Grid
     }
 
     /**
+     * Register column displayers.
+     *
+     * @return void.
+     */
+    public static function registerColumnDisplayer()
+    {
+        $map = [
+            'editable'    => Displayers\Editable::class,
+            'switch'      => Displayers\SwitchDisplay::class,
+            'switchGroup' => Displayers\SwitchGroup::class,
+            'select'      => Displayers\Select::class,
+            'image'       => Displayers\Image::class,
+            'label'       => Displayers\Label::class,
+            'button'      => Displayers\Button::class,
+            'link'        => Displayers\Link::class,
+            'badge'       => Displayers\Badge::class,
+            'progressBar' => Displayers\ProgressBar::class,
+            'radio'       => Displayers\Radio::class,
+            'checkbox'    => Displayers\Checkbox::class,
+            'orderable'   => Displayers\Orderable::class,
+            'table'       => Displayers\Table::class,
+            'expand'      => Displayers\Expand::class,
+            'modal'       => Displayers\Modal::class,
+            'carousel'    => Displayers\Carousel::class,
+            'download'    => Displayers\Download::class,
+        ];
+
+        foreach ($map as $abstract => $class) {
+            Column::extend($abstract, $class);
+        }
+    }
+
+    /**
      * Add variables to grid view.
      *
-     * @param array $variables
+     * @param array<mixed> $variables
      *
      * @return $this
      */
@@ -839,7 +1022,7 @@ class Grid
     /**
      * Get all variables will used in grid view.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     protected function variables()
     {
@@ -852,7 +1035,9 @@ class Grid
      * Set a view to render.
      *
      * @param string $view
-     * @param array  $variables
+     * @param array<mixed>  $variables
+     *
+     * @return void
      */
     public function setView($view, $variables = [])
     {
@@ -880,7 +1065,7 @@ class Grid
     /**
      * Set relation for grid.
      *
-     * @param Relations\Relation $relation
+     * @param Relations\Relation<\Illuminate\Database\Eloquent\Model> $relation
      *
      * @return $this
      */
@@ -906,32 +1091,6 @@ class Grid
     }
 
     /**
-     * Set rendering callback.
-     *
-     * @param callable $callback
-     *
-     * @return $this
-     */
-    public function rendering(callable $callback)
-    {
-        $this->renderingCallbacks[] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Call callbacks before render.
-     *
-     * @return void
-     */
-    protected function callRenderingCallback()
-    {
-        foreach ($this->renderingCallbacks as $callback) {
-            call_user_func($callback, $this);
-        }
-    }
-
-    /**
      * Get the string contents of the grid view.
      *
      * @return string
@@ -946,8 +1105,6 @@ class Grid
             return Handler::renderException($e);
         }
 
-        $this->callRenderingCallback();
-
-        return Admin::component($this->view, $this->variables());
+        return view($this->view, $this->variables())->render();
     }
 }

@@ -2,27 +2,30 @@
 
 namespace OpenAdminCore\Admin\Layout;
 
-use Illuminate\Contracts\Support\Renderable;
 use OpenAdminCore\Admin\Grid;
+use Illuminate\Contracts\Support\Renderable;
+use OpenAdminCore\Admin\Traits\GridWidth;
 
 class Column implements Buildable
 {
+    use GridWidth;
+    
     /**
      * grid system prefix width.
      *
-     * @var array
+     * @var array<string, int>|int
      */
     protected $width = [];
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $contents = [];
 
     /**
      * Column constructor.
      *
-     * @param $content
+     * @param mixed $content
      * @param int $width
      */
     public function __construct($content, $width = 12)
@@ -33,23 +36,13 @@ class Column implements Buildable
             $this->append($content);
         }
 
-        ///// set width.
-        // if null, or $this->width is empty array, set as "md" => "12"
-        if (is_null($width) || (is_array($width) && count($width) === 0)) {
-            $this->width['md'] = 12;
-        }
-        // $this->width is number(old version), set as "md" => $width
-        elseif (is_numeric($width)) {
-            $this->width['md'] = $width;
-        } else {
-            $this->width = $width;
-        }
+        $this->setWidth($width);
     }
 
     /**
      * Append content to column.
      *
-     * @param $content
+     * @param mixed $content
      *
      * @return $this
      */
@@ -63,7 +56,7 @@ class Column implements Buildable
     /**
      * Add a row for column.
      *
-     * @param $content
+     * @param mixed $content
      *
      * @return Column
      */
@@ -90,6 +83,8 @@ class Column implements Buildable
 
     /**
      * Build column html.
+     *
+     * @return void
      */
     public function build()
     {
@@ -108,19 +103,21 @@ class Column implements Buildable
 
     /**
      * Start column.
+     *
+     * @return void
      */
     protected function startColumn()
     {
         // get class name using width array
-        $classnName = collect($this->width)->map(function ($value, $key) {
-            return "col-$key-$value";
-        })->implode(' ');
+        $classnName = $this->getGridWidthClass();
 
         echo "<div class=\"{$classnName}\">";
     }
 
     /**
      * End column.
+     *
+     * @return void
      */
     protected function endColumn()
     {

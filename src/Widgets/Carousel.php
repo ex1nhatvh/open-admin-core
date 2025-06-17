@@ -3,6 +3,7 @@
 namespace OpenAdminCore\Admin\Widgets;
 
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Support\Collection;
 
 class Carousel extends Widget implements Renderable
 {
@@ -12,7 +13,7 @@ class Carousel extends Widget implements Renderable
     protected $view = 'admin::widgets.carousel';
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $items;
 
@@ -24,7 +25,7 @@ class Carousel extends Widget implements Renderable
     /**
      * Carousel constructor.
      *
-     * @param array $items
+     * @param array<mixed>|Collection<int|string, mixed>|mixed $items
      */
     public function __construct($items = [])
     {
@@ -32,13 +33,15 @@ class Carousel extends Widget implements Renderable
 
         $this->id('carousel-'.uniqid());
         $this->class('carousel slide');
-        $this->offsetSet('data-bs-ride', 'carousel');
+        $this->offsetSet('data-ride', 'carousel');
     }
 
     /**
      * Set title.
      *
      * @param string $title
+     *
+     * @return void
      */
     public function title($title)
     {

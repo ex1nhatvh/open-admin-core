@@ -2,8 +2,8 @@
 
 namespace OpenAdminCore\Admin\Grid\Tools;
 
+use OpenAdminCore\Admin\Grid;
 use Illuminate\Support\Arr;
-use OpenAdminCore\Admin\Grid\Concerns\HasQuickSearch;
 
 class QuickSearch extends AbstractTool
 {
@@ -12,39 +12,16 @@ class QuickSearch extends AbstractTool
      */
     protected $view = 'admin::grid.quick-search';
 
-    /**
-     * @var string
-     */
-    protected $placeholder;
-
-    /**
-     * Set placeholder.
-     *
-     * @param string $text
-     *
-     * @return $this
-     */
-    public function placeholder($text = '')
-    {
-        $this->placeholder = $text;
-
-        return $this;
-    }
-
-    /**
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
     public function render()
     {
         $query = request()->query();
 
-        Arr::forget($query, HasQuickSearch::$searchKey);
+        Arr::forget($query, Grid::getSearchKey());
 
         $vars = [
-            'action'      => request()->url().'?'.http_build_query($query),
-            'key'         => HasQuickSearch::$searchKey,
-            'value'       => request(HasQuickSearch::$searchKey),
-            'placeholder' => $this->placeholder,
+            'action' => request()->url().'?'.http_build_query($query),
+            'key'    => Grid::getSearchKey(),
+            'value'  => request(Grid::getSearchKey()),
         ];
 
         return view($this->view, $vars);

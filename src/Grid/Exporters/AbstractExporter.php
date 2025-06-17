@@ -19,7 +19,7 @@ abstract class AbstractExporter implements ExporterInterface
     /**
      * Create a new exporter instance.
      *
-     * @param $grid
+     * @param Grid|null $grid
      */
     public function __construct(Grid $grid = null)
     {
@@ -49,7 +49,7 @@ abstract class AbstractExporter implements ExporterInterface
      */
     public function getTable()
     {
-        return $this->grid->model()->getOriginalModel()->getTable();
+        return $this->grid->model()->eloquent()->getTable();
     }
 
     /**
@@ -72,16 +72,15 @@ abstract class AbstractExporter implements ExporterInterface
      */
     public function chunk(callable $callback, $count = 100)
     {
-        $this->grid->applyQuery();
-
         return $this->grid->getFilter()->chunk($callback, $count);
     }
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Support\Collection<int|string, mixed>
      */
     public function getCollection()
     {
+        /** @phpstan-ignore-next-line Unable to resolve the template type TKey in call to function collect   */
         return collect($this->getData());
     }
 
@@ -103,8 +102,8 @@ abstract class AbstractExporter implements ExporterInterface
                 ->select([$keyName])
                 ->setEagerLoads([])
                 ->forPage($this->page, $perPage)->get();
-            // If $querybuilder is a Model, it must be reassigned, unless it is a eloquent/query builder.
-            $queryBuilder = $queryBuilder->whereIn($keyName, $scope->pluck($keyName));
+
+            $queryBuilder->whereIn($keyName, $scope->pluck($keyName));
         }
 
         return $queryBuilder;

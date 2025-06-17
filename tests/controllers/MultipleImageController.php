@@ -2,14 +2,63 @@
 
 namespace Tests\Controllers;
 
-use OpenAdminCore\Admin\Controllers\AdminController;
+use App\Http\Controllers\Controller;
+use OpenAdminCore\Admin\Controllers\ModelForm;
+use OpenAdminCore\Admin\Facades\Admin;
 use OpenAdminCore\Admin\Form;
 use OpenAdminCore\Admin\Grid;
+use OpenAdminCore\Admin\Layout\Content;
 use Tests\Models\MultipleImage;
 
-class MultipleImageController extends AdminController
+class MultipleImageController extends Controller
 {
-    protected $title = 'Images';
+    use ModelForm;
+
+    /**
+     * Index interface.
+     *
+     * @return Content
+     */
+    public function index()
+    {
+        return Admin::content(function (Content $content) {
+            $content->header('header');
+            $content->description('description');
+
+            $content->body($this->grid());
+        });
+    }
+
+    /**
+     * Edit interface.
+     *
+     * @param $id
+     *
+     * @return Content
+     */
+    public function edit($id)
+    {
+        return Admin::content(function (Content $content) use ($id) {
+            $content->header('header');
+            $content->description('description');
+
+            $content->body($this->form()->edit($id));
+        });
+    }
+
+    /**
+     * Create interface.
+     *
+     * @return Content
+     */
+    public function create()
+    {
+        return Admin::content(function (Content $content) {
+            $content->header('Upload image');
+
+            $content->body($this->form());
+        });
+    }
 
     /**
      * Make a grid builder.
@@ -18,16 +67,14 @@ class MultipleImageController extends AdminController
      */
     protected function grid()
     {
-        $grid = new Grid(new MultipleImage());
+        return Admin::grid(Image::class, function (Grid $grid) {
+            $grid->id('ID')->sortable();
 
-        $grid->id('ID')->sortable();
+            $grid->created_at();
+            $grid->updated_at();
 
-        $grid->created_at();
-        $grid->updated_at();
-
-        $grid->disableFilter();
-
-        return $grid;
+            $grid->disableFilter();
+        });
     }
 
     /**
@@ -37,15 +84,13 @@ class MultipleImageController extends AdminController
      */
     protected function form()
     {
-        $form = new Form(new MultipleImage());
+        return Admin::form(MultipleImage::class, function (Form $form) {
+            $form->display('id', 'ID');
 
-        $form->display('id', 'ID');
+            $form->multipleImage('pictures');
 
-        $form->multipleImage('pictures');
-
-        $form->display('created_at', 'Created At');
-        $form->display('updated_at', 'Updated At');
-
-        return $form;
+            $form->display('created_at', 'Created At');
+            $form->display('updated_at', 'Updated At');
+        });
     }
 }

@@ -2,12 +2,11 @@
 
 namespace OpenAdminCore\Admin\Grid\Concerns;
 
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use OpenAdminCore\Admin\Grid\Column;
 use OpenAdminCore\Admin\Grid\Model;
 use OpenAdminCore\Admin\Grid\Tools;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Trait HasQuickSearch.
@@ -15,36 +14,62 @@ use OpenAdminCore\Admin\Grid\Tools;
  * @property Collection $columns
  * @property Tools      $tools
  *
- * @method Model model()
+ * @method  Model model()
  */
 trait HasQuickSearch
 {
     /**
      * @var string
      */
-    public static $searchKey = '__search__';
+    protected static $searchKey = '__search__';
 
     /**
-     * @var array|string|\Closure
+     * @var array|string|\Closure|mixed|null
      */
     protected $search;
 
     /**
-     * @param array|string|\Closure
+     * Get Search Key
      *
-     * @return Tools\QuickSearch
+     * @return string
+     */
+    public static function getSearchKey() : string
+    {
+        return static::$searchKey;
+    }
+
+    /**
+     * Set search key
+     *
+     * @param string $key
+     * @return void
+     */
+    public static function setSearchKey(string $key)
+    {
+        static::$searchKey = $key;
+    }
+
+    /**
+     * @param array<mixed>|string|\Closure|null $search
+     * @return $this
      */
     public function quickSearch($search = null)
     {
+        $position = null;
         if (func_num_args() > 1) {
-            $this->search = func_get_args();
+            if(func_get_arg(0) instanceof \Closure){
+                $this->search = func_get_arg(0);
+                $position = func_get_arg(1);
+            }else{
+                $this->search = func_get_args();
+            }
         } else {
             $this->search = $search;
         }
 
-        return tap(new Tools\QuickSearch(), function ($search) {
-            $this->tools->append($search);
-        });
+        $this->tools->append(new Tools\QuickSearch(), $position);
+
+        return $this;
     }
 
     /**
@@ -52,9 +77,9 @@ trait HasQuickSearch
      *
      * @return mixed|void
      */
-    protected function applyQuickSearch()
+    public function applyQuickSearch()
     {
-        if (!$query = request()->get(static::$searchKey)) {
+        if (!$query = request()->get(static::getSearchKey())) {
             return;
         }
 
@@ -67,56 +92,53 @@ trait HasQuickSearch
         }
 
         if (is_array($this->search)) {
-            $this->model()->where(function (Builder $builder) use ($query) {
-                foreach ($this->search as $column) {
-                    $this->addWhereLikeBinding($builder, $column, true, '%'.$query.'%');
-                }
-            });
+            foreach ($this->search as $column) {
+                $this->addWhereLikeBinding($column, true, '%'.$query.'%');
+            }
         } elseif (is_null($this->search)) {
-            $this->model()->where(function (Builder $builder) use ($query) {
-                $this->addWhereBindings($builder, $query);
-            });
+            $this->addWhereBindings($query);
         }
     }
 
     /**
      * Add where bindings.
      *
-     * @param Builder $builder
-     * @param string  $query
+     * @param string $query
+     *
+     * @return void
      */
-    protected function addWhereBindings(Builder $builder, $query)
+    protected function addWhereBindings($query)
     {
         $queries = preg_split('/\s(?=([^"]*"[^"]*")*[^"]*$)/', trim($query));
 
         foreach ($this->parseQueryBindings($queries) as list($column, $condition, $or)) {
             if (preg_match('/(?<not>!?)\((?<values>.+)\)/', $condition, $match) !== 0) {
-                $this->addWhereInBinding($builder, $column, $or, (bool) $match['not'], $match['values']);
+                $this->addWhereInBinding($column, $or, (bool) $match['not'], $match['values']);
                 continue;
             }
 
             if (preg_match('/\[(?<start>.*?),(?<end>.*?)]/', $condition, $match) !== 0) {
-                $this->addWhereBetweenBinding($builder, $column, $or, $match['start'], $match['end']);
+                $this->addWhereBetweenBinding($column, $or, $match['start'], $match['end']);
                 continue;
             }
 
             if (preg_match('/(?<function>date|time|day|month|year),(?<value>.*)/', $condition, $match) !== 0) {
-                $this->addWhereDatetimeBinding($builder, $column, $or, $match['function'], $match['value']);
+                $this->addWhereDatetimeBinding($column, $or, $match['function'], $match['value']);
                 continue;
             }
 
             if (preg_match('/(?<pattern>%[^%]+%)/', $condition, $match) !== 0) {
-                $this->addWhereLikeBinding($builder, $column, $or, $match['pattern']);
+                $this->addWhereLikeBinding($column, $or, $match['pattern']);
                 continue;
             }
 
             if (preg_match('/\/(?<value>.*)\//', $condition, $match) !== 0) {
-                $this->addWhereBasicBinding($builder, $column, $or, 'REGEXP', $match['value']);
+                $this->addWhereBasicBinding($column, $or, 'REGEXP', $match['value']);
                 continue;
             }
 
             if (preg_match('/(?<operator>>=?|<=?|!=|%){0,1}(?<value>.*)/', $condition, $match) !== 0) {
-                $this->addWhereBasicBinding($builder, $column, $or, $match['operator'], $match['value']);
+                $this->addWhereBasicBinding($column, $or, $match['operator'], $match['value']);
                 continue;
             }
         }
@@ -125,9 +147,9 @@ trait HasQuickSearch
     /**
      * Parse quick query bindings.
      *
-     * @param array $queries
+     * @param array<mixed> $queries
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function parseQueryBindings(array $queries)
     {
@@ -163,47 +185,50 @@ trait HasQuickSearch
     /**
      * Add where like binding to model query.
      *
-     * @param Builder $builder
-     * @param string  $column
-     * @param bool    $or
-     * @param string  $pattern
+     * @param string $column
+     * @param bool   $or
+     * @param string $pattern
+     *
+     * @return void
      */
-    protected function addWhereLikeBinding(Builder $builder, string $column, bool $or, string $pattern)
+    protected function addWhereLikeBinding(string $column, bool $or, string $pattern)
     {
-        $connectionType = $builder->getModel()->getConnection()->getDriverName();
+        $connectionType = $this->model()->eloquent()->getConnection()->getDriverName();
         $likeOperator = $connectionType == 'pgsql' ? 'ilike' : 'like';
 
         $method = $or ? 'orWhere' : 'where';
 
-        $builder->{$method}($column, $likeOperator, $pattern);
+        $this->model()->{$method}($column, $likeOperator, $pattern);
     }
 
     /**
      * Add where date time function binding to model query.
      *
-     * @param Builder $builder
-     * @param string  $column
-     * @param bool    $or
-     * @param string  $function
-     * @param string  $value
+     * @param string $column
+     * @param bool   $or
+     * @param string $function
+     * @param string $value
+     *
+     * @return void
      */
-    protected function addWhereDatetimeBinding(Builder $builder, string $column, bool $or, string $function, string $value)
+    protected function addWhereDatetimeBinding(string $column, bool $or, string $function, string $value)
     {
         $method = ($or ? 'orWhere' : 'where').ucfirst($function);
 
-        $builder->{$method}($column, $value);
+        $this->model()->$method($column, $value);
     }
 
     /**
      * Add where in binding to the model query.
      *
-     * @param Builder $builder
-     * @param string  $column
-     * @param bool    $or
-     * @param bool    $not
-     * @param string  $values
+     * @param string $column
+     * @param bool   $or
+     * @param bool   $not
+     * @param string $values
+     *
+     * @return void
      */
-    protected function addWhereInBinding(Builder $builder, string $column, bool $or, bool $not, string $values)
+    protected function addWhereInBinding(string $column, bool $or, bool $not, string $values)
     {
         $values = explode(',', $values);
 
@@ -217,35 +242,37 @@ trait HasQuickSearch
 
         $method = $where.($not ? 'NotIn' : 'In');
 
-        $builder->{$method}($column, $values);
+        $this->model()->$method($column, $values);
     }
 
     /**
      * Add where between binding to the model query.
      *
-     * @param Builder $builder
-     * @param string  $column
-     * @param bool    $or
-     * @param string  $start
-     * @param string  $end
+     * @param string $column
+     * @param bool   $or
+     * @param string $start
+     * @param string $end
+     *
+     * @return void
      */
-    protected function addWhereBetweenBinding(Builder $builder, string $column, bool $or, string $start, string $end)
+    protected function addWhereBetweenBinding(string $column, bool $or, string $start, string $end)
     {
         $method = $or ? 'orWhereBetween' : 'whereBetween';
 
-        $builder->{$method}($column, [$start, $end]);
+        $this->model()->$method($column, [$start, $end]);
     }
 
     /**
      * Add where basic binding to the model query.
      *
-     * @param Builder $builder
-     * @param string  $column
-     * @param bool    $or
-     * @param string  $operator
-     * @param string  $value
+     * @param string $column
+     * @param bool   $or
+     * @param string $operator
+     * @param string $value
+     *
+     * @return void
      */
-    protected function addWhereBasicBinding(Builder $builder, string $column, bool $or, string $operator, string $value)
+    protected function addWhereBasicBinding(string $column, bool $or, string $operator, string $value)
     {
         $method = $or ? 'orWhere' : 'where';
 
@@ -264,6 +291,6 @@ trait HasQuickSearch
             $value = substr($value, 1, -1);
         }
 
-        $builder->{$method}($column, $operator, $value);
+        $this->model()->{$method}($column, $operator, $value);
     }
 }

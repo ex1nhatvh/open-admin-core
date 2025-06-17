@@ -8,9 +8,15 @@ docker-compose.yml
 .phpunit.result.cache
 .DS_Store
 phpunit.phar
+/vendor
 composer.phar
+composer.lock
 *.project
+.idea/
 .php_cs.cache
+.vscode/
+.php-cs-fixer.cache
+.phpunit.result.cache
 resources/assets/minify-manifest.json
 resources/assets/open-admin.min.css
 resources/assets/open-admin.min.js

@@ -2,21 +2,23 @@
 
 namespace OpenAdminCore\Admin\Grid\Tools;
 
-use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Actions\BatchAction;
 use OpenAdminCore\Admin\Admin;
+use Illuminate\Support\Collection;
 
 class BatchActions extends AbstractTool
 {
     /**
-     * @var Collection
+     * deleteBatchClassName
+     *
+     * @var string
      */
-    protected $actions;
+    public static $deleteBatchClassName = \OpenAdminCore\Admin\Grid\Tools\BatchDelete::class;
+
 
     /**
-     * @var bool
+     * @var Collection<int|string, mixed>
      */
-    protected $enableEdit = true;
+    protected $actions;
 
     /**
      * @var bool
@@ -26,7 +28,7 @@ class BatchActions extends AbstractTool
     /**
      * @var bool
      */
-    private $holdAll = false;
+    private $isHoldSelectAllCheckbox = false;
 
     /**
      * BatchActions constructor.
@@ -41,24 +43,11 @@ class BatchActions extends AbstractTool
     /**
      * Append default action(batch delete action).
      *
-     * return void
+     * @return void
      */
     protected function appendDefaultAction()
     {
-        $this->add(new BatchEdit());
-        $this->add(new BatchDelete());
-    }
-
-    /**
-     * Disable edit.
-     *
-     * @return $this
-     */
-    public function disableEdit(bool $disable = true)
-    {
-        $this->enableEdit = !$disable;
-
-        return $this;
+        $this->add(new static::$deleteBatchClassName(trans('admin.batch_delete')));
     }
 
     /**
@@ -82,7 +71,7 @@ class BatchActions extends AbstractTool
     {
         $this->enableDelete = false;
 
-        $this->holdAll = true;
+        $this->isHoldSelectAllCheckbox = true;
 
         return $this;
     }
@@ -90,23 +79,21 @@ class BatchActions extends AbstractTool
     /**
      * Add a batch action.
      *
-     * @param $name
+     * @param BatchAction|string $title
      * @param BatchAction|null $action
      *
      * @return $this
      */
-    public function add($name, BatchAction $action = null)
+    public function add($title, BatchAction $action = null)
     {
         $id = $this->actions->count();
 
         if (func_num_args() == 1) {
-            $action = $name;
-        } elseif (func_num_args() == 2) {
-            $action->setName($name);
-        }
-
-        if (method_exists($action, 'setId')) {
+            $action = $title;
             $action->setId($id);
+        } elseif (func_num_args() == 2) {
+            $action->setId($id);
+            $action->setTitle($title);
         }
 
         $this->actions->push($action);
@@ -119,15 +106,61 @@ class BatchActions extends AbstractTool
      *
      * @return void
      */
-    protected function addActionScripts()
+    protected function setUpScripts()
     {
-        $this->actions->each(function ($action) {
+        Admin::script($this->script());
+
+        foreach ($this->actions as $action) {
             $action->setGrid($this->grid);
 
-            if (method_exists($action, 'script')) {
-                Admin::script($action->script());
-            }
+            Admin::script($action->script());
+        }
+    }
+
+    /**
+     * Scripts of BatchActions button groups.
+     *
+     * @return string
+     */
+    protected function script()
+    {
+        $allName = $this->grid->getSelectAllName();
+        $rowName = $this->grid->getGridRowName();
+
+        $selected = trans('admin.grid_items_selected');
+
+        return <<<EOT
+        $.admin.grid.selects = {};
+$('.{$allName}').iCheck({checkboxClass:'icheckbox_minimal-blue'});
+
+$('.{$allName}').on('ifChanged', function(event) {
+    if (this.checked) {
+        $('.{$rowName}-checkbox').iCheck('check');
+    } else {
+        $('.{$rowName}-checkbox').iCheck('uncheck');
+    }
+}).on('ifClicked', function () {
+    if (this.checked) {
+        $.admin.grid.selects = {};
+    } else {
+        $('.{$rowName}-checkbox').each(function () {
+            var id = $(this).data('id');
+            $.admin.grid.select(id);
         });
+    }
+
+    var selected = $.admin.grid.selected().length;
+    
+    if (selected > 0) {
+        $('.{$allName}-btn').show();
+    } else {
+        $('.{$allName}-btn').hide();
+    }
+    
+    $('.{$allName}-btn .selected').html("{$selected}".replace('{n}', selected));
+});
+
+EOT;
     }
 
     /**
@@ -137,25 +170,22 @@ class BatchActions extends AbstractTool
      */
     public function render()
     {
-        if (!$this->enableEdit) {
-            $this->actions = $this->actions->filter(function ($action, $key) {
-                return get_class($action) != "OpenAdminCore\Admin\Grid\Tools\BatchEdit";
-            });
-        }
-
         if (!$this->enableDelete) {
-            $this->actions = $this->actions->filter(function ($action, $key) {
-                return get_class($action) != "OpenAdminCore\Admin\Grid\Tools\BatchDelete";
-            });
+            $this->actions->shift();
         }
 
-        $this->addActionScripts();
+        if ($this->actions->isEmpty()) {
+            return '';
+        }
 
-        return Admin::component('admin::grid.batch-actions', [
-            'all'     => $this->grid->getSelectAllName(),
-            'row'     => $this->grid->getGridRowName(),
-            'actions' => $this->actions,
-            'holdAll' => $this->holdAll,
-        ]);
+        $this->setUpScripts();
+
+        $data = [
+            'actions'                 => $this->actions,
+            'selectAllName'           => $this->grid->getSelectAllName(),
+            'isHoldSelectAllCheckbox' => $this->isHoldSelectAllCheckbox,
+        ];
+
+        return view('admin::grid.batch-actions', $data)->render();
     }
 }

@@ -2,10 +2,11 @@
 
 namespace OpenAdminCore\Admin\Middleware;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use OpenAdminCore\Admin\Auth\Permission as Checker;
 use OpenAdminCore\Admin\Facades\Admin;
+use Illuminate\Config\Repository;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class Permission
 {
@@ -19,16 +20,12 @@ class Permission
      *
      * @param \Illuminate\Http\Request $request
      * @param \Closure                 $next
-     * @param array                    $args
+     * @param array<mixed>                    $args
      *
      * @return mixed
      */
     public function handle(Request $request, \Closure $next, ...$args)
     {
-        if (config('admin.check_route_permission') === false) {
-            return $next($request);
-        }
-
         if (!Admin::user() || !empty($args) || $this->shouldPassThrough($request)) {
             return $next($request);
         }
@@ -84,16 +81,12 @@ class Permission
      */
     protected function shouldPassThrough($request)
     {
-        // 下面这些路由不验证权限
-        $excepts = array_merge(config('admin.auth.excepts', []), [
+        $excepts = config('admin.auth.excepts', [
             'auth/login',
             'auth/logout',
-            '_handle_action_',
-            '_handle_form_',
-            '_handle_selectable_',
-            '_handle_renderable_',
         ]);
 
+        /** @phpstan-ignore-next-line Unable to resolve the template type TKey in call to function collect  */
         return collect($excepts)
             ->map('admin_base_path')
             ->contains(function ($except) use ($request) {

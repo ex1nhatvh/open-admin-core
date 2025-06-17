@@ -2,15 +2,13 @@
 
 namespace OpenAdminCore\Admin;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use OpenAdminCore\Admin\Auth\Database\Permission;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 abstract class Extension
 {
     /**
@@ -19,12 +17,12 @@ abstract class Extension
     protected $name;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     public $css = [];
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     public $js = [];
 
@@ -44,12 +42,12 @@ abstract class Extension
     public $migrations = '';
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     public $menu = [];
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     public $permission = [];
 
@@ -63,19 +61,18 @@ abstract class Extension
     /**
      * The menu validation rules.
      *
-     * @var array
+     * @var array<string, string>
      */
     protected $menuValidationRules = [
-        'title'    => 'required',
-        'path'     => 'required',
-        'icon'     => 'required',
-        'children' => 'nullable|array',
+        'title' => 'required',
+        'path'  => 'required',
+        'icon'  => 'required',
     ];
 
     /**
      * The permission validation rules.
      *
-     * @var array
+     * @var array<string, string>
      */
     protected $permissionValidationRules = [
         'name'  => 'required',
@@ -93,6 +90,7 @@ abstract class Extension
         $class = get_called_class();
 
         if (!isset(self::$instance[$class]) || !self::$instance[$class] instanceof $class) {
+            /** @phpstan-ignore-next-line https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-static */
             self::$instance[$class] = new static();
         }
 
@@ -101,6 +99,8 @@ abstract class Extension
 
     /**
      * Bootstrap this extension.
+     *
+     * @return bool
      */
     public static function boot()
     {
@@ -136,7 +136,7 @@ abstract class Extension
     /**
      * Get the paths of css files.
      *
-     * @return array
+     * @return array<mixed>
      */
     public function css()
     {
@@ -146,7 +146,7 @@ abstract class Extension
     /**
      * Get the paths of js files.
      *
-     * @return array
+     * @return array<mixed>
      */
     public function js()
     {
@@ -174,7 +174,7 @@ abstract class Extension
     }
 
     /**
-     * @return array
+     * @return array<mixed>
      */
     public function menu()
     {
@@ -182,7 +182,7 @@ abstract class Extension
     }
 
     /**
-     * @return array
+     * @return array<mixed>
      */
     public function permission()
     {
@@ -213,7 +213,7 @@ abstract class Extension
      * Get config set in config/admin.php.
      *
      * @param string $key
-     * @param null   $default
+     * @param null|array<mixed>   $default
      *
      * @return \Illuminate\Config\Repository|mixed
      */
@@ -231,39 +231,38 @@ abstract class Extension
     }
 
     /**
-     * Import menu item and permission to open-admin.
+     * Import menu item and permission to laravel-admin.
+     * @return void
      */
     public static function import()
     {
         $extension = static::getInstance();
-        DB::transaction(function () use ($extension) {
-            if ($menu = $extension->menu()) {
-                if ($extension->validateMenu($menu)) {
-                    extract($menu);
-                    $children = Arr::get($menu, 'children', []);
-                    static::createMenu($title, $path, $icon, 0, $children);
-                }
+
+        if ($menu = $extension->menu()) {
+            if ($extension->validateMenu($menu)) {
+                $title = null;
+                $path = null;
+                $icon = null;
+                extract($menu);
+                static::createMenu($title, $path, $icon);
             }
-            if ($permission = $extension->permission()) {
-                $name = Arr::get($permission, 'name', null);
-                if (null !== $name) {
-                    $permission = [$permission];
-                }
-                foreach ($permission as $item) {
-                    if ($extension->validatePermission($item)) {
-                        $method = [];
-                        extract($item);
-                        static::createPermission($name, $slug, implode("\r\n", $path), $method);
-                    }
-                }
+        }
+
+        if ($permission = $extension->permission()) {
+            if ($extension->validatePermission($permission)) {
+                $name = null;
+                $slug = null;
+                $path = null;
+                extract($permission);
+                static::createPermission($name, $slug, $path);
             }
-        });
+        }
     }
 
     /**
      * Validate menu fields.
      *
-     * @param array $menu
+     * @param array<mixed> $menu
      *
      * @throws \Exception
      *
@@ -272,7 +271,7 @@ abstract class Extension
     public function validateMenu(array $menu)
     {
         /** @var \Illuminate\Validation\Validator $validator */
-        $validator = Validator::make($menu, $this->getMenuValidationRules());
+        $validator = Validator::make($menu, $this->menuValidationRules);
 
         if ($validator->passes()) {
             return true;
@@ -284,24 +283,10 @@ abstract class Extension
     }
 
     /**
-     * Get menu validation rules.
-     *
-     * @return array
-     */
-    protected function getMenuValidationRules()
-    {
-        return [
-            'title'    => 'required',
-            'path'     => ['required', Rule::unique(Config::get('admin.database.menu_table'), 'uri')],
-            'icon'     => 'required',
-            'children' => 'nullable|array',
-        ];
-    }
-
-    /**
      * Validate permission fields.
      *
-     * @param array $permission
+     *
+     * @param array<mixed> $permission
      *
      * @throws \Exception
      *
@@ -309,12 +294,8 @@ abstract class Extension
      */
     public function validatePermission(array $permission)
     {
-        if (!empty($permission['method'])) {
-            $permission['method'] = array_map('strtoupper', $permission['method']);
-        }
-
         /** @var \Illuminate\Validation\Validator $validator */
-        $validator = Validator::make($permission, $this->getPermissionValidationRules());
+        $validator = Validator::make($permission, $this->permissionValidationRules);
 
         if ($validator->passes()) {
             return true;
@@ -326,90 +307,56 @@ abstract class Extension
     }
 
     /**
-     * Get permission validation rules.
+     * Create a item in laravel-admin left side menu.
      *
-     * @return array
-     */
-    protected function getPermissionValidationRules()
-    {
-        return [
-            'name'     => 'required',
-            'slug'     => ['required', Rule::unique(Config::get('admin.database.permissions_table'), 'slug')],
-            'path'     => 'required|array',
-            'path.*'   => 'string',
-            'method'   => 'nullable|array',
-            'method.*' => ['string', Rule::in(Permission::$httpMethods)],
-        ];
-    }
-
-    /**
-     * Create a item in open-admin left side menu.
-     *
-     * @param string $title
-     * @param string $uri
-     * @param string $icon
+     * @param string|null $title
+     * @param string|null $uri
+     * @param string|null  $icon
      * @param int    $parentId
-     * @param array  $children
      *
-     * @throws \Exception
-     *
-     * @return Model
+     * @return void
      */
-    protected static function createMenu($title, $uri, $icon = 'fa-bars', $parentId = 0, array $children = [])
+    protected static function createMenu($title, $uri, $icon = 'fa-bars', $parentId = 0)
     {
         $menuModel = config('admin.database.menu_model');
 
         $lastOrder = $menuModel::max('order');
-        /**
-         * @var Model
-         */
-        $menu = $menuModel::create([
+
+        $menuModel::create([
             'parent_id' => $parentId,
             'order'     => $lastOrder + 1,
             'title'     => $title,
             'icon'      => $icon,
             'uri'       => $uri,
         ]);
-        if (!empty($children)) {
-            $extension = static::getInstance();
-            foreach ($children as $child) {
-                if ($extension->validateMenu($child)) {
-                    $subTitle = Arr::get($child, 'title');
-                    $subUri = Arr::get($child, 'path');
-                    $subIcon = Arr::get($child, 'icon');
-                    $subChildren = Arr::get($child, 'children', []);
-                    static::createMenu($subTitle, $subUri, $subIcon, $menu->getKey(), $subChildren);
-                }
-            }
-        }
-
-        return $menu;
     }
 
     /**
      * Create a permission for this extension.
      *
-     * @param       $name
-     * @param       $slug
-     * @param       $path
-     * @param array $methods
+     * @param null|mixed $name
+     * @param null|mixed $slug
+     * @param null|mixed $path
+     *
+     * @return void
      */
-    protected static function createPermission($name, $slug, $path, $methods = [])
+    protected static function createPermission($name, $slug, $path)
     {
         $permissionModel = config('admin.database.permissions_model');
 
         $permissionModel::create([
-            'name'        => $name,
-            'slug'        => $slug,
-            'http_path'   => '/'.trim($path, '/'),
-            'http_method' => $methods,
+            'name'      => $name,
+            'slug'      => $slug,
+            'http_path' => '/'.trim($path, '/'),
         ]);
     }
 
     /**
      * Set routes for this extension.
      *
-     * @param $callback
+     * @param mixed $callback
+     *
+     * @return void
      */
     public static function routes($callback)
     {

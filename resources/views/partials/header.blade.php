@@ -1,54 +1,64 @@
 <!-- Main Header -->
-<header class="custom-navbar navbar navbar-light bg-white p-0 align-items-stretch">
-    <a class="navbar-brand menu-width container-md bg-semi-dark text-center" href="{{ admin_url('/') }}">
-        <span class="short">{!! config('admin.logo-mini', config('admin.name')) !!}</span><span class="long">{!! config('admin.logo', config('admin.name')) !!}</span>
+<header class="main-header">
+
+    <!-- Logo -->
+    <a href="{{ admin_url('/') }}" class="logo">
+        <!-- mini logo for sidebar mini 50x50 pixels -->
+        <span class="logo-mini">{!! config('admin.logo-mini', config('admin.name')) !!}</span>
+        <!-- logo for regular state and mobile devices -->
+        <span class="logo-lg">{!! config('admin.logo', config('admin.name')) !!}</span>
     </a>
-    <div class="d-flex flex-fill flex-wrap header-items">
 
-        <a class="flex-shrink order-1 order-sm-0 valign-header px-4 link-secondary" type="button" id='menu-toggle' aria-controls="menu" aria-expanded="false" aria-label="Toggle navigation">
-            <i class="icon-bars"></i>
+    <!-- Header Navbar -->
+    <nav class="navbar navbar-static-top" role="navigation">
+        <!-- Sidebar toggle button-->
+        <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+            <span class="sr-only">Toggle navigation</span>
         </a>
-
-        <ul class="nav navbar-nav hidden-sm visible-lg-block">
-            {!! Admin::getNavbar()->render('left') !!}
+        <ul class="nav navbar-nav">
+        {!! Admin::getNavbar()->render('left') !!}
         </ul>
 
-        <div class="flex-fill search order-0 order-sm-1" style="display:none;">
-            <input class="form-control" type="text" placeholder="Search" aria-label="Search">
+        <!-- Navbar Right Menu -->
+        <div class="navbar-custom-menu">
+            <ul class="nav navbar-nav">
+
+                {!! Admin::getNavbar()->render() !!}
+
+                <!-- User Account Menu -->
+                <li class="dropdown user user-menu">
+                    <!-- Menu Toggle Button -->
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <!-- The user image in the navbar-->
+                        <img src="{{ Admin::user()->avatar }}" class="user-image" alt="User Image">
+                        <!-- hidden-xs hides the username on small devices so only the image appears. -->
+                        <span class="d-none d-md-inline">{{ Admin::user()->name }}</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <!-- The user image in the menu -->
+                        <li class="user-header">
+                            <img src="{{ Admin::user()->avatar }}" class="img-circle" alt="User Image">
+
+                            <p>
+                                {{ Admin::user()->name }}
+                                <small>Member since admin {{ Admin::user()->created_at }}</small>
+                            </p>
+                        </li>
+                        <li class="user-footer">
+                            <div class="pull-left">
+                                <a href="{{ admin_url('auth/setting') }}" class="btn btn-default btn-flat">{{ trans('admin.setting') }}</a>
+                            </div>
+                            <div class="pull-right">
+                                <a href="{{ admin_url('auth/logout') }}" class="btn btn-default btn-flat">{{ trans('admin.logout') }}</a>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+                <!-- Control Sidebar Toggle Button -->
+                {{--<li>--}}
+                    {{--<a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>--}}
+                {{--</li>--}}
+            </ul>
         </div>
-
-        <ul class="nav order-2 ms-auto d-flex align-items-center">
-
-            {!! Admin::getNavbar()->render() !!}
-
-            <li class="nav-item">
-                <div class="dropdown user-menu d-flex align-items-center px-3" href="#" role="button" id="user-menu-link" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="bg-light inline rounded-circle user-image">
-                        <img src="{{ Admin::user()->avatar }}" alt="User Image">
-                    </span>
-                    <span class="hidden-xs">{{ Admin::user()->name }}</span>
-                </div>
-                <ul class="dropdown-menu dropdown-menu-end user-menu" aria-labelledby="user-menu-link">
-                    <!-- The user image in the menu -->
-                    <li class="user-header text-center bg-semi-dark p-3">
-                        <span class="bg-light inline rounded-circle user-image medium">
-                            <img src="{{ Admin::user()->avatar }}" alt="User Image">
-                        </span>
-                        <p>
-                            <h2>{{ Admin::user()->name }}</h2>
-                            <small>Member since admin {{ Admin::user()->created_at }}</small>
-                        </p>
-                    </li>
-                    <li class="user-footer p-2 clearfix">
-                        <div class="float-start">
-                            <a href="{{ admin_url('auth/setting') }}" class="btn btn-secondary">{{ __('admin.setting') }}</a>
-                        </div>
-                        <div class="float-end">
-                            <a href="{{ admin_url('auth/logout') }}" class="btn no-ajax btn-secondary">{{ __('admin.logout') }}</a>
-                        </div>
-                    </li>
-                </ul>
-            </li>
-        </ul>
-    </div>
+    </nav>
 </header>

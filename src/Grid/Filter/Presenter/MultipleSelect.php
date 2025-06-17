@@ -20,9 +20,8 @@ class MultipleSelect extends Select
     {
         $column = $this->filter->getColumn();
 
-        $script = <<<JS
-console.log("LoadMore not ported yet");
-/*
+        $script = <<<EOT
+
 $(document).on('change', ".{$this->getClass($column)}", function () {
     var target = $(this).closest('form').find(".{$this->getClass($target)}");
      var ids = $(this).find("option:selected").map(function(index,elem) {
@@ -36,12 +35,11 @@ $(document).on('change', ".{$this->getClass($column)}", function () {
                 text : item.$textField
             }));
         });
-
+        
         $(target).trigger('change');
     });
 });
-*/
-JS;
+EOT;
 
         Admin::script($script);
 

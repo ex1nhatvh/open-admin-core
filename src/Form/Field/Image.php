@@ -2,8 +2,6 @@
 
 namespace OpenAdminCore\Admin\Form\Field;
 
-use OpenAdminCore\Admin\Form\Field;
-use OpenAdminCore\Admin\Form\Field\Traits\ImageField;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class Image extends File
@@ -11,7 +9,7 @@ class Image extends File
     use ImageField;
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     protected $view = 'admin::form.file';
 
@@ -22,58 +20,42 @@ class Image extends File
      */
     protected $rules = 'image';
 
-    protected function setType($type = 'image')
-    {
-        $this->options['type'] = $type;
-    }
-
     /**
-     * @param array|UploadedFile $image
-     *
-     * @return string
+     * @param array<mixed>|UploadedFile|null|string $image
      */
-    public function prepare($file)
+    public function prepare($image)
     {
-        if ($this->picker) {
-            return parent::prepare($file);
+        // If has $file is string, and has TMP_FILE_PREFIX, get $file
+        if(is_string($image) && strpos($image, File::TMP_FILE_PREFIX) === 0 && $this->getTmp){
+            $image = call_user_func($this->getTmp, $image);
         }
 
-        if (request()->has($this->column.Field::FILE_DELETE_FLAG)) {
+        if (request()->has(static::FILE_DELETE_FLAG)) {
             $this->destroy();
-
-            return '';
+            return;
         }
 
-        if (!empty($file)) {
-            if ($this->picker) {
-                return parent::prepare($file);
-            }
-            $this->name = $this->getStoreName($file);
-
-            $this->callInterventionMethods($file->getRealPath());
-
-            $path = $this->uploadAndDeleteOriginal($file);
-
-            $this->uploadAndDeleteOriginalThumbnail($file);
-
-            return $path;
+        if(is_null($image)){
+            return null;
         }
 
-        return false;
+        $this->name = $this->getStoreName($image);
+
+        $this->callInterventionMethods($image->getRealPath());
+
+        $path = $this->uploadAndDeleteOriginal($image);
+
+        $this->uploadAndDeleteOriginalThumbnail($image);
+
+        return $path;
     }
-
+    
     /**
-     * force file type to image.
-     *
-     * @param $file
-     *
-     * @return array|bool|int[]|string[]
+     * Render file upload field.
      */
-    public function guessPreviewType($file)
+    public function render()
     {
-        $extra         = parent::guessPreviewType($file);
-        $extra['type'] = 'image';
-
-        return $extra;
+        $this->filetype('image');
+        return parent::render();
     }
 }

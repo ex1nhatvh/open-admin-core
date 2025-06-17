@@ -2,7 +2,9 @@
 
 namespace OpenAdminCore\Admin\Form;
 
+use OpenAdminCore\Admin\Admin;
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Support\Arr;
 
 class Footer implements Renderable
 {
@@ -23,26 +25,56 @@ class Footer implements Renderable
     /**
      * Available buttons.
      *
-     * @var array
+     * @var array<string>
      */
     protected $buttons = ['reset', 'submit'];
 
     /**
+     * Default Submit label.
+     *
+     * @var string|null
+     */
+    public static $defaultSubmitLabel;
+
+    /**
+     * Submit label.
+     *
+     * @var string|null
+     */
+    protected $submitLabel;
+
+    /**
      * Available checkboxes.
      *
-     * @var array
+     * @var array<int, string>
      */
-    protected $checkboxes = ['view', 'continue_editing', 'continue_creating'];
+    protected $checkboxes = [
+        1 => 'continue_editing',
+        2 => 'continue_creating',
+        3 => 'view',
+    ];
 
     /**
-     * @var string
+     * Available footer checks.
+     * 
+     * $submitRedirects : [
+     *     [
+     *         'key': 'list', // this check key name. Use default check etc
+     *         'value': 'foo', // this check value name
+     *         'label': 'FOO', // this check label
+     *         'default': true, // if this flow is checked, set true
+     *     ],
+     *     [
+     *         'key': 'edit', // this check key name. Use default check etc
+     *         'value': 'bar', // this check value name
+     *         'label': 'BAR', // this check label
+     *         'default': false, // if this flow is checked, set true
+     *     ],
+     * ]
+     *
+     * @var array<mixed>
      */
-    protected $defaultCheck;
-
-    /**
-     * @var string
-     */
-    public $fixedFooter = true;
+    protected $submitRedirects = [];
 
     /**
      * Footer constructor.
@@ -52,10 +84,41 @@ class Footer implements Renderable
     public function __construct(Builder $builder)
     {
         $this->builder = $builder;
+
+        // set default submitRedirects
+        foreach($this->checkboxes as $value => $key){
+            $this->enableCheck($key, $value);
+        }
+    }
+
+    /**
+     * Set submit label.
+     * @param string $submitLabel
+     *
+     * @return $this
+     */
+    public function submitLabel(string $submitLabel)
+    {
+        $this->submitLabel = $submitLabel;
+
+        return $this;
+    }
+
+    /**
+     * Set submit label as save.
+     *
+     * @return $this
+     */
+    public function submitLabelSave()
+    {
+        $this->submitLabel = trans('admin.save');
+
+        return $this;
     }
 
     /**
      * Disable reset button.
+     * @param bool $disable
      *
      * @return $this
      */
@@ -72,6 +135,7 @@ class Footer implements Renderable
 
     /**
      * Disable submit button.
+     * @param bool $disable
      *
      * @return $this
      */
@@ -88,98 +152,205 @@ class Footer implements Renderable
 
     /**
      * Disable View Checkbox.
+     * @pparam bool $disable
      *
      * @return $this
      */
     public function disableViewCheck(bool $disable = true)
     {
-        if ($disable) {
-            array_delete($this->checkboxes, 'view');
-        } elseif (!in_array('view', $this->checkboxes)) {
-            array_push($this->checkboxes, 'view');
-        }
-
-        return $this;
+        return $disable ? $this->disableCheck('view') : $this->enableCheck('view', 3);
     }
 
     /**
      * Disable Editing Checkbox.
+     * @param bool $disable
      *
      * @return $this
      */
     public function disableEditingCheck(bool $disable = true)
     {
-        if ($disable) {
-            array_delete($this->checkboxes, 'continue_editing');
-        } elseif (!in_array('continue_editing', $this->checkboxes)) {
-            array_push($this->checkboxes, 'continue_editing');
-        }
-
-        return $this;
+        return $disable ? $this->disableCheck('continue_editing') : $this->enableCheck('continue_editing', 1);
     }
 
     /**
      * Disable Creating Checkbox.
+     * @param bool $disable
      *
      * @return $this
      */
     public function disableCreatingCheck(bool $disable = true)
     {
-        if ($disable) {
-            array_delete($this->checkboxes, 'continue_creating');
-        } elseif (!in_array('continue_creating', $this->checkboxes)) {
-            array_push($this->checkboxes, 'continue_creating');
+        return $disable ? $this->disableCheck('continue_creating') : $this->enableCheck('continue_creating', 2);
+    }
+
+    /**
+     * enable Checkbox.
+     * @param int|string $key
+     * @param int|string $value
+     *
+     * @return $this
+     */
+    protected function enableCheck($key, $value)
+    {
+        $this->submitRedirects[] = [
+            'key' => $key,
+            'value' => $value,
+            'label' => trans("admin.{$key}"),
+        ];
+
+        return $this;
+    }
+    
+    /**
+     * Disable Checkbox.
+     * @param string $key
+     *
+     * @return $this
+     */
+    protected function disableCheck($key)
+    {
+        $this->submitRedirects = array_filter($this->submitRedirects, function($submitRedirect) use($key){
+            return Arr::get($submitRedirect, 'key') == $key;
+        });
+
+        return $this;
+    }
+
+    /**
+     * Set default Checkbox.
+     * @param string $key
+     *
+     * @return $this
+     */
+    public function defaultCheck($key)
+    {
+        foreach($this->submitRedirects as &$submitRedirect){
+            if(Arr::get($submitRedirect, 'key') == $key){
+                $submitRedirect['default'] = true;
+            }
+        }
+        
+        return $this;
+    }
+
+    /**
+     * add footer check item.
+     *
+     * $footerCheck : 
+     *     [
+     *         'key': 'list', // this check key name. Use default check etc
+     *         'value': 'foo', // this check value name
+     *         'label': 'FOO', // this check label
+     *         'redirect': \Closure, //set callback. Please redirect.
+     *     ]
+     * @param array<mixed> $submitRedirect
+     *
+     * @return $this
+     */
+    public function submitRedirect(array $submitRedirect)
+    {
+        $this->submitRedirects[] = $submitRedirect;
+
+        return $this;
+    }
+
+
+    /**
+     * Get RedirectResponse after data saving.
+     *
+     * @param string $resourcesPath
+     * @param string $key
+     * @param int $afterSaveValue
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|string|null
+     */
+    public function getRedirect($resourcesPath, $key, $afterSaveValue){
+        // set submitRedirects
+        $formId = request()->get('formid');
+        $redirectDashboard = request()->get('redirect-dashboard');
+        $redirectCamera = request()->get('redirect-camera');
+        foreach($this->submitRedirects as $submitRedirect){
+            if(Arr::get($submitRedirect, 'value') == $afterSaveValue){
+                $url = Arr::get($submitRedirect, 'redirect');
+                break;
+            }
         }
 
-        return $this;
+        if(!isset($url) || $formId){
+            if ($afterSaveValue == 1) {
+                // continue editing
+                if ($formId) {
+                    $url = rtrim($resourcesPath, '/')."/{$key}/edit?after-save=1&formid=" . $formId;
+                } else {
+                    $url = rtrim($resourcesPath, '/')."/{$key}/edit?after-save=1";
+                }
+            } elseif ($afterSaveValue == 2) {
+                // continue creating
+                $url = rtrim($resourcesPath, '/').'/create?after-save=2';
+            } elseif ($afterSaveValue == 3) {
+                // view resource
+                $url = rtrim($resourcesPath, '/')."/{$key}";
+            } elseif ($redirectDashboard) {
+                // dashboard
+                $url = admin_url('');
+            } elseif ($formId && $redirectCamera) {
+                // camera
+                $url = rtrim($resourcesPath, '/')."/{$key}/edit?redirect-camera=1&formid=" . $formId;
+            }
+        }
+
+        
+        if(!isset($url)){
+            return null;
+        }
+        if(is_string($url)){
+            return redirect($url);
+        }
+        elseif($url instanceof \Closure){
+            return $url($resourcesPath, $key);
+        }
+        return $url;
     }
 
     /**
-     * Set `view` as default check.
-     *
-     * @return $this
+     * Setup scripts.
+     * @return void
      */
-    public function checkView()
+    protected function setupScript()
     {
-        $this->defaultCheck = 'view';
+        $redirectCamera = request()->get('redirect-camera');
+        $script = <<<'EOT'
+$('.after-submit').iCheck({checkboxClass:'icheckbox_minimal-blue'}).on('ifChecked', function () {
+    $('.after-submit').not(this).iCheck('uncheck');
+});
+EOT;
+        if ($redirectCamera) {
+            $script .= <<<'EOT'
+            function waitForElm(selector) {
+                return new Promise((resolve) => {
+                    if (document.querySelector(selector)) {
+                        return resolve(document.querySelector(selector));
+                    }
 
-        return $this;
-    }
+                    const observer = new MutationObserver((mutations) => {
+                        if (document.querySelector(selector)) {
+                            resolve(document.querySelector(selector));
+                            observer.disconnect();
+                        }
+                    });
 
-    /**
-     * Set `continue_creating` as default check.
-     *
-     * @return $this
-     */
-    public function checkCreating()
-    {
-        $this->defaultCheck = 'continue_creating';
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true,
+                    });
+                });
+            }
 
-        return $this;
-    }
-
-    /**
-     * Set `continue_editing` as default check.
-     *
-     * @return $this
-     */
-    public function checkEditing()
-    {
-        $this->defaultCheck = 'continue_editing';
-
-        return $this;
-    }
-
-    /**
-     * Set `continue_editing` as default check.
-     *
-     * @return $this
-     */
-    public function fixedFooter($set = true)
-    {
-        $this->fixedFooter = $set;
-
-        return $this;
+            $('#admin-submit').click(function(){setTimeout(function() {waitForElm(".hidden-xs").then(async (elm) => {$('[role="scanButtonDashboard"]').click();})},2000);});
+            EOT;
+        }
+        
+        Admin::script($script);
     }
 
     /**
@@ -189,22 +360,40 @@ class Footer implements Renderable
      */
     public function render()
     {
-        $submitRedirects = [
-            'continue_editing'  => 'continue_editing',
-            'continue_creating' => 'continue_creating',
-            'view'              => 'view',
-            //'exit' => 'exit', // can be exit as well when doing ajax request
-        ];
+        $this->setupScript();
 
         $data = [
-            'width'            => $this->builder->getWidth(),
-            'buttons'          => $this->buttons,
-            'checkboxes'       => $this->checkboxes,
-            'submit_redirects' => $submitRedirects,
-            'default_check'    => $this->defaultCheck,
-            'fixedFooter'      => $this->fixedFooter,
+            'buttons'      => $this->buttons,
+            'checkboxes'   => $this->checkboxes,
+            'width'        => $this->builder->getWidth(),
+            'submitLabel'  => $this->submitLabel ?? static::$defaultSubmitLabel ?? trans('admin.submit'),
+            'submitRedirects'=> $this->submitRedirects,
+            'default_check'    => $this->getDefaultCheck(),
         ];
 
-        return view($this->view, $data)->render();
+        return view($this->view, $data);
+    }
+
+
+    /**
+     * Get default check value
+     *
+     * @return ?string
+     */
+    protected function getDefaultCheck(){
+        if(!is_null($result = old('after-save'))){
+            return $result;
+        }
+        if(!is_null($result = request()->get('after-save'))){
+            return $result;
+        }
+
+        foreach ($this->submitRedirects as $submitRedirect) {
+            if(boolval(Arr::get($submitRedirect, 'default'))){
+                return Arr::get($submitRedirect, 'value');
+            }
+        }
+
+        return null;
     }
 }

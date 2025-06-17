@@ -29,7 +29,7 @@
             let table = document.querySelector('.table-responsive');
             if (table){
                 table.addEventListener('show.bs.dropdown', function (event) {
-                    document.querySelector('.table-responsive').style.overflow = "auto";    // change overflow inherit to auto
+                    document.querySelector('.table-responsive').style.overflow = "inherit";
                 });
                 table.addEventListener('hide.bs.dropdown', function (event) {
                     document.querySelector('.table-responsive').style.overflow = "auto";

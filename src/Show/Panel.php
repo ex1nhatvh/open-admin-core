@@ -2,9 +2,9 @@
 
 namespace OpenAdminCore\Admin\Show;
 
+use OpenAdminCore\Admin\Show;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Collection;
-use OpenAdminCore\Admin\Show;
 
 class Panel implements Renderable
 {
@@ -18,14 +18,14 @@ class Panel implements Renderable
     /**
      * The fields that this panel holds.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $fields;
 
     /**
      * Variables in the view.
      *
-     * @var array
+     * @var array<string, mixed>
      */
     protected $data;
 
@@ -48,15 +48,29 @@ class Panel implements Renderable
 
     /**
      * Initialize view data.
+     *
+     * @return void
      */
     protected function initData()
     {
         $this->data = [
             'fields' => new Collection(),
             'tools'  => new Tools($this),
-            'style'  => 'none',
+            'style'  => 'info',
             'title'  => trans('admin.detail'),
         ];
+    }
+
+    /**
+     * @param string $key
+     * @param mixed $value
+     * @return $this
+     */
+    public function setData($key, $value)
+    {
+        $this->data[$key] = $value;
+        
+        return $this;
     }
 
     /**
@@ -128,7 +142,9 @@ class Panel implements Renderable
     /**
      * Build panel tools.
      *
-     * @param $callable
+     * @param callable $callable
+     *
+     * @return void
      */
     public function tools($callable)
     {
@@ -137,9 +153,7 @@ class Panel implements Renderable
 
     /**
      * Fill fields to panel.
-     *
-     * @param []Field $fields
-     *
+     * @param Field[]|Collection<int|string, mixed> $fields
      * @return $this
      */
     public function fill($fields)
@@ -156,6 +170,6 @@ class Panel implements Renderable
      */
     public function render()
     {
-        return view($this->view, $this->data)->render();
+        return view($this->view, $this->data);
     }
 }

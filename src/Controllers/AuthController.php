@@ -2,16 +2,15 @@
 
 namespace OpenAdminCore\Admin\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Lang;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Validator;
 use OpenAdminCore\Admin\Facades\Admin;
 use OpenAdminCore\Admin\Form;
 use OpenAdminCore\Admin\Layout\Content;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -23,7 +22,7 @@ class AuthController extends Controller
     /**
      * Show the login page.
      *
-     * @return \Illuminate\Contracts\View\Factory|Redirect|\Illuminate\View\View
+     * @return bool|\Illuminate\Auth\Access\Response|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|\Illuminate\View\View
      */
     public function getLogin()
     {
@@ -43,22 +42,13 @@ class AuthController extends Controller
      */
     public function postLogin(Request $request)
     {
-        $rate_limit_key = 'login-tries-'.Admin::guardName();
-
         $this->loginValidator($request->all())->validate();
 
         $credentials = $request->only([$this->username(), 'password']);
-        $remember    = $request->get('remember', false);
+        $remember = boolval($request->get('remember', false));
 
         if ($this->guard()->attempt($credentials, $remember)) {
-            RateLimiter::clear($rate_limit_key);
-
             return $this->sendLoginResponse($request);
-        }
-
-        if (config('admin.auth.throttle_logins')) {
-            $throttle_timeout = config('admin.auth.throttle_timeout', 600);
-            RateLimiter::hit($rate_limit_key, $throttle_timeout);
         }
 
         return back()->withInput()->withErrors([
@@ -69,22 +59,23 @@ class AuthController extends Controller
     /**
      * Get a validator for an incoming login request.
      *
-     * @param array $data
+     * @param array<mixed> $data
      *
      * @return \Illuminate\Contracts\Validation\Validator
      */
     protected function loginValidator(array $data)
     {
         return Validator::make($data, [
-            $this->username() => 'required',
-            'password'        => 'required',
+            $this->username()   => 'required',
+            'password'          => 'required',
         ]);
     }
 
     /**
      * User logout.
      *
-     * @return Redirect
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
     public function getLogout(Request $request)
     {
@@ -108,8 +99,6 @@ class AuthController extends Controller
         $form->tools(
             function (Form\Tools $tools) {
                 $tools->disableList();
-                $tools->disableDelete();
-                $tools->disableView();
             }
         );
 
@@ -154,7 +143,7 @@ class AuthController extends Controller
 
         $form->saving(function (Form $form) {
             if ($form->password && $form->model()->password != $form->password) {
-                $form->password = Hash::make($form->password);
+                $form->password = bcrypt($form->password);
             }
         });
 
@@ -194,9 +183,8 @@ class AuthController extends Controller
     /**
      * Send the response after the user was authenticated.
      *
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     protected function sendLoginResponse(Request $request)
     {
@@ -224,6 +212,6 @@ class AuthController extends Controller
      */
     protected function guard()
     {
-        return Admin::guard();
+        return Auth::guard('admin');
     }
 }

@@ -1,12 +1,35 @@
-@include("admin::form._header")
+<div class="{{$viewClass['form-group']}} {!! !$errors->has($errorKey) ? '' : 'has-error' !!}">
 
-    @foreach($options as $option => $label)
+    <label for="{{$id}}" class="{{$viewClass['label']}} control-label text-lg-end pt-2">{{$label}}</label>
 
-        <div class="form-check @if(!$stacked)form-check-inline @endif">
-            <input type="checkbox" class="form-check-input {{$class}}" id="{{$id}}-{{$option}}" name="{{$name}}[]" value="{{$option}}" {{ false !== array_search($option, array_filter(old($column, $value ?? []))) || ($value === null && in_array($option, $checked)) ?'checked':'' }} {!! $attributes !!} />
-            <label class="form-check-label" for="{{$id}}-{{$option}}">{{$label}}</label>
-        </div>
+    <div class="{{$viewClass['field']}}" id="{{$id}}">
 
-    @endforeach
+        @if($canCheckAll)
+            <span class="icheck">
+            <label class="checkbox-inline">
+                <input type="checkbox" class="{{ $checkAllClass }}"/>&nbsp;{{ __('admin.all') }}
+            </label>
+            </span>
+            <hr style="margin-top: 10px;margin-bottom: 0;">
+        @endif
 
-@include("admin::form._footer")
+        @include('admin::form.error')
+
+        @foreach($options as $option => $label)
+
+            {!! $inline ? '<span class="icheck">' : '<div class="checkbox icheck">' !!}
+
+                <label @if($inline)class="checkbox-inline"@endif>
+                    <input type="checkbox" name="{{$name}}[]" value="{{$option}}" class="{{$class}}" {{ in_array($option, (array)$old) || ($value === null && in_array($label, $checked)) ?'checked':'' }} {!! $attributes !!} />&nbsp;{{$label}}&nbsp;&nbsp;
+                </label>
+
+            {!! $inline ? '</span>' :  '</div>' !!}
+
+        @endforeach
+
+        <input type="hidden" name="{{$name}}[]">
+
+        @include('admin::form.help-block')
+
+    </div>
+</div>

@@ -12,7 +12,7 @@ class Collapse extends Widget implements Renderable
     protected $view = 'admin::widgets.collapse';
 
     /**
-     * @var array
+     * @var array<string, string>
      */
     protected $items = [];
 
@@ -22,7 +22,7 @@ class Collapse extends Widget implements Renderable
     public function __construct()
     {
         $this->id('accordion-'.uniqid());
-        $this->class('collapse-group');
+        $this->class('box-group');
         $this->style('margin-bottom: 20px');
     }
 
@@ -44,6 +44,9 @@ class Collapse extends Widget implements Renderable
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function variables()
     {
         return [

@@ -2,6 +2,13 @@
 
 namespace OpenAdminCore\Admin;
 
+use Doctrine\DBAL\Schema\View;
+use OpenAdminCore\Admin\Exception\Handler;
+use OpenAdminCore\Admin\Show\Divider;
+use OpenAdminCore\Admin\Show\Field;
+use OpenAdminCore\Admin\Show\Panel;
+use OpenAdminCore\Admin\Show\Relation;
+use OpenAdminCore\Admin\Traits\Resource;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,20 +22,15 @@ use Illuminate\Database\Eloquent\Relations\Relation as EloquentRelation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Show\Divider;
-use OpenAdminCore\Admin\Show\Field;
-use OpenAdminCore\Admin\Show\Panel;
-use OpenAdminCore\Admin\Show\Relation;
-use OpenAdminCore\Admin\Traits\ShouldSnakeAttributes;
 
 class Show implements Renderable
 {
-    use ShouldSnakeAttributes;
+    use Resource;
 
     /**
      * The Eloquent model to show.
      *
-     * @var Model
+     * @var Model|null
      */
     protected $model;
 
@@ -49,14 +51,14 @@ class Show implements Renderable
     /**
      * Fields to be show.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $fields;
 
     /**
      * Relations to be show.
      *
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $relations;
 
@@ -68,7 +70,7 @@ class Show implements Renderable
     /**
      * Extended fields.
      *
-     * @var array
+     * @var array<mixed>
      */
     public static $extendedFields = [];
 
@@ -76,6 +78,13 @@ class Show implements Renderable
      * @var \Closure
      */
     protected static $initCallback;
+
+    /**
+     * If set, not call default renderException, and \Closure.
+     *
+     * @var \Closure|null
+     */
+    protected $renderException;
 
     /**
      * Show constructor.
@@ -100,6 +109,8 @@ class Show implements Renderable
      * Initialize with user pre-defined default disables, etc.
      *
      * @param \Closure $callback
+     *
+     * @return void
      */
     public static function init(\Closure $callback = null)
     {
@@ -121,6 +132,8 @@ class Show implements Renderable
 
     /**
      * Initialize the contents to show.
+     *
+     * @return void
      */
     protected function initContents()
     {
@@ -130,6 +143,8 @@ class Show implements Renderable
 
     /**
      * Initialize panel.
+     *
+     * @return void
      */
     protected function initPanel()
     {
@@ -162,7 +177,7 @@ class Show implements Renderable
     /**
      * Add multiple fields.
      *
-     * @param array $fields
+     * @param array<mixed> $fields
      *
      * @return $this
      */
@@ -213,18 +228,23 @@ class Show implements Renderable
     /**
      * Add a model field to show.
      *
-     * @param string $name
+     * @param string|Field $name
      * @param string $label
      *
      * @return Field
      */
-    protected function addField($name, $label = '')
+    public function addField($name, $label = '')
     {
-        $field = new Field($name, $label);
+        if($name instanceof Field){
+            $field = $name;
+        }
+        else{
+            $field = new Field($name, $label);
+        }
 
         $field->setParent($this);
 
-        $this->overwriteExistingField($name);
+        $this->overwriteExistingField($field->getName());
 
         return tap($field, function ($field) {
             $this->fields->push($field);
@@ -257,6 +277,8 @@ class Show implements Renderable
      * Overwrite existing field.
      *
      * @param string $name
+     *
+     * @return void
      */
     protected function overwriteExistingField($name)
     {
@@ -275,6 +297,8 @@ class Show implements Renderable
      * Overwrite existing relation.
      *
      * @param string $name
+     *
+     * @return void
      */
     protected function overwriteExistingRelation($name)
     {
@@ -291,6 +315,8 @@ class Show implements Renderable
 
     /**
      * Show a divider.
+     *
+     * @return void
      */
     public function divider()
     {
@@ -319,15 +345,10 @@ class Show implements Renderable
     public function getResourcePath()
     {
         if (empty($this->resource)) {
-            $path = request()->path();
-
-            $segments = explode('/', $path);
-            array_pop($segments);
-
-            $this->resource = implode('/', $segments);
+            $this->resource = $this->getResource(-1);
         }
 
-        return url($this->resource);
+        return $this->resource;
     }
 
     /**
@@ -341,7 +362,7 @@ class Show implements Renderable
     public function setWidth($fieldWidth = 8, $labelWidth = 2)
     {
         collect($this->fields)->each(function ($field) use ($fieldWidth, $labelWidth) {
-            $field->setWidth($fieldWidth, $labelWidth);
+            $field->each->setWidth($fieldWidth, $labelWidth);
         });
 
         return $this;
@@ -375,7 +396,7 @@ class Show implements Renderable
      * Add field and relation dynamically.
      *
      * @param string $method
-     * @param array  $arguments
+     * @param array<int, mixed>  $arguments
      *
      * @return bool|mixed
      */
@@ -419,7 +440,7 @@ class Show implements Renderable
      * Handle relation field.
      *
      * @param string $method
-     * @param array  $arguments
+     * @param array<int, mixed>  $arguments
      *
      * @return $this|bool|Relation|Field
      */
@@ -447,9 +468,7 @@ class Show implements Renderable
                 return $this->addRelation($method, $arguments[1], $arguments[0]);
             }
 
-            return $this->addField($method, Arr::get($arguments, 0))->setRelation(
-                $this->shouldSnakeAttributes() ? Str::snake($method) : $method
-            );
+            return $this->addField($method, Arr::get($arguments, 0))->setRelation(Str::snake($method));
         }
 
         if ($relation    instanceof HasMany
@@ -502,6 +521,17 @@ class Show implements Renderable
 
         return false;
     }
+    /**
+     * Set if true, not call default renderException, and \Closure.
+     *
+     * @return  self
+     */ 
+    public function renderException(\Closure $renderException)
+    {
+        $this->renderException = $renderException;
+
+        return $this;
+    }
 
     /**
      * Render the show panels.
@@ -510,26 +540,43 @@ class Show implements Renderable
      */
     public function render()
     {
-        if (is_callable($this->builder)) {
-            call_user_func($this->builder, $this);
+        try {
+            if (is_callable($this->builder)) {
+                call_user_func($this->builder, $this);
+            }
+    
+            if ($this->fields->isEmpty()) {
+                $this->all();
+            }
+    
+            if (is_array($this->builder)) {
+                $this->fields($this->builder);
+            }
+    
+            $this->fields->each->setValue($this->model);
+            $this->relations->each->setModel($this->model);
+    
+            $data = [
+                'panel'     => $this->panel->fill($this->fields),
+                'relations' => $this->relations,
+            ];
+    
+            return $this->renderView($data);
+        } catch (\Exception $e) {
+            if($this->renderException){
+                return call_user_func($this->renderException, $e);
+            }
+
+            return Handler::renderException($e);
         }
+    }
 
-        if ($this->fields->isEmpty()) {
-            $this->all();
-        }
-
-        if (is_array($this->builder)) {
-            $this->fields($this->builder);
-        }
-
-        $this->fields->each->setValue($this->model);
-        $this->relations->each->setModel($this->model);
-
-        $data = [
-            'panel'     => $this->panel->fill($this->fields),
-            'relations' => $this->relations,
-        ];
-
-        return view('admin::show', $data)->render();
+    /**
+     * @param array<string, mixed> $data
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
+    protected function renderView($data)
+    {
+        return view('admin::show', $data);
     }
 }

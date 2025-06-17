@@ -2,12 +2,13 @@
 
 namespace Tests\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use OpenAdminCore\Admin\Traits\AdminBuilder;
 use OpenAdminCore\Admin\Traits\ModelTree;
+use Illuminate\Database\Eloquent\Model;
 
 class Tree extends Model
 {
-    use ModelTree;
+    use AdminBuilder, ModelTree;
 
     /**
      * Create a new Eloquent model instance.

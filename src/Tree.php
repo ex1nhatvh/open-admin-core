@@ -3,14 +3,21 @@
 namespace OpenAdminCore\Admin;
 
 use Closure;
+use OpenAdminCore\Admin\Auth\Database\Menu;
+use OpenAdminCore\Admin\Traits\ModelTree;
+use OpenAdminCore\Admin\Tree\Tools;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Eloquent\Model;
-use OpenAdminCore\Admin\Tree\Tools;
 
 class Tree implements Renderable
 {
     /**
-     * @var array
+     * @var string
+     */
+    protected $title;
+
+    /**
+     * @var array<mixed>
      */
     protected $items = [];
 
@@ -20,7 +27,7 @@ class Tree implements Renderable
     protected $elementId = 'tree-';
 
     /**
-     * @var Model
+     * @var Model|null
      */
     protected $model;
 
@@ -30,9 +37,14 @@ class Tree implements Renderable
     protected $queryCallback;
 
     /**
+     * @var \Closure
+     */
+    protected $getCallback;
+
+    /**
      * View of tree to render.
      *
-     * @var string
+     * @var array<string, string>
      */
     protected $view = [
         'tree'   => 'admin::tree',
@@ -45,9 +57,14 @@ class Tree implements Renderable
     protected $callback;
 
     /**
-     * @var null
+     * @var \Closure|null
      */
     protected $branchCallback = null;
+
+    /**
+     * @var bool
+     */
+    public $useExpandCollapse = true;
 
     /**
      * @var bool
@@ -65,7 +82,17 @@ class Tree implements Renderable
     public $useRefresh = true;
 
     /**
-     * @var array
+     * @var bool
+     */
+    public $useAction = true;
+
+    /**
+     * @var bool
+     */
+    public $useNestable = true;
+
+    /**
+     * @var array<mixed>
      */
     protected $nestableOptions = [];
 
@@ -77,6 +104,11 @@ class Tree implements Renderable
     public $tools;
 
     /**
+     * @var string
+     */
+    public $path;
+
+    /**
      * Menu constructor.
      *
      * @param Model|null $model
@@ -85,7 +117,7 @@ class Tree implements Renderable
     {
         $this->model = $model;
 
-        $this->path = \request()->getPathInfo();
+        $this->path = url(app('request')->getPathInfo());
         $this->elementId .= uniqid();
 
         $this->setupTools();
@@ -99,6 +131,8 @@ class Tree implements Renderable
 
     /**
      * Setup tree tools.
+     *
+     * @return void
      */
     public function setupTools()
     {
@@ -115,6 +149,7 @@ class Tree implements Renderable
         if (is_null($this->branchCallback)) {
             $this->branchCallback = function ($branch) {
                 $key = $branch[$this->model->getKeyName()];
+                /** @phpstan-ignore-next-line Call to an undefined method Illuminate\Database\Eloquent\Model::getTitleColumn(). */
                 $title = $branch[$this->model->getTitleColumn()];
 
                 return "$key - $title";
@@ -139,7 +174,7 @@ class Tree implements Renderable
     /**
      * Set query callback this tree.
      *
-     * @return Model
+     * @return $this
      */
     public function query(\Closure $callback)
     {
@@ -149,9 +184,32 @@ class Tree implements Renderable
     }
 
     /**
+     * Set get callback to model.
+     * @param Closure|null $get
+     * @return $this
+     */
+    public function getCallback(\Closure $get = null)
+    {
+        $this->getCallback = $get;
+
+        return $this;
+    }
+
+    /**
+     * Set title
+     * @param string $title
+     *
+     * @return void
+     */
+    public function title($title)
+    {
+        $this->title = $title;
+    }
+
+    /**
      * Set nestable options.
      *
-     * @param array $options
+     * @param array<mixed> $options
      *
      * @return $this
      */
@@ -160,6 +218,16 @@ class Tree implements Renderable
         $this->nestableOptions = array_merge($this->nestableOptions, $options);
 
         return $this;
+    }
+
+    /**
+     * Disable ExpandCollapse.
+     *
+     * @return void
+     */
+    public function disableExpandCollapse()
+    {
+        $this->useExpandCollapse = false;
     }
 
     /**
@@ -193,6 +261,26 @@ class Tree implements Renderable
     }
 
     /**
+     * Disable refresh.
+     *
+     * @return void
+     */
+    public function disableAction()
+    {
+        $this->useAction = false;
+    }
+
+    /**
+     * Disable Nestable event.
+     *
+     * @return void
+     */
+    public function disableNestable()
+    {
+        $this->useNestable = false;
+    }
+
+    /**
      * Save tree order from a input.
      *
      * @param string $serialize
@@ -207,6 +295,7 @@ class Tree implements Renderable
             throw new \InvalidArgumentException(json_last_error_msg());
         }
 
+        /** @phpstan-ignore-next-line Call to an undefined method Illuminate\Database\Eloquent\Model::saveOrder(). */
         $this->model->saveOrder($tree);
 
         return true;
@@ -219,19 +308,103 @@ class Tree implements Renderable
      */
     protected function script()
     {
+        $trans = [
+            'delete_confirm'    => trans('admin.delete_confirm'),
+            'save_succeeded'    => trans('admin.save_succeeded'),
+            'refresh_succeeded' => trans('admin.refresh_succeeded'),
+            'delete_succeeded'  => trans('admin.delete_succeeded'),
+            'confirm'           => trans('admin.confirm'),
+            'cancel'            => trans('admin.cancel'),
+        ];
+
         $nestableOptions = json_encode($this->nestableOptions);
 
-        $url = url($this->path);
-
+        $useNestable = $this->useNestable ? 'true' : 'false';
         return <<<SCRIPT
-            admin.tree.init('{$this->elementId}','{$nestableOptions}','{$url}');
+
+        if({$useNestable}){
+            $('#{$this->elementId}').nestable($nestableOptions);
+        }
+
+        $('.tree_branch_delete').click(function() {
+            var id = $(this).data('id');
+            swal({
+                title: "{$trans['delete_confirm']}",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "{$trans['confirm']}",
+                showLoaderOnConfirm: true,
+                allowOutsideClick: false,
+                cancelButtonText: "{$trans['cancel']}",
+                preConfirm: function() {
+                    $('.swal2-cancel').hide();
+                    return new Promise(function(resolve) {
+                        $.ajax({
+                            method: 'post',
+                            url: '{$this->path}/' + id,
+                            data: {
+                                _method:'delete',
+                                _token:LA.token,
+                            },
+                            success: function (data) {
+                                $.pjax.reload('#pjax-container');
+                                toastr.success('{$trans['delete_succeeded']}');
+                                resolve(data);
+                            }
+                        });
+                    });
+                }
+            }).then(function(result) {
+                var data = result.value;
+                if (typeof data === 'object') {
+                    if (data.status) {
+                        swal(data.message, '', 'success');
+                    } else {
+                        swal(data.message, '', 'error');
+                    }
+                }
+            });
+        });
+
+        $('.{$this->elementId}-save').click(function () {
+            var serialize = $('#{$this->elementId}').nestable('serialize');
+
+            $.post('{$this->path}', {
+                _token: LA.token,
+                _order: JSON.stringify(serialize)
+            },
+            function(data){
+                $.pjax.reload('#pjax-container');
+                toastr.success('{$trans['save_succeeded']}');
+            });
+        });
+
+        $('.{$this->elementId}-refresh').click(function () {
+            $.pjax.reload('#pjax-container');
+            toastr.success('{$trans['refresh_succeeded']}');
+        });
+
+        $('.{$this->elementId}-tree-tools').on('click', function(e){
+            var action = $(this).data('action');
+            if (action === 'expand') {
+                $('.dd').nestable('expandAll');
+            }
+            if (action === 'collapse') {
+                $('.dd').nestable('collapseAll');
+            }
+        });
+
+
 SCRIPT;
     }
 
     /**
      * Set view of tree.
      *
-     * @param string $view
+     * @param array<string, string> $view
+     *
+     * @return void
      */
     public function setView($view)
     {
@@ -240,28 +413,34 @@ SCRIPT;
 
     /**
      * Return all items of the tree.
-     *
-     * @return array
+     * @return mixed
      */
     public function getItems()
     {
-        return $this->model->withQuery($this->queryCallback)->toTree();
+        /** @phpstan-ignore-next-line Call to an undefined method Illuminate\Database\Eloquent\Model::withQuery(). */
+        return $this->model
+            ->withQuery($this->queryCallback)
+            ->getCallback($this->getCallback)
+            ->toTree();
     }
 
     /**
      * Variables in tree template.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function variables()
     {
         return [
             'id'         => $this->elementId,
+            'title'      => $this->title,
             'tools'      => $this->tools->render(),
             'items'      => $this->getItems(),
             'useCreate'  => $this->useCreate,
             'useSave'    => $this->useSave,
             'useRefresh' => $this->useRefresh,
+            'useAction' => $this->useAction,
+            'useExpandCollapse' => $this->useExpandCollapse,
         ];
     }
 
@@ -291,6 +470,7 @@ SCRIPT;
             'keyName'        => $this->model->getKeyName(),
             'branchView'     => $this->view['branch'],
             'branchCallback' => $this->branchCallback,
+            'useAction' => $this->useAction,
         ]);
 
         return view($this->view['tree'], $this->variables())->render();

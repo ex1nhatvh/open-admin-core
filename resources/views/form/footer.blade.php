@@ -1,38 +1,32 @@
+<div class="box-footer mt-3 border-top border-light py-3 d-flex" style="background-color: inherit;">
 
-<footer class="navbar form-footer navbar-light bg-white py-3 px-4 @if (!empty($fixedFooter))shadow fixed-bottom @endif">
-    <div class="row">
-    {{ csrf_field() }}
+    @csrf
 
-    <div class="col-md-{{$width['label']}}">
+    <div class="col-md-{{ $width['label'] }}">
     </div>
 
-    <div class="col-md-{{$width['field']}} d-flex align-items-center ">
-        @if(in_array('reset', $buttons))
-        <div class="flex-grow-1 ">
-            <button type="reset" class="btn btn-warning">{{ trans('admin.reset') }}</button>
-        </div>
-        @endif
+    <div class="col-md-{{ $width['field'] }}">
 
         @if(in_array('submit', $buttons))
+        <div class="btn-group float-end">
+            <button id="admin-submit" type="submit" class="btn btn-primary">{{ $submitLabel ?? __('admin.submit') }}</button>
+        </div>
 
-        <div class="btn-group">
-        @foreach($submit_redirects as $value => $redirect)
-            @if(in_array($redirect, $checkboxes))
-            <div class="form-check form-check-inline">
-                <input type="checkbox" class="form-check-input after-submit" id="after-save-{{$redirect}}" name="after-save" value="{{ $value }}" {{ ($default_check == $redirect) ? 'checked' : '' }}>
-                <label class="form-check-label" for="after-save-{{$redirect}}">{{ trans("admin.{$redirect}") }}</label>
-            </div>
-            @endif
+        @foreach($submitRedirects as $redirect)
+            <label class="float-end" style="margin: 5px 10px 0 0;">
+                <input type="checkbox" class="after-submit" name="after-save"
+                       value="{{ data_get($redirect, 'value') }}"
+                       {{ $default_check == data_get($redirect, 'value') ? 'checked' : '' }}>
+                {{ data_get($redirect, 'label') }}
+            </label>
         @endforeach
-        </div>
-
-        <div class="btn-group">
-            <button type="submit" class="btn btn-primary">{{ trans('admin.submit') }}</button>
-        </div>
 
         @endif
 
-
+        @if(in_array('reset', $buttons))
+        <div class="btn-group float-start">
+            <button type="reset" class="btn btn-warning">{{ __('admin.reset') }}</button>
+        </div>
+        @endif
     </div>
 </div>
-</footer>

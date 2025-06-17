@@ -2,25 +2,29 @@
 
 namespace OpenAdminCore\Admin\Grid;
 
+use OpenAdminCore\Admin\Grid;
+use OpenAdminCore\Admin\Middleware\Pjax;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
-use OpenAdminCore\Admin\Grid;
-use OpenAdminCore\Admin\Middleware\Pjax;
 
+/**
+ * @method orderBy($column, $direction = 'asc');
+ * @method where()
+ * @method whereIn($column, $values, $boolean = 'and', $not = false)
+ */
 class Model
 {
     /**
      * Eloquent model instance of the grid model.
-     *
-     * @var EloquentModel
+     * @var mixed
      */
     protected $model;
 
@@ -32,28 +36,42 @@ class Model
     /**
      * Array of queries of the eloquent model.
      *
-     * @var \Illuminate\Support\Collection
+     * @var \Illuminate\Support\Collection<int|string, mixed>
      */
     protected $queries;
 
     /**
      * Sort parameters of the model.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $sort;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $data = [];
 
-    /*
+    /**
      * 20 items per page as default.
      *
      * @var int
      */
     protected $perPage = 20;
+
+    /**
+     * per page arguments.
+     *
+     * @var array<mixed>
+     */
+    protected $perPageArguments = [];
+
+    /**
+     * handleInvalidPage. if false, disable call handleInvalidPage.
+     *
+     * @var boolean
+     */
+    protected $handleInvalidPage = true;
 
     /**
      * If the model use pagination.
@@ -79,7 +97,7 @@ class Model
     /**
      * Collection callback.
      *
-     * @var \Closure
+     * @var \Closure|null
      */
     protected $collectionCallback;
 
@@ -89,9 +107,14 @@ class Model
     protected $grid;
 
     /**
-     * @var Relation
+     * @var Relation<\Illuminate\Database\Eloquent\Model>|null
      */
     protected $relation;
+
+    /**
+     * @var array<mixed>
+     */
+    protected $eagerLoads = [];
 
     /**
      * Create a new grid model instance.
@@ -108,6 +131,22 @@ class Model
         $this->grid = $grid;
 
         $this->queries = collect();
+
+//        static::doNotSnakeAttributes($this->model);
+    }
+
+    /**
+     * Don't snake case attributes.
+     *
+     * @param EloquentModel $model
+     *
+     * @return void
+     */
+    protected static function doNotSnakeAttributes(EloquentModel $model)
+    {
+        $class = get_class($model);
+
+        $class::$snakeAttributes = false;
     }
 
     /**
@@ -132,6 +171,8 @@ class Model
      * Enable or disable pagination.
      *
      * @param bool $use
+     *
+     * @return void
      */
     public function usePaginate($use = true)
     {
@@ -189,6 +230,30 @@ class Model
     }
 
     /**
+     * Set per-page arguments.
+     * @param array<mixed> $arguments
+     * @return $this
+     */
+    public function setPerPageArguments($arguments)
+    {
+        $this->perPageArguments = $arguments;
+
+        return $this;
+    }
+
+    /**
+     * disable handleInvalidPage
+     *
+     * @return $this
+     */
+    public function disableHandleInvalidPage()
+    {
+        $this->handleInvalidPage = false;
+
+        return $this;
+    }
+
+    /**
      * Get the query string variable used to store the sort.
      *
      * @return string
@@ -237,7 +302,7 @@ class Model
     }
 
     /**
-     * @param Relation $relation
+     * @param Relation<\Illuminate\Database\Eloquent\Model> $relation
      *
      * @return $this
      */
@@ -249,7 +314,7 @@ class Model
     }
 
     /**
-     * @return Relation
+     * @return Relation<\Illuminate\Database\Eloquent\Model>|null
      */
     public function getRelation()
     {
@@ -259,20 +324,13 @@ class Model
     /**
      * Get constraints.
      *
-     * @return array|bool
+     * @return array<mixed>|bool
      */
     public function getConstraints()
     {
         if ($this->relation instanceof HasMany) {
             return [
                 $this->relation->getForeignKeyName() => $this->relation->getParentKey(),
-            ];
-        }
-
-        if ($this->relation instanceof MorphMany) {
-            return [
-                $this->relation->getForeignKeyName() => $this->relation->getParentKey(),
-                $this->relation->getMorphType()      => $this->relation->getMorphClass(),
             ];
         }
 
@@ -297,8 +355,8 @@ class Model
      * Build.
      *
      * @param bool $toArray
-     *
-     * @return array|Collection|mixed
+     * @return array|\Illuminate\Database\Eloquent\Builder|EloquentModel|LengthAwarePaginator|Collection|mixed|mixed[]
+     * @throws \Exception
      */
     public function buildData($toArray = true)
     {
@@ -336,7 +394,13 @@ class Model
         $this->queries->reject(function ($query) {
             return $query['method'] == 'paginate';
         })->each(function ($query) {
-            $this->model = $this->model->{$query['method']}(...$query['arguments']);
+            if(isset($query['callback'])){
+                $func = $query['callback'];
+                $func($this->model, $query['arguments']);
+            }
+            else{
+                $this->model = $this->model->{$query['method']}(...$query['arguments']);
+            }
         });
 
         return $this->model->chunk($count, $callback);
@@ -345,7 +409,7 @@ class Model
     /**
      * Add conditions to grid model.
      *
-     * @param array $conditions
+     * @param array<mixed> $conditions
      *
      * @return $this
      */
@@ -371,7 +435,7 @@ class Model
     /**
      * @throws \Exception
      *
-     * @return Collection
+     * @return Collection<int|string, mixed>|LengthAwarePaginator<array<string, mixed>>
      */
     protected function get()
     {
@@ -380,14 +444,20 @@ class Model
         }
 
         if ($this->relation) {
-            $this->model = $this->relation;
+            $this->model = $this->relation->getQuery();
         }
 
         $this->setSort();
         $this->setPaginate();
 
         $this->queries->unique()->each(function ($query) {
-            $this->model = call_user_func_array([$this->model, $query['method']], $query['arguments']);
+            if(isset($query['callback'])){
+                $func = $query['callback'];
+                $func($this->model, $query['arguments']);
+            }
+            else{
+                $this->model = call_user_func_array([$this->model, $query['method']], $query['arguments']);
+            }
         });
 
         if ($this->model instanceof Collection) {
@@ -395,7 +465,9 @@ class Model
         }
 
         if ($this->model instanceof LengthAwarePaginator) {
-            $this->handleInvalidPage($this->model);
+            if($this->handleInvalidPage){
+                $this->handleInvalidPage($this->model);
+            }
 
             return $this->model->getCollection();
         }
@@ -419,7 +491,13 @@ class Model
         $this->queries->reject(function ($query) {
             return in_array($query['method'], ['get', 'paginate']);
         })->each(function ($query) use (&$queryBuilder) {
-            $queryBuilder = $queryBuilder->{$query['method']}(...$query['arguments']);
+            if(isset($query['callback'])){
+                $func = $query['callback'];
+                $func($queryBuilder, $query['arguments']);
+            }
+            else{
+                $queryBuilder = $queryBuilder->{$query['method']}(...$query['arguments']);
+            }
         });
 
         return $queryBuilder;
@@ -428,7 +506,7 @@ class Model
     /**
      * If current page is greater than last page, then redirect to last page.
      *
-     * @param LengthAwarePaginator $paginator
+     * @param LengthAwarePaginator<array<string, mixed>> $paginator
      *
      * @return void
      */
@@ -474,9 +552,9 @@ class Model
     /**
      * Resolve perPage for pagination.
      *
-     * @param array|null $paginate
+     * @param array<mixed>|null|Model $paginate
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function resolvePerPage($paginate)
     {
@@ -484,18 +562,32 @@ class Model
             if (is_array($paginate)) {
                 $paginate['arguments'][0] = (int) $perPage;
 
+                if ($name = $this->grid->getName()) {
+                    if (!array_key_exists(1, $paginate['arguments'])) {
+                        $paginate['arguments'][1] = '*';
+                    }
+                    $paginate['arguments'][2] = "{$name}_page";
+                }
+        
                 return $paginate['arguments'];
             }
 
             $this->perPage = (int) $perPage;
         }
 
-        if (isset($paginate['arguments'][0])) {
-            return $paginate['arguments'];
+        if(!empty($this->perPageArguments)){
+            if(!isset($this->perPageArguments[0])){
+                $this->perPageArguments[0] = $this->perPage;
+            }
+            return $this->perPageArguments;
         }
 
         if ($name = $this->grid->getName()) {
             return [$this->perPage, ['*'], "{$name}_page"];
+        }
+
+        if (isset($paginate['arguments'][0])) {
+            return $paginate['arguments'];
         }
 
         return [$this->perPage];
@@ -504,7 +596,7 @@ class Model
     /**
      * Find query by method name.
      *
-     * @param $method
+     * @param mixed $method
      *
      * @return static
      */
@@ -522,43 +614,49 @@ class Model
      */
     protected function setSort()
     {
-        $this->sort = \request($this->sortName, []);
+        $this->sort = Request::get($this->sortName, []);
         if (!is_array($this->sort)) {
             return;
         }
 
-        $columnName = $this->sort['column'] ?? null;
-        if ($columnName === null || empty($this->sort['type'])) {
+        if (empty($this->sort['column']) || empty($this->sort['type'])) {
             return;
         }
 
-        $columnNameContainsDots = Str::contains($columnName, '.');
-        $isRelation = $this->queries->contains(function ($query) use ($columnName) {
-            return $query['method'] === 'with' && in_array($columnName, $query['arguments'], true);
-        });
-        if ($columnNameContainsDots === true && $isRelation) {
-            $this->setRelationSort($columnName);
-        } else {
+        $column = $this->getSortColumn();
+        // if sort as callback, Execute callback
+        /** @phpstan-ignore-next-line Call to function is_null() with Closure will always evaluate to false.  */
+        if($column && !is_null($column->getSortCallback())){
+            $this->setCallbackSort();
+            return;
+        }
+
+        $relationSort = false;
+        if(boolval(Arr::get($this->sort, 'direct'))){
+        }
+        elseif (Str::contains($this->sort['column'], '.')) {
+            $relationSort = true;
+        }
+        
+        if($relationSort){
+            $this->setRelationSort($this->sort['column']);
+        }
+        else {
             $this->resetOrderBy();
 
-            if ($columnNameContainsDots === true) {
-                //json
-                $this->resetOrderBy();
-                $explodedCols = explode('.', $this->sort['column']);
-                $col = array_shift($explodedCols);
-                $parts = implode('.', $explodedCols);
-                $columnName = "JSON_EXTRACT({$col}, '$.{$parts}')";
-            }
-
+            // Change type -1 to desc, 1 to asc.
+            $type = ($this->sort['type'] ?? 1) == -1 ? 'desc' : 'asc';
+    
             // get column. if contains "cast", set set column as cast
-            if (!empty($this->sort['cast'])) {
-                $column = "CAST({$columnName} AS {$this->sort['cast']}) {$this->sort['type']}";
+            if ($column && !is_null($cast = $column->getCast())) {
+                $columnName = \DB::getQueryGrammar()->wrap($this->sort['column']);
+                $column = "CAST({$columnName} AS {$cast}) {$type}";
                 $method = 'orderByRaw';
                 $arguments = [$column];
             } else {
-                $column = $columnName;
+                $column = $this->sort['column'];
                 $method = 'orderBy';
-                $arguments = [$column, $this->sort['type']];
+                $arguments = [$column, $type];
             }
 
             $this->queries->push([
@@ -566,6 +664,24 @@ class Model
                 'arguments' => $arguments,
             ]);
         }
+    }
+
+    /**
+     * Get sort column.
+     *
+     * @return Column|null
+     */
+    protected function getSortColumn(){
+        $column_name = $this->sort['column'] ?? null;
+        if(!$column_name){
+            return null;
+        }
+        return $this->grid->columns()->first(function($column) use($column_name){
+            if($column->getSortName() == $column_name){
+                return true;
+            }
+            return false;
+        });
     }
 
     /**
@@ -596,13 +712,40 @@ class Model
 
             $this->resetOrderBy();
 
+            // Change type -1 to desc, 1 to asc.
+            $type = ($this->sort['type'] ?? 1) == -1 ? 'desc' : 'asc';
+    
             $this->queries->push([
                 'method'    => 'orderBy',
                 'arguments' => [
                     $relation->getRelated()->getTable().'.'.$relationColumn,
-                    $this->sort['type'],
+                    $type,
                 ],
             ]);
+        }
+    }
+
+    /**
+     * Set callback sort.
+     * @return false|void
+     */
+    protected function setCallbackSort()
+    {
+        $column = $this->getSortColumn();
+        /** @phpstan-ignore-next-line Call to function is_null() with Closure will always evaluate to false. */
+        if($column && !is_null($func = $column->getSortCallback())){
+            $this->resetOrderBy();   
+
+            // Change type -1 to desc, 1 to asc.
+            $type = ($this->sort['type'] ?? 1) == -1 ? 'desc' : 'asc';
+    
+            // call callback sorting.
+            $this->queries->push([
+                'method' => null,
+                'callback' => $func,
+                'arguments' => [$type],
+            ]);
+            return false;
         }
     }
 
@@ -623,11 +766,11 @@ class Model
      *
      * `HasOne` and `BelongsTo` relation has different join parameters.
      *
-     * @param Relation $relation
+     * @param Relation<\Illuminate\Database\Eloquent\Model> $relation
      *
      * @throws \Exception
      *
-     * @return array
+     * @return array<mixed>
      */
     protected function joinParameters(Relation $relation)
     {
@@ -658,22 +801,75 @@ class Model
 
     /**
      * @param string $method
-     * @param array  $arguments
+     * @param array<mixed>  $arguments
      *
      * @return $this
      */
     public function __call($method, $arguments)
     {
-        $this->queries->push([
-            'method'    => $method,
-            'arguments' => $arguments,
-        ]);
+        $match = false;
+
+        // if matched method name, update
+        $this->queries = $this->queries->map(function($query) use($method, $arguments, &$match){
+            // rewrite value target methods
+            $rewriteTargets = ['paginate'];
+            
+            if(is_string($method) && $query['method'] == $method && in_array($method, $rewriteTargets)){
+                $query['arguments'] = $arguments;
+                $match = true;
+            }
+
+            return $query;
+        });
+
+        if(!$match){
+            $this->queries->push([
+                'method'    => $method,
+                'arguments' => $arguments,
+            ]);
+        }
 
         return $this;
     }
 
     /**
-     * @param $key
+     * Set the relationships that should be eager loaded.
+     *
+     * @param mixed $relations
+     *
+     * @return $this|Model
+     */
+    public function with($relations)
+    {
+        if (is_array($relations)) {
+            if (Arr::isAssoc($relations)) {
+                $relations = array_keys($relations);
+            }
+
+            $this->eagerLoads = array_merge($this->eagerLoads, $relations);
+        }
+
+        if (is_string($relations)) {
+            if (Str::contains($relations, '.')) {
+                $relations = explode('.', $relations)[0];
+            }
+
+            if (Str::contains($relations, ':')) {
+                $relations = explode(':', $relations)[0];
+            }
+
+            if (in_array($relations, $this->eagerLoads)) {
+                return $this;
+            }
+
+            $this->eagerLoads[] = $relations;
+        }
+
+        return $this->__call('with', (array) $relations);
+    }
+
+    /**
+     * @param mixed $key
      *
      * @return mixed
      */

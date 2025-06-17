@@ -2,8 +2,7 @@
 
 namespace OpenAdminCore\Admin\Grid\Filter;
 
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
+use OpenAdminCore\Admin\Facades\Admin;
 use OpenAdminCore\Admin\Grid\Filter;
 use OpenAdminCore\Admin\Grid\Filter\Presenter\Checkbox;
 use OpenAdminCore\Admin\Grid\Filter\Presenter\DateTime;
@@ -12,6 +11,8 @@ use OpenAdminCore\Admin\Grid\Filter\Presenter\Presenter;
 use OpenAdminCore\Admin\Grid\Filter\Presenter\Radio;
 use OpenAdminCore\Admin\Grid\Filter\Presenter\Select;
 use OpenAdminCore\Admin\Grid\Filter\Presenter\Text;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 
 /**
  * Class AbstractFilter.
@@ -24,7 +25,7 @@ use OpenAdminCore\Admin\Grid\Filter\Presenter\Text;
  * @method Text percentage($options = [])
  * @method Text ip()
  * @method Text mac()
- * @method Text phonenumber($mask = '19999999999')
+ * @method Text mobile($mask = '19999999999')
  * @method Text inputmask($options = [], $icon = '')
  * @method Text placeholder($placeholder = '')
  */
@@ -33,7 +34,7 @@ abstract class AbstractFilter
     /**
      * Element id.
      *
-     * @var array|string
+     * @var array<mixed>|string
      */
     protected $id;
 
@@ -45,12 +46,22 @@ abstract class AbstractFilter
     protected $label;
 
     /**
-     * @var array|string
+     * @var array<mixed>|string
      */
     protected $value;
 
     /**
-     * @var array|string
+     * @var bool
+     */
+    protected $isnull = false;
+
+    /**
+     * @var bool
+     */
+    protected $nullcheck = false;
+
+    /**
+     * @var array<mixed>|string
      */
     protected $defaultValue;
 
@@ -84,19 +95,14 @@ abstract class AbstractFilter
     protected $view = 'admin::filter.where';
 
     /**
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     public $group;
 
     /**
-     * @var bool
-     */
-    protected $ignore = false;
-
-    /**
      * AbstractFilter constructor.
      *
-     * @param $column
+     * @param mixed $column
      * @param string $label
      */
     public function __construct($column, $label = '')
@@ -136,8 +142,8 @@ abstract class AbstractFilter
      * Format name.
      *
      * @param string $column
-     *
-     * @return string
+     * 
+     * @return string|null
      */
     protected function formatName($column)
     {
@@ -160,9 +166,9 @@ abstract class AbstractFilter
     /**
      * Format id.
      *
-     * @param $columns
+     * @param array<mixed>|string $columns
      *
-     * @return array|string
+     * @return array<mixed>|string
      */
     protected function formatId($columns)
     {
@@ -171,6 +177,8 @@ abstract class AbstractFilter
 
     /**
      * @param Filter $filter
+     * 
+     * @return void
      */
     public function setParent(Filter $filter)
     {
@@ -224,16 +232,30 @@ abstract class AbstractFilter
     /**
      * Get query condition from filter.
      *
-     * @param array $inputs
+     * @param array<mixed> $inputs
      *
-     * @return array|mixed|null
+     * @return array<mixed>|mixed|null
+     */
+    public function getCondition($inputs)
+    {
+        $isnull = Arr::get($inputs, 'isnull-'. $this->column);
+
+        if (isset($isnull)) {
+            return $this->whereNullCondition();
+        }
+
+        return $this->condition($inputs);
+    }
+
+    /**
+     * Get query condition from filter.
+     *
+     * @param array<mixed> $inputs
+     *
+     * @return array<mixed>|mixed|null
      */
     public function condition($inputs)
     {
-        if ($this->ignore) {
-            return;
-        }
-
         $value = Arr::get($inputs, $this->column);
 
         if (!isset($value)) {
@@ -246,21 +268,21 @@ abstract class AbstractFilter
     }
 
     /**
-     * Ignore this query filter.
+     * Get query where null condition from filter.
      *
-     * @return $this
+     * @return array<mixed>|mixed|null
      */
-    public function ignore()
+    public function whereNullCondition()
     {
-        $this->ignore = true;
-
-        return $this;
+        $this->isnull = true;
+        $this->query = 'whereNull';
+        return $this->buildCondition($this->column);
     }
 
     /**
      * Select filter.
      *
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array<mixed>|\Illuminate\Support\Collection<int|string,mixed> $options
      *
      * @return Select
      */
@@ -270,7 +292,7 @@ abstract class AbstractFilter
     }
 
     /**
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array<mixed>|\Illuminate\Support\Collection<int|string, mixed> $options
      *
      * @return MultipleSelect
      */
@@ -280,7 +302,7 @@ abstract class AbstractFilter
     }
 
     /**
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array<mixed>|\Illuminate\Support\Collection<int|string, mixed> $options
      *
      * @return Radio
      */
@@ -290,7 +312,7 @@ abstract class AbstractFilter
     }
 
     /**
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array<mixed>|\Illuminate\Support\Collection<int|string, mixed> $options
      *
      * @return Checkbox
      */
@@ -302,9 +324,9 @@ abstract class AbstractFilter
     /**
      * Datetime filter.
      *
-     * @param array|\Illuminate\Support\Collection $options
+     * @param array<mixed>|\Illuminate\Support\Collection<int|string, mixed> $options
      *
-     * @return DateTime
+     * @return mixed
      */
     public function datetime($options = [])
     {
@@ -316,11 +338,9 @@ abstract class AbstractFilter
      *
      * @return DateTime
      */
-    public function date($options = [])
+    public function date()
     {
-        $options = array_merge(['format' => 'YYYY-MM-DD'], $options);
-
-        return $this->datetime($options);
+        return $this->datetime(['format' => 'YYYY-MM-DD']);
     }
 
     /**
@@ -328,11 +348,9 @@ abstract class AbstractFilter
      *
      * @return DateTime
      */
-    public function time($options = [])
+    public function time()
     {
-        $options = array_merge(['format' => 'HH:mm:ss', 'noCalendar'=>true], $options);
-
-        return $this->datetime($options);
+        return $this->datetime(['format' => 'HH:mm:ss']);
     }
 
     /**
@@ -340,11 +358,9 @@ abstract class AbstractFilter
      *
      * @return DateTime
      */
-    public function day($options = [])
+    public function day()
     {
-        $options = array_merge(['mask'=>'99', 'rightAlign'=> false], $options);
-
-        return $this->inputmask($options, 'calendar');
+        return $this->datetime(['format' => 'DD']);
     }
 
     /**
@@ -352,11 +368,9 @@ abstract class AbstractFilter
      *
      * @return DateTime
      */
-    public function month($options = [])
+    public function month()
     {
-        $options = array_merge(['mask'=>'99', 'rightAlign'=> false], $options);
-
-        return $this->inputmask($options, 'calendar');
+        return $this->datetime(['format' => 'MM']);
     }
 
     /**
@@ -364,11 +378,20 @@ abstract class AbstractFilter
      *
      * @return DateTime
      */
-    public function year($options = [])
+    public function year()
     {
-        $options = array_merge(['mask'=>'9999', 'rightAlign'=> false], $options);
+        return $this->datetime(['format' => 'YYYY']);
+    }
 
-        return $this->inputmask($options, 'calendar');
+    /**
+     * show isnull condition.
+     *
+     * @return $this
+     */
+    public function showNullCheck()
+    {
+        $this->nullcheck = true;
+        return $this;
     }
 
     /**
@@ -398,7 +421,7 @@ abstract class AbstractFilter
     /**
      * Set default value for filter.
      *
-     * @param null $default
+     * @param array<mixed>|string|null $default
      *
      * @return $this
      */
@@ -411,15 +434,10 @@ abstract class AbstractFilter
         return $this;
     }
 
-    public function getFilterBoxId()
-    {
-        return $this->parent ? $this->parent->getFilterID() : 'filter-box';
-    }
-
     /**
      * Get element id.
      *
-     * @return array|string
+     * @return array<mixed>|string
      */
     public function getId()
     {
@@ -455,7 +473,7 @@ abstract class AbstractFilter
     /**
      * Get value of current filter.
      *
-     * @return array|string
+     * @return array<mixed>|string
      */
     public function getValue()
     {
@@ -481,14 +499,13 @@ abstract class AbstractFilter
     /**
      * Build query condition of model relation.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     protected function buildRelationQuery()
     {
         $args = func_get_args();
 
-        $relation = substr($this->column, 0, strrpos($this->column, '.'));
-        $args[0] = last(explode('.', $this->column));
+        list($relation, $args[0]) = explode('.', $this->column);
 
         return ['whereHas' => [$relation, function ($relation) use ($args) {
             call_user_func_array([$relation, $this->query], $args);
@@ -498,16 +515,18 @@ abstract class AbstractFilter
     /**
      * Variables for filter view.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     protected function variables()
     {
         return array_merge([
             'id'        => $this->id,
-            'column'    => $this->column,
             'name'      => $this->formatName($this->column),
+            'column'    => $this->column,
             'label'     => $this->label,
             'value'     => $this->value ?: $this->defaultValue,
+            'nullcheck' => $this->nullcheck,
+            'isnull'    => $this->isnull? 'checked': '',
             'presenter' => $this->presenter(),
         ], $this->presenter()->variables());
     }
@@ -519,6 +538,9 @@ abstract class AbstractFilter
      */
     public function render()
     {
+        $script = "$('.isnull-{$this->column}').iCheck({checkboxClass:'icheckbox_minimal-blue'});";
+        Admin::script($script);
+
         return view($this->view, $this->variables());
     }
 
@@ -533,8 +555,8 @@ abstract class AbstractFilter
     }
 
     /**
-     * @param $method
-     * @param $params
+     * @param string $method
+     * @param array<mixed> $params
      *
      * @throws \Exception
      *

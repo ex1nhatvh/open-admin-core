@@ -2,6 +2,8 @@
 
 namespace OpenAdminCore\Admin\Show;
 
+use OpenAdminCore\Admin\Grid;
+use OpenAdminCore\Admin\Show;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,8 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use OpenAdminCore\Admin\Grid;
-use OpenAdminCore\Admin\Show;
 
 class Relation extends Field
 {
@@ -53,9 +53,9 @@ class Relation extends Field
      */
     public function __construct($name, $builder, $title = '')
     {
-        $this->name    = $name;
+        $this->name = $name;
         $this->builder = $builder;
-        $this->title   = $this->formatLabel($title);
+        $this->title = $this->formatLabel($title);
     }
 
     /**
@@ -75,13 +75,14 @@ class Relation extends Field
     /**
      * Get null renderable instance.
      *
-     * @return Renderable|__anonymous@1539
+     * @return Renderable
      */
     protected function getNullRenderable()
     {
         return new class() implements Renderable {
             public function render()
             {
+                return '';
             }
         };
     }
@@ -121,8 +122,7 @@ class Relation extends Field
 
             $renderable->setName($this->name)
                 ->setTitle($this->title)
-                ->setRelation($relation)
-                ->fixedFooter(false);
+                ->setRelation($relation);
         }
 
         return $renderable->render();

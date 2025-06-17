@@ -2,13 +2,14 @@
 
 namespace OpenAdminCore\Admin\Grid\Filter;
 
-use Illuminate\Support\Arr;
 use OpenAdminCore\Admin\Admin;
+use Illuminate\Support\Arr;
 
 class Between extends AbstractFilter
 {
     /**
      * {@inheritdoc}
+     * @var string
      */
     protected $view = 'admin::filter.between';
 
@@ -17,7 +18,7 @@ class Between extends AbstractFilter
      *
      * @param string $column
      *
-     * @return array|string
+     * @return array<mixed>|string
      */
     public function formatId($column)
     {
@@ -28,10 +29,11 @@ class Between extends AbstractFilter
 
     /**
      * Format two field names of this filter.
-     *
+     * @phpstan-ignore-next-line Return type (array<string, string>) of method OpenAdminCore\Admin\Grid\Filter\Between::formatName() should be compatible with return type (string|null) of method
+     * OpenAdminCore\Admin\Grid\Filter\AbstractFilter::formatName()
      * @param string $column
      *
-     * @return array
+     * @return array<string, string>
      */
     protected function formatName($column)
     {
@@ -53,16 +55,12 @@ class Between extends AbstractFilter
     /**
      * Get condition of this filter.
      *
-     * @param array $inputs
+     * @param array<mixed> $inputs
      *
      * @return mixed
      */
     public function condition($inputs)
     {
-        if ($this->ignore) {
-            return;
-        }
-
         if (!Arr::has($inputs, $this->column)) {
             return;
         }
@@ -91,7 +89,7 @@ class Between extends AbstractFilter
     }
 
     /**
-     * @param array $options
+     * @param array<string, mixed> $options
      *
      * @return $this
      */
@@ -105,30 +103,28 @@ class Between extends AbstractFilter
     }
 
     /**
-     * @param array $options
+     * @param array<string, mixed> $options
+     *
+     * @return void
      */
     protected function setupDatetime($options = [])
     {
         $options['format'] = Arr::get($options, 'format', 'YYYY-MM-DD HH:mm:ss');
         $options['locale'] = Arr::get($options, 'locale', config('app.locale'));
-        $options['allowInput'] = Arr::get($options, 'allowInput', true);
 
         $startOptions = json_encode($options);
         $endOptions = json_encode($options + ['useCurrent' => false]);
 
-        $script = <<<SCRIPT
-        let inst_{$this->id['start']} = flatpickr('#{$this->id['start']}',$startOptions);
-        let inst_{$this->id['end']} = flatpickr('#{$this->id['end']}',$endOptions);
-
-        inst_{$this->id['start']}.config.onChange.push(function(selectedDates, dateStr, instance) {
-            inst_{$this->id['end']}.set("minDate",dateStr);
-        });
-
-        inst_{$this->id['end']}.config.onChange.push(function(selectedDates, dateStr, instance) {
-            inst_{$this->id['start']}.set("maxDate",dateStr);
-        });
-
-SCRIPT;
+        $script = <<<EOT
+            $('#{$this->id['start']}').datetimepicker($startOptions);
+            $('#{$this->id['end']}').datetimepicker($endOptions);
+            $("#{$this->id['start']}").on("dp.change", function (e) {
+                $('#{$this->id['end']}').data("DateTimePicker").minDate(e.date);
+            });
+            $("#{$this->id['end']}").on("dp.change", function (e) {
+                $('#{$this->id['start']}').data("DateTimePicker").maxDate(e.date);
+            });
+EOT;
 
         Admin::script($script);
     }

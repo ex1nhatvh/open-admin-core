@@ -8,7 +8,7 @@ use OpenAdminCore\Admin\Grid\Tools\Header;
 trait HasHeader
 {
     /**
-     * @var Closure
+     * @var Closure|null
      */
     protected $header;
 

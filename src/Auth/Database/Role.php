@@ -4,18 +4,15 @@ namespace OpenAdminCore\Admin\Auth\Database;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use OpenAdminCore\Admin\Traits\DefaultDatetimeFormat;
 
 class Role extends Model
 {
-    use DefaultDatetimeFormat;
-
     protected $fillable = ['name', 'slug'];
 
     /**
      * Create a new Eloquent model instance.
      *
-     * @param array $attributes
+     * @param array<mixed> $attributes
      */
     public function __construct(array $attributes = [])
     {
@@ -32,8 +29,9 @@ class Role extends Model
      * A role belongs to many users.
      *
      * @return BelongsToMany
+     * @phpstan-ignore-next-line Method OpenAdminCore\Admin\Auth\Database\Role::administrators() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsToMany does not specify its types: TRelatedModel
      */
-    public function administrators(): BelongsToMany
+    public function administrators() : BelongsToMany
     {
         $pivotTable = config('admin.database.role_users_table');
 
@@ -46,8 +44,9 @@ class Role extends Model
      * A role belongs to many permissions.
      *
      * @return BelongsToMany
+     * @phpstan-ignore-next-line Method OpenAdminCore\Admin\Auth\Database\Role::administrators() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsToMany does not specify its types: TRelatedModel
      */
-    public function permissions(): BelongsToMany
+    public function permissions() : BelongsToMany
     {
         $pivotTable = config('admin.database.role_permissions_table');
 
@@ -60,8 +59,9 @@ class Role extends Model
      * A role belongs to many menus.
      *
      * @return BelongsToMany
+     * @phpstan-ignore-next-line Method OpenAdminCore\Admin\Auth\Database\Role::administrators() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsToMany does not specify its types: TRelatedModel
      */
-    public function menus(): BelongsToMany
+    public function menus() : BelongsToMany
     {
         $pivotTable = config('admin.database.role_menu_table');
 
@@ -77,7 +77,7 @@ class Role extends Model
      *
      * @return bool
      */
-    public function can(string $permission): bool
+    public function can(string $permission) : bool
     {
         return $this->permissions()->where('slug', $permission)->exists();
     }
@@ -89,7 +89,7 @@ class Role extends Model
      *
      * @return bool
      */
-    public function cannot(string $permission): bool
+    public function cannot(string $permission) : bool
     {
         return !$this->can($permission);
     }

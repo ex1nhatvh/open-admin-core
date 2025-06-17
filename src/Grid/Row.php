@@ -8,51 +8,43 @@ use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Arr;
 
+/**
+ * @property mixed $model
+ */
 class Row
 {
     /**
      * Row number.
      *
-     * @var
+     * @var mixed
      */
     public $number;
 
     /**
      * Row data.
      *
-     * @var
+     * @var mixed
      */
     protected $data;
 
     /**
      * Attributes of row.
      *
-     * @var array
+     * @var array<mixed>
      */
     protected $attributes = [];
 
     /**
-     * @var string
-     */
-    protected $key;
-
-    /**
-     * Row constructor.
+     * Constructor.
      *
      * @param mixed $number
-     * @param array $data
-     * @param mixed $key
+     * @param mixed $data
      */
-    public function __construct($number, $data, $key)
+    public function __construct($number, $data)
     {
-        $this->data = $data;
         $this->number = $number;
-        $this->key = $key;
 
-        $this->attributes = [
-            'data-key' => $key,
-            'class'    => 'row-'.$key,
-        ];
+        $this->data = $data;
     }
 
     /**
@@ -62,7 +54,7 @@ class Row
      */
     public function getKey()
     {
-        return $this->key;
+        return $this->model->getKey();
     }
 
     /**
@@ -84,17 +76,39 @@ class Row
      */
     public function getColumnAttributes($column)
     {
-        if ($attributes = Column::getAttributes($column, $this->getKey())) {
+        if ($attributes = Column::getAttributes($column)) {
             return $this->formatHtmlAttribute($attributes);
         }
 
         return '';
     }
 
+
+    /**
+     * Get column classes.
+     *
+     * @param string $column name
+     *
+     * @return string
+     */
+    public function getColumnClasses($column)
+    {
+        $classes = Column::getClasses($column) ?? [];
+        if(is_string($classes))
+            $classes = [$classes];
+
+
+        $classes[] = "column-$column";
+        /** @phpstan-ignore-next-line Unable to resolve the template type TValue in call to function collect */
+        return collect($classes)->unique()->map(function($class){
+            return e($class);
+        })->implode(' ');
+    }
+
     /**
      * Format attributes to html.
      *
-     * @param array $attributes
+     * @param array<mixed> $attributes
      *
      * @return string
      */
@@ -102,7 +116,7 @@ class Row
     {
         $attrArr = [];
         foreach ($attributes as $name => $val) {
-            $attrArr[] = "$name=\"$val\"";
+            $attrArr[] = $name.'="'.e($val).'"';
         }
 
         return implode(' ', $attrArr);
@@ -111,22 +125,25 @@ class Row
     /**
      * Set attributes.
      *
-     * @param array $attributes
+     * @param array<mixed> $attributes
+     *
+     * @return void
      */
     public function setAttributes(array $attributes)
     {
-        $this->attributes = array_merge($this->attributes, $attributes);
+        $this->attributes = $attributes;
     }
 
     /**
      * Set style of the row.
      *
-     * @param array|string $style
+     * @param array<mixed>|string $style
+     * @return void
      */
     public function style($style)
     {
         if (is_array($style)) {
-            $style = implode(';', array_map(function ($key, $val) {
+            $style = implode('', array_map(function ($key, $val) {
                 return "$key:$val";
             }, array_keys($style), array_values($style)));
         }

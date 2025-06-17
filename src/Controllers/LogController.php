@@ -2,9 +2,9 @@
 
 namespace OpenAdminCore\Admin\Controllers;
 
-use Illuminate\Support\Arr;
 use OpenAdminCore\Admin\Auth\Database\OperationLog;
 use OpenAdminCore\Admin\Grid;
+use Illuminate\Support\Arr;
 
 class LogController extends AdminController
 {
@@ -26,27 +26,27 @@ class LogController extends AdminController
         $grid->model()->orderBy('id', 'DESC');
 
         $grid->column('id', 'ID')->sortable();
-        $grid->column('user.name', trans('admin.name'));
-        $grid->column('method', trans('admin.http.method'))->display(function ($method) {
+        $grid->column('user.name', 'User');
+        $grid->column('method')->display(function ($method) {
             $color = Arr::get(OperationLog::$methodColors, $method, 'grey');
 
             return "<span class=\"badge bg-$color\">$method</span>";
-        })->sortable();
-        $grid->column('path', trans('admin.http.path'))->label('info')->sortable();
-        $grid->column('ip')->label('primary')->sortable();
-        $grid->column('input', trans('admin.input'))->display(function ($input) {
+        });
+        $grid->column('path')->label('info');
+        $grid->column('ip')->label('primary');
+        $grid->column('input')->display(function ($input) {
             $input = json_decode($input, true);
             $input = Arr::except($input, ['_pjax', '_token', '_method', '_previous_']);
             if (empty($input)) {
                 return '<code>{}</code>';
             }
 
-            return '<pre>'.json_encode($input, JSON_PRETTY_PRINT | JSON_HEX_TAG).'</pre>';
-        })->sortable();
+            return '<pre>'.json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE).'</pre>';
+        });
 
-        $grid->column('created_at', trans('admin.created_at'))->sortable();
+        $grid->column('created_at', trans('admin.created_at'));
 
-        $grid->actions(function (Grid\Displayers\Actions\Actions $actions) {
+        $grid->actions(function (Grid\Displayers\Actions $actions) {
             $actions->disableEdit();
             $actions->disableView();
         });
@@ -66,12 +66,12 @@ class LogController extends AdminController
     }
 
     /**
-     * @param mixed $id
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
      */
     public function destroy($id)
     {
+        /** @phpstan-ignore-next-line Parameter #2 $string of function explode expects string, int given. */
         $ids = explode(',', $id);
 
         if (OperationLog::destroy(array_filter($ids))) {

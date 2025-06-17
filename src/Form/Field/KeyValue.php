@@ -2,23 +2,23 @@
 
 namespace OpenAdminCore\Admin\Form\Field;
 
-use Illuminate\Support\Arr;
+use OpenAdminCore\Admin\Admin;
 use OpenAdminCore\Admin\Form\Field;
-use OpenAdminCore\Admin\Form\Field\Traits\Sortable;
+use Illuminate\Contracts\Validation\Factory;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Support\Arr;
 
 class KeyValue extends Field
 {
-    use Sortable;
-
     /**
-     * @var array
+     * @var array<string, string>
      */
     protected $value = ['' => ''];
 
     /**
      * Fill data to the field.
      *
-     * @param array $data
+     * @param array<mixed> $data
      *
      * @return void
      */
@@ -33,6 +33,8 @@ class KeyValue extends Field
 
     /**
      * {@inheritdoc}
+     * @param array<mixed> $input
+     * @return bool|Validator|Factory
      */
     public function getValidator(array $input)
     {
@@ -62,50 +64,42 @@ class KeyValue extends Field
         return validator($input, $rules, $this->getValidationMessages(), $attributes);
     }
 
+    /**
+     * @return void
+     */
     protected function setupScript()
     {
-        $this->script = <<<JS
+        $this->script = <<<SCRIPT
 
-document.querySelector('.{$this->column}-add').addEventListener('click', function () {
-    var tpl = document.querySelector('template.{$this->column}-tpl').innerHTML;
-    var clone = htmlToElement(tpl);
-    document.querySelector('tbody.kv-{$this->column}-table').appendChild(clone);
+$('.{$this->column}-add').on('click', function () {
+    var tpl = $('template.{$this->column}-tpl').html();
+    $('tbody.kv-{$this->column}-table').append(tpl);
 });
 
-document.querySelector('tbody.kv-{$this->column}-table').addEventListener('click', function (event) {
-    if (event.target.classList.contains('{$this->column}-remove')){
-        event.target.closest('tr').remove();
-    }
+$('tbody').on('click', '.{$this->column}-remove', function () {
+    $(this).closest('tr').remove();
 });
 
-JS;
+SCRIPT;
     }
 
+    /**
+     * @param array<mixed> $value
+     * @return array<mixed>
+     */
     public function prepare($value)
     {
-        $value = parent::prepare($value);
-        if (empty($value)) {
-            return [];
-        }
-
         return array_combine($value['keys'], $value['values']);
     }
 
-    /*
-    public function beforeRender()
-    {
-        if (!in_array(Arr::get($this->form->model->getCasts(),$this->column),["json","array"]) && ){
-            throw new \Exception("The column ($this->column) of this Model has no casts defined as: Json or Array");
-        };
-    }
-    */
-
+    /**
+     * @return string
+     */
     public function render()
     {
-        $this->addSortable('.kv-', '-table');
-        view()->share('options', $this->options);
-
         $this->setupScript();
+
+        Admin::style('td .form-group {margin-bottom: 0 !important;}');
 
         return parent::render();
     }

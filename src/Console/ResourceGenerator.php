@@ -2,8 +2,8 @@
 
 namespace OpenAdminCore\Admin\Console;
 
+use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 class ResourceGenerator
 {
@@ -13,7 +13,7 @@ class ResourceGenerator
     protected $model;
 
     /**
-     * @var array
+     * @var array<string, string>
      */
     protected $formats = [
         'form_field'  => "\$form->%s('%s', __('%s'))",
@@ -22,7 +22,7 @@ class ResourceGenerator
     ];
 
     /**
-     * @var array
+     * @var array<string,array<string>>
      */
     private $doctrineTypeMapping = [
         'string' => [
@@ -33,17 +33,17 @@ class ResourceGenerator
     ];
 
     /**
-     * @var array
+     * @var array<string, string>
      */
     protected $fieldTypeMapping = [
-        'ip'          => 'ip',
-        'email'       => 'email|mail',
-        'password'    => 'password|pwd',
-        'url'         => 'url|link|src|href',
-        'phonenumber' => 'mobile|phone',
-        'color'       => 'color|rgb',
-        'image'       => 'image|img|avatar|pic|picture|cover',
-        'file'        => 'file|attachment',
+        'ip'       => 'ip',
+        'email'    => 'email|mail',
+        'password' => 'password|pwd',
+        'url'      => 'url|link|src|href',
+        'mobile'   => 'mobile|phone',
+        'color'    => 'color|rgb',
+        'image'    => 'image|img|avatar|pic|picture|cover',
+        'file'     => 'file|attachment',
     ];
 
     /**
@@ -84,12 +84,12 @@ class ResourceGenerator
         $output = '';
 
         foreach ($this->getTableColumns() as $column) {
-            $name = $column['name'];
+            $name = $column->getName();
             if (in_array($name, $reservedColumns)) {
                 continue;
             }
-            $type = $column['type'];
-            $default = $column['default'];
+            $type = $column->getType()->getName();
+            $default = $column->getDefault();
 
             $defaultValue = '';
 
@@ -162,12 +162,16 @@ class ResourceGenerator
         return $output;
     }
 
+    /**
+     * @return string
+     * @throws \Exception
+     */
     public function generateShow()
     {
         $output = '';
 
         foreach ($this->getTableColumns() as $column) {
-            $name = $column['name'];
+            $name = $column->getName();
 
             // set column label
             $label = $this->formatLabel($name);
@@ -180,12 +184,16 @@ class ResourceGenerator
         return $output;
     }
 
+    /**
+     * @return string
+     * @throws \Exception
+     */
     public function generateGrid()
     {
         $output = '';
 
         foreach ($this->getTableColumns() as $column) {
-            $name = $column['name'];
+            $name = $column->getName();
             $label = $this->formatLabel($name);
 
             $output .= sprintf($this->formats['grid_column'], $name, $label);
@@ -195,6 +203,9 @@ class ResourceGenerator
         return $output;
     }
 
+    /**
+     * @return array<string>
+     */
     protected function getReservedColumns()
     {
         return [
@@ -208,23 +219,40 @@ class ResourceGenerator
     /**
      * Get columns of a giving model.
      *
-     * @return array
+     * @throws \Exception
+     *
+     * @return \Doctrine\DBAL\Schema\Column[]
      */
     protected function getTableColumns()
     {
-        $listColumn = [];
-        // get prefix and name table
+        if (!$this->model->getConnection()->isDoctrineAvailable()) {
+            throw new \Exception(
+                'You need to require doctrine/dbal: ~2.3 in your own composer.json to get database columns. '
+            );
+        }
+
         $table = $this->model->getConnection()->getTablePrefix().$this->model->getTable();
-        // get schema manager
-        $schema = Schema::getColumns($table);
-        if (!empty($schema))
-        {
-            foreach ($schema as $column)
-            {
-                $listColumn[$column['name']] = $column;
+        /**
+         * @var AbstractSchemaManager $schema
+         * @phpstan-ignore-next-line Maybe not use $table argument
+         */
+        $schema = $this->model->getConnection()->getDoctrineSchemaManager($table);
+
+        // custom mapping the types that doctrine/dbal does not support
+        $databasePlatform = $schema->getDatabasePlatform();
+
+        foreach ($this->doctrineTypeMapping as $doctrineType => $dbTypes) {
+            foreach ($dbTypes as $dbType) {
+                $databasePlatform->registerDoctrineTypeMapping($dbType, $doctrineType);
             }
         }
-        return $listColumn;
+
+        $database = null;
+        if (strpos($table, '.')) {
+            list($database, $table) = explode('.', $table);
+        }
+
+        return $schema->listTableColumns($table, $database);
     }
 
     /**

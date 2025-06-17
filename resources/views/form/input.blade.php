@@ -1,23 +1,26 @@
-@include("admin::form._header")
+<div class="{{$viewClass['form-group']}} {!! !$errors->has($errorKey) ? '' : 'has-error' !!}">
 
-        <div class="input-group">
+    <label for="{{$id}}" class="{{$viewClass['label']}} control-label text-lg-end pt-2">{{$label}}</label>
+
+    <div class="{{$viewClass['field']}}">
+
+        @include('admin::form.error')
+
+        <div class="input-group flex-nowrap ">
 
             @if ($prepend)
-            <span class="input-group-text with-icon">{!! $prepend !!}</span>
+            <span class="input-group-addon d-flex align-items-center justify-content-center">{!! $prepend !!}</span>
             @endif
 
             <input {!! $attributes !!} />
 
             @if ($append)
-                <span class="input-group-text clearfix">{!! $append !!}</span>
+                <span class="input-group-addon clearfix">{!! $append !!}</span>
             @endif
-
-            @isset($btn)
-                <span class="input-group-btn">
-                  {!! $btn !!}
-                </span>
-            @endisset
 
         </div>
 
-@include("admin::form._footer")
+        @include('admin::form.help-block')
+
+    </div>
+</div>

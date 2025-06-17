@@ -2,8 +2,8 @@
 
 namespace OpenAdminCore\Admin\Controllers;
 
-use Illuminate\Support\Arr;
 use OpenAdminCore\Admin\Admin;
+use Illuminate\Support\Arr;
 
 class Dashboard
 {
@@ -48,53 +48,48 @@ class Dashboard
         $extensions = [
             'helpers' => [
                 'name' => 'open-admin-ext/helpers',
-                'link' => 'https://github.com/dedermus/helpers',
-                'icon' => 'cogs',
+                'link' => 'https://github.com/open-admin-org/helpers',
+                'icon' => 'gears',
             ],
             'log-viewer' => [
                 'name' => 'open-admin-ext/log-viewer',
-                'link' => 'https://github.com/dedermus/log-viewer',
+                'link' => 'https://github.com/open-admin-org/log-viewer',
                 'icon' => 'database',
             ],
             'backup' => [
                 'name' => 'open-admin-ext/backup',
-                'link' => 'https://github.com/dedermus/backup',
+                'link' => 'https://github.com/open-admin-org/backup',
                 'icon' => 'copy',
             ],
             'config' => [
                 'name' => 'open-admin-ext/config',
-                'link' => 'https://github.com/dedermus/config',
+                'link' => 'https://github.com/open-admin-org/config',
                 'icon' => 'toggle-on',
             ],
             'api-tester' => [
                 'name' => 'open-admin-ext/api-tester',
-                'link' => 'https://github.com/dedermus/api-tester',
-                'icon' => 'sliders-h',
+                'link' => 'https://github.com/open-admin-org/api-tester',
+                'icon' => 'sliders',
             ],
             'media-manager' => [
                 'name' => 'open-admin-ext/media-manager',
-                'link' => 'https://github.com/dedermus/media-manager',
+                'link' => 'https://github.com/open-admin-org/media-manager',
                 'icon' => 'file',
             ],
             'scheduling' => [
                 'name' => 'open-admin-ext/scheduling',
-                'link' => 'https://github.com/dedermus/scheduling',
-                'icon' => 'clock',
+                'link' => 'https://github.com/open-admin-org/scheduling',
+                'icon' => 'clock-o',
             ],
             'reporter' => [
                 'name' => 'open-admin-ext/reporter',
-                'link' => 'https://github.com/dedermus/reporter',
+                'link' => 'https://github.com/open-admin-org/reporter',
                 'icon' => 'bug',
             ],
             'redis-manager' => [
                 'name' => 'open-admin-ext/redis-manager',
-                'link' => 'https://github.com/dedermus/redis-manager',
+                'link' => 'https://github.com/open-admin-org/redis-manager',
                 'icon' => 'flask',
-            ],
-            'grid-sortable' => [
-                'name' => 'open-admin-ext/grid-sortable',
-                'link' => 'https://github.com/dedermus/grid-sortable',
-                'icon' => 'arrows-alt-v',
             ],
         ];
 
@@ -115,6 +110,8 @@ class Dashboard
 
         $dependencies = json_decode($json, true)['require'];
 
-        return Admin::component('admin::dashboard.dependencies', compact('dependencies'));
+        Admin::script("$('.dependencies').slimscroll({height:'510px',size:'3px'});");
+
+        return view('admin::dashboard.dependencies', compact('dependencies'));
     }
 }

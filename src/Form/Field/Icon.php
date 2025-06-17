@@ -4,23 +4,38 @@ namespace OpenAdminCore\Admin\Form\Field;
 
 class Icon extends Text
 {
-    protected $default = '';
+    /**
+     * @var string
+     */
+    protected $default = 'fa-pencil';
 
-    protected static $js = [
-        '/vendor/open-admin/fields/icon-picker/icon-picker.js',
+    /**
+     * @var array<string>
+     */
+    protected static $css = [
+        '/vendor/open-admin/fontawesome-iconpicker/dist/css/fontawesome-iconpicker.min.css',
     ];
 
+    /**
+     * @var array<string>
+     */
+    protected static $js = [
+        '/vendor/open-admin/fontawesome-iconpicker/dist/js/fontawesome-iconpicker-customize.js',
+    ];
+
+    /**
+     * @return string
+     */
     public function render()
     {
-        $this->script = <<<JS
-new Iconpicker(document.querySelector("{$this->getElementClassSelector()}"),{
-    showSelectedIn: document.querySelector("{$this->getElementClassSelector()}-icon"),
-    defaultValue: '{$this->value}',
-});
-JS;
+        $this->script = <<<EOT
 
-        $this->prepend('<span class="'.substr($this->getElementClassSelector(), 1).'-icon"><i class="'.$this->value.'"></i></span>');
-        $this->style('max-width', '160px');
+$('{$this->getElementClassSelector()}').iconpicker({placement:'bottomLeft'});
+
+EOT;
+
+        $this->prepend('<i class="fa fa-pencil fa-fw"></i>')
+            ->defaultAttribute('style', 'width: 140px');
 
         return parent::render();
     }

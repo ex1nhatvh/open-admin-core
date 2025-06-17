@@ -9,7 +9,6 @@ use Illuminate\Support\Str;
 class Scope implements Renderable
 {
     const QUERY_NAME = '_scope_';
-    const SEPARATOR = '_separator_';
 
     /**
      * @var string
@@ -22,14 +21,14 @@ class Scope implements Renderable
     protected $label = '';
 
     /**
-     * @var Collection
+     * @var Collection<int|string, mixed>
      */
     protected $queries;
 
     /**
      * Scope constructor.
      *
-     * @param $key
+     * @param string $key
      * @param string $label
      */
     public function __construct($key, $label = '')
@@ -53,7 +52,7 @@ class Scope implements Renderable
     /**
      * Get model query conditions.
      *
-     * @return array
+     * @return array<mixed>
      */
     public function condition()
     {
@@ -67,32 +66,14 @@ class Scope implements Renderable
      */
     public function render()
     {
-        if ($this->key == static::SEPARATOR) {
-            return '<li role="separator" class="divider"></li>';
-        }
-
         $url = request()->fullUrlWithQuery([static::QUERY_NAME => $this->key]);
 
-        return "<li><a class='dropdown-item' href=\"{$url}\">{$this->label}</a></li>";
-    }
-
-    /**
-     * Set this scope as default.
-     *
-     * @return self
-     */
-    public function asDefault()
-    {
-        if (!request()->input('_scope_')) {
-            request()->merge(['_scope_' => $this->key]);
-        }
-
-        return $this;
+        return "<li><a href=\"{$url}\">{$this->label}</a></li>";
     }
 
     /**
      * @param string $method
-     * @param array  $arguments
+     * @param array<mixed>  $arguments
      *
      * @return $this
      */

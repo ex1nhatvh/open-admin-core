@@ -1,7 +1,30 @@
-@include("admin::form._header")
+<div class="{{$viewClass['form-group']}}">
+    <label class="{{$viewClass['label']}} control-label text-lg-end pt-2" style="padding-top:10px;">{{$label}}</label>
+    <div class="{{$viewClass['field']}} pt-2">
+        <div class="no-margin">
+            <!-- /.box-header -->
+            <div class="box-body {{$displayClass ?? null}}" style="padding-left:0; padding-bottom:0;">
+                <span class="{{$class}}" {!! $attributes  !!}>
+                @if(isset($displayText))
+                    @if(!$escape)
+                    {!! $displayText !!}
+                    @else
+                    {{ $displayText }}
+                    @endif
+                @else
+                    @if(!$escape)
+                    {!! $value !!}
+                    @else
+                    {{ $value }}
+                    @endif
+                @endif
+                </span>
+            </div><!-- /.box-body -->
+        </div>
 
-    <div class="form-value">
-        {!! $value !!}&nbsp;
+        @include('admin::form.help-block')
+
     </div>
+</div>
 
-@include("admin::form._footer")
+

@@ -11,7 +11,7 @@ class FormCommand extends GeneratorCommand
      *
      * @var string
      */
-    protected $signature = 'admin:form {name}
+    protected $signature = 'admin:form {name} 
         {--title=}
         {--step}
         {--namespace=}';

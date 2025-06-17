@@ -14,9 +14,16 @@ class Row implements Buildable, Renderable
     /**
      * row classes.
      *
-     * @var array
+     * @var array<string>
      */
     protected $class = [];
+
+    /**
+     * Element attributes.
+     *
+     * @var array<mixed>
+     */
+    protected $attributes = [];
 
     /**
      * Row constructor.
@@ -34,7 +41,9 @@ class Row implements Buildable, Renderable
      * Add a column.
      *
      * @param int $width
-     * @param $content
+     * @param mixed $content
+     *
+     * @return void
      */
     public function column($width, $content)
     {
@@ -48,7 +57,9 @@ class Row implements Buildable, Renderable
     /**
      * Add class in row.
      *
-     * @param array|string $class
+     * @param array<string>|string $class
+     *
+     * @return $this
      */
     public function class($class)
     {
@@ -62,7 +73,38 @@ class Row implements Buildable, Renderable
     }
 
     /**
+     * Add html attributes to elements.
+     *
+     * @param array<mixed>|string $attribute
+     * @param mixed        $value
+     *
+     * @return $this
+     */
+    public function attribute($attribute, $value = null)
+    {
+        if (is_array($attribute)) {
+            $this->attributes = array_merge($this->attributes, $attribute);
+        } else {
+            $this->attributes[$attribute] = (string) $value;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get field attributes.
+     *
+     * @return array<mixed>
+     */
+    public function getAttributes()
+    {
+        return $this->attributes;
+    }
+
+    /**
      * @param Column $column
+     *
+     * @return void
      */
     protected function addColumn(Column $column)
     {
@@ -71,6 +113,8 @@ class Row implements Buildable, Renderable
 
     /**
      * Build row column.
+     *
+     * @return void
      */
     public function build()
     {
@@ -85,16 +129,36 @@ class Row implements Buildable, Renderable
 
     /**
      * Start row.
+     *
+     * @return void
      */
     protected function startRow()
     {
         $class = $this->class;
         $class[] = 'row';
-        echo '<div class="'.implode(' ', $class).'">';
+        echo '<div class="'.implode(' ', $class).'" ' . $this->formatAttributes() . '>';
+    }
+
+    /**
+     * Format the field attributes.
+     *
+     * @return string
+     */
+    protected function formatAttributes()
+    {
+        $html = [];
+
+        foreach ($this->attributes as $name => $value) {
+            $html[] = $name.'="'.e($value).'"';
+        }
+
+        return implode(' ', $html);
     }
 
     /**
      * End column.
+     *
+     * @return void
      */
     protected function endRow()
     {

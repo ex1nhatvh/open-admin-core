@@ -2,13 +2,14 @@
 
 namespace OpenAdminCore\Admin\Widgets;
 
+use OpenAdminCore\Admin\Widgets\Navbar\RefreshButton;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\Support\Renderable;
 
 class Navbar implements Renderable
 {
     /**
-     * @var array
+     * @var array<mixed>
      */
     protected $elements = [];
 
@@ -24,7 +25,7 @@ class Navbar implements Renderable
     }
 
     /**
-     * @param $element
+     * @param mixed $element
      *
      * @return $this
      */
@@ -36,7 +37,7 @@ class Navbar implements Renderable
     }
 
     /**
-     * @param $element
+     * @param mixed $element
      *
      * @return $this
      */
@@ -48,7 +49,7 @@ class Navbar implements Renderable
     }
 
     /**
-     * @param $element
+     * @param mixed $element
      *
      * @return Navbar
      *
@@ -67,7 +68,7 @@ class Navbar implements Renderable
     public function render($part = 'right')
     {
         if ($part == 'right') {
-            //$this->right(new RefreshButton());
+            $this->right(new RefreshButton());
         }
 
         if (!isset($this->elements[$part]) || $this->elements[$part]->isEmpty()) {

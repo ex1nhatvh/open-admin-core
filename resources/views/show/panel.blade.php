@@ -1,8 +1,8 @@
-<div class="card border-{{ $style }}" @if ($style!= 'none')style="border-top:2px solid;" @endif>
-    <div class="card-header with-border">
-        <h3 class="card-title">{{ $title }}</h3>
+<div class="box card p-2 box-{{ $style }}">
+    <div class="box-header with-border d-flex justify-content-between border-bottom p-1 pb-2">
+        <h3 class="box-title">{{ $title }}</h3>
 
-        <div class="card-tools">
+        <div class="box-tools d-flex flex-row-reverse">
             {!! $tools !!}
         </div>
     </div>
@@ -10,9 +10,9 @@
     <!-- form start -->
     <div class="form-horizontal">
 
-        <div class="card-body">
+        <div class="box-body">
 
-            <div class="row">
+            <div class="fields-group">
 
                 @foreach($fields as $field)
                     {!! $field->render() !!}

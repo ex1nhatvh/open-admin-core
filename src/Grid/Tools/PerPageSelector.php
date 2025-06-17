@@ -4,11 +4,12 @@ namespace OpenAdminCore\Admin\Grid\Tools;
 
 use OpenAdminCore\Admin\Admin;
 use OpenAdminCore\Admin\Grid;
+use Illuminate\Support\Collection;
 
 class PerPageSelector extends AbstractTool
 {
     /**
-     * @var string
+     * @var int
      */
     protected $perPage;
 
@@ -38,7 +39,7 @@ class PerPageSelector extends AbstractTool
     {
         $this->perPageName = $this->grid->model()->getPerPageName();
 
-        $this->perPage = (int) \request()->input(
+        $this->perPage = (int) app('request')->input(
             $this->perPageName,
             $this->grid->perPage
         );
@@ -47,7 +48,7 @@ class PerPageSelector extends AbstractTool
     /**
      * Get options for selector.
      *
-     * @return static
+     * @return Collection<int, int>
      */
     public function getOptions()
     {
@@ -69,7 +70,7 @@ class PerPageSelector extends AbstractTool
 
         $options = $this->getOptions()->map(function ($option) {
             $selected = ($option == $this->perPage) ? 'selected' : '';
-            $url = \request()->fullUrlWithQuery([$this->perPageName => $option]);
+            $url = app('request')->fullUrlWithQuery([$this->perPageName => $option]);
 
             return "<option value=\"$url\" $selected>$option</option>";
         })->implode("\r\n");
@@ -79,15 +80,18 @@ class PerPageSelector extends AbstractTool
             'entries' => trans('admin.entries'),
         ];
 
-        return <<<HTML
-<label class="form-group pull-right d-flex align-items-center" style="margin-right: 10px; font-weight: 100;">
-        <small>{$trans['show']}</small>&nbsp;
-        <select class="form-select form-select-sm {$this->grid->getPerPageName()}" name="per-page">
+        return <<<EOT
+
+<label class="control-label pull-right d-flex align-items-center flex-nowrap" style="margin-right: 10px; font-weight: 100;">
+
+        <small class="text-nowrap">{$trans['show']}</small>&nbsp;
+        <select class="input-sm form-select {$this->grid->getPerPageName()}" name="per-page">
             $options
         </select>
         &nbsp;<small>{$trans['entries']}</small>
     </label>
-HTML;
+
+EOT;
     }
 
     /**
@@ -97,10 +101,12 @@ HTML;
      */
     protected function script()
     {
-        return <<<JS
-document.querySelector('.{$this->grid->getPerPageName()}').addEventListener("change", function(e) {
-    admin.ajax.navigate(this.value);
+        return <<<EOT
+
+$('.{$this->grid->getPerPageName()}').on("change", function(e) {
+    $.pjax({url: this.value, container: '#pjax-container'});
 });
-JS;
+
+EOT;
     }
 }

@@ -4,15 +4,16 @@ namespace OpenAdminCore\Admin\Auth;
 
 use OpenAdminCore\Admin\Facades\Admin;
 use OpenAdminCore\Admin\Middleware\Pjax;
+use Illuminate\Support\Facades\Auth;
 
 class Permission
 {
+
     /**
      * Check permission.
      *
-     * @param $permission
-     *
-     * @return true
+     * @param mixed $permission
+     * @return true|void
      */
     public static function check($permission)
     {
@@ -28,7 +29,7 @@ class Permission
             return;
         }
 
-        if (Admin::user()->cannot($permission)) {
+        if (Auth::guard('admin')->user()->cannot($permission)) {
             static::error();
         }
     }
@@ -36,9 +37,8 @@ class Permission
     /**
      * Roles allowed to access.
      *
-     * @param $roles
-     *
-     * @return true
+     * @param array<mixed> $roles
+     * @return true|void
      */
     public static function allow($roles)
     {
@@ -46,7 +46,8 @@ class Permission
             return true;
         }
 
-        if (!Admin::user()->inRoles($roles)) {
+        // @phpstan-ignore-next-line inRoles undefined
+        if (!Auth::guard('admin')->user()->inRoles($roles)) {
             static::error();
         }
     }
@@ -64,9 +65,8 @@ class Permission
     /**
      * Roles denied to access.
      *
-     * @param $roles
-     *
-     * @return true
+     * @param array<mixed> $roles
+     * @return true|void
      */
     public static function deny($roles)
     {
@@ -74,21 +74,33 @@ class Permission
             return true;
         }
 
-        if (Admin::user()->inRoles($roles)) {
+        // @phpstan-ignore-next-line inRoles undefined
+        if (Auth::guard('admin')->user()->inRoles($roles)) {
             static::error();
         }
     }
 
     /**
      * Send error response page.
+     * @param string|null $message
+     *
+     * @return void
      */
-    public static function error()
+    public static function error($message = null)
     {
-        $response = response(Admin::content()->withError(trans('admin.deny')));
+        if(empty($message)){
+            $message = trans('admin.deny');
+        }
+        
+        // move to after ajax
+        //$response = response(Admin::content()->withError($message));
 
         if (!request()->pjax() && request()->ajax()) {
-            abort(403, trans('admin.deny'));
+            abort(403, $message);
         }
+
+        /** @phpstan-ignore-next-line Parameter #1 $content of function response expects array|Illuminate\Contracts\View\View|string|null, OpenAdminCore\Admin\Layout\Content given. */
+        $response = response(Admin::content()->withError($message));
 
         Pjax::respond($response);
     }
@@ -100,6 +112,7 @@ class Permission
      */
     public static function isAdministrator()
     {
-        return Admin::user()->isRole('administrator');
+        // @phpstan-ignore-next-line isRole undefined
+        return Auth::guard('admin')->user()->isRole('administrator');
     }
 }

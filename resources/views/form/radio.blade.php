@@ -1,12 +1,24 @@
-@include("admin::form._header")
+<div class="{{$viewClass['form-group']}} {!! !$errors->has($errorKey) ? '' : 'has-error' !!}">
+
+    <label for="{{$id}}" class="{{$viewClass['label']}} control-label text-lg-end pt-2">{{$label}}</label>
+
+    <div class="{{$viewClass['field']}}">
+
+        @include('admin::form.error')
 
         @foreach($options as $option => $label)
 
-            <div class="form-check @if(!$stacked)form-check-inline @endif">
-                <input class="form-check-input {{$class}}" type="radio" id="{{$name}}-{{$option}}" name="{{$name}}" value="{{$option}}" {{ ($option == old($column, $value)) || ($value === null && in_array($label, $checked)) ?'checked':'' }} {!! $attributes !!} />
-                <label class="form-check-label" for="{{$name}}-{{$option}}">{{$label}}</label>
-            </div>
+            {!! $inline ? '<span class="icheck">' : '<div class="radio icheck">'  !!}
+
+                <label @if($inline)class="radio-inline"@endif>
+                    <input type="radio" name="{{$name}}" value="{{$option}}" class="minimal {{$class}}" {{ ($option == $old) || ($value === null && in_array($label, $checked)) ?'checked':'' }} {!! $attributes !!} />&nbsp;{{$label}}&nbsp;&nbsp;
+                </label>
+
+            {!! $inline ? '</span>' :  '</div>' !!}
 
         @endforeach
 
-@include("admin::form._footer")
+        @include('admin::form.help-block')
+
+    </div>
+</div>
