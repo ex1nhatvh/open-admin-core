@@ -132,7 +132,7 @@ class Column
     /**
      * @var bool
      */
-    protected $escape = true;
+    protected $escape = false;
 
 
     /**
