@@ -10,6 +10,11 @@ trait HasAssets
     public static $script = [];
 
     /**
+     * @var array
+     */
+    public static $deferredScript = [];
+
+    /**
      * @var array<string>
      */
     public static $style = [];
@@ -58,7 +63,7 @@ trait HasAssets
      * @var array<string, string>
      */
     public static $min = [
-        'js' => 'vendor/open-admin/open-admin.min.js',
+        'js'  => 'vendor/open-admin/open-admin.min.js',
         'css' => 'vendor/open-admin/open-admin.min.css',
     ];
 
@@ -157,14 +162,23 @@ trait HasAssets
     public static $jQuery = 'https://code.jquery.com/jquery-3.7.1.min.js';
 
     /**
+     * @var array
+     */
+    public static $minifyIgnoresCss = [];
+    public static $minifyIgnoresJs = [];
+
+    /**
      * Add css or get all css.
      *
      * @param null|array<mixed> $css
+     * @param bool $minify
      *
      * @return array<mixed>|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public static function css($css = null)
+    public static function css($css = null, $minify = true)
     {
+        static::ignoreMinify('css', $css, $minify);
+
         if (!is_null($css)) {
             return self::$css = array_merge(self::$css, (array) $css);
         }
@@ -173,8 +187,7 @@ trait HasAssets
             $css = array_merge(static::$css, static::baseCss());
         }
 
-        $css = array_merge($css, static::$csslast);
-
+        $css = array_merge($css, static::$minifyIgnoresCss); // add minified ignored files
         $css = array_filter(array_unique($css));
 
         return view('admin::partials.css', compact('css'));
@@ -182,11 +195,14 @@ trait HasAssets
 
     /**
      * @param null $css
+     * @param bool $minify
      *
      * @return array<string>|null
      */
-    public static function baseCss($css = null)
+    public static function baseCss($css = null, $minify = true)
     {
+        static::ignoreMinify('css', $css, $minify);
+
         if (!is_null($css)) {
             return static::$baseCss = $css;
         }
@@ -202,11 +218,14 @@ trait HasAssets
      * Add js or get all js.
      *
      * @param null|array<mixed> $js
+     * @param bool $minify
      *
      * @return array<mixed>|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public static function js($js = null)
+    public static function js($js = null, $minify = true)
     {
+        static::ignoreMinify('js', $js, $minify);
+
         if (!is_null($js)) {
             return self::$js = array_merge(self::$js, (array) $js);
         }
@@ -215,8 +234,7 @@ trait HasAssets
             $js = array_merge(static::baseJs(), static::$js);
         }
 
-        $js = array_merge($js, static::$jslast);
-
+        $js = array_merge($js, static::$minifyIgnoresJs); // add minified ignored files
         $js = array_filter(array_unique($js));
 
         return view('admin::partials.js', compact('js'));
@@ -240,14 +258,18 @@ trait HasAssets
 
     /**
      * @param null $js
+     * @param bool $minify
      *
      * @return array<string>|null
      */
-    public static function baseJs($js = null)
+    public static function baseJs($js = null, $minify = true)
     {
+        static::ignoreMinify('js', $js, $minify);
+
         if (!is_null($js)) {
             return static::$baseJs = $js;
         }
+        array_push(static::$baseJs,         'vendor/open-admin/flatpickr/l10n/'.config('app.locale').'.js'); //4.6.13 version
 
         return static::$baseJs;
     }
@@ -276,18 +298,51 @@ trait HasAssets
         return self::$jslast = array_merge(self::$jslast, (array) $js);
     }
 
+
+    /**
+     * @param string $assets
+     * @param bool   $ignore
+     */
+    public static function ignoreMinify($type, $assets, $ignore = true)
+    {
+        if (!$ignore) {
+            if ($type == 'css') {
+                static::$minifyIgnoresCss[] = $assets;
+            } else {
+                static::$minifyIgnoresJs[] = $assets;
+            }
+        }
+    }
+
     /**
      * @param string $script
+     * @param bool   $deferred
      *
-     * @return array<mixed>|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @return array|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
-    public static function script($script = '')
+    public static function script($script = '', $deferred = false)
     {
         if (!empty($script)) {
+            if ($deferred) {
+                return self::$deferredScript = array_merge(self::$deferredScript, (array) $script);
+            }
+
             return self::$script = array_merge(self::$script, (array) $script);
         }
 
-        return view('admin::partials.script', ['script' => array_unique(self::$script)]);
+        $script = collect(static::$script)
+            ->merge(static::$deferredScript)
+            ->unique()
+            ->map(function ($line) {
+                return $line;
+                //@see https://stackoverflow.com/questions/19509863/how-to-remove-js-comments-using-php
+                $pattern = '/(?:(?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:(?<!\:|\\\|\')\/\/.*))/';
+                $line = preg_replace($pattern, '', $line);
+
+                return preg_replace('/\s+/', ' ', $line);
+            });
+
+        return view('admin::partials.script', compact('script'));
     }
 
     /**
@@ -303,7 +358,7 @@ trait HasAssets
     /**
      * @param string $style
      *
-     * @return array<mixed>|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @return array|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public static function style($style = '')
     {
@@ -311,7 +366,13 @@ trait HasAssets
             return self::$style = array_merge(self::$style, (array) $style);
         }
 
-        return view('admin::partials.style', ['style' => array_unique(self::$style)]);
+        $style = collect(static::$style)
+            ->unique()
+            ->map(function ($line) {
+                return preg_replace('/\s+/', ' ', $line);
+            });
+
+        return view('admin::partials.style', compact('style'));
     }
 
     /**
@@ -377,5 +438,84 @@ trait HasAssets
     public function jQuery()
     {
         return admin_asset(static::$jQuery);
+    }
+
+    /**
+     * @param $component
+     */
+    public static function component($component, $data = [])
+    {
+        $string = view($component, $data)->render();
+
+        $dom = new \DOMDocument();
+
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8" ?>'.$string);
+        libxml_use_internal_errors(false);
+
+        if ($head = $dom->getElementsByTagName('head')->item(0)) {
+            foreach ($head->childNodes as $child) {
+                if ($child instanceof \DOMElement) {
+                    if ($child->tagName == 'style' && !empty($child->nodeValue)) {
+                        static::style($child->nodeValue);
+                        continue;
+                    }
+
+                    if ($child->tagName == 'link' && $child->hasAttribute('href')) {
+                        static::css($child->getAttribute('href'));
+                    }
+
+                    if ($child->tagName == 'script') {
+                        if ($child->hasAttribute('src')) {
+                            static::js($child->getAttribute('src'));
+                        } else {
+                            static::script(';(function () {'.$child->nodeValue.'})();');
+                        }
+
+                        continue;
+                    }
+                }
+            }
+        }
+
+        $render = '';
+
+        if ($body = $dom->getElementsByTagName('body')->item(0)) {
+            foreach ($body->childNodes as $child) {
+                if ($child instanceof \DOMElement) {
+                    if ($child->tagName == 'style' && !empty($child->nodeValue)) {
+                        static::style($child->nodeValue);
+                        continue;
+                    }
+
+                    if ($child->tagName == 'script' && !empty($child->nodeValue)) {
+                        static::script(';(function () {'.$child->nodeValue.'})();');
+                        continue;
+                    }
+
+                    if ($child->tagName == 'template') {
+                        if ($child->getAttribute('render') == 'true') {
+                            // this will render the template tags right into the dom. Don't think we want this
+                            $html = '';
+                            foreach ($child->childNodes as $childNode) {
+                                $html .= $child->ownerDocument->saveHTML($childNode);
+                            }
+                        } else {
+                            // this leaves the template tags in place, so they won't get rendered right away
+                            $sub_doc = new \DOMDocument();
+                            $sub_doc->appendChild($sub_doc->importNode($child, true));
+                            $html = $sub_doc->saveHTML();
+                        }
+                        $html && static::html($html);
+
+                        continue;
+                    }
+                }
+
+                $render .= $body->ownerDocument->saveHTML($child);
+            }
+        }
+
+        return trim($render);
     }
 }
