@@ -5,6 +5,7 @@ namespace OpenAdminCore\Admin\Form;
 use OpenAdminCore\Admin\Form;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use OpenAdminCore\Admin\Widgets\Form as WidgetForm;
 
 /**
  * Class EmbeddedForm.
@@ -21,6 +22,7 @@ use Illuminate\Support\Collection;
  * @method Field\Url            url($column, $label = '')
  * @method Field\Color          color($column, $label = '')
  * @method Field\Email          email($column, $label = '')
+ * @method Field\PhoneNumber    phonenumber($column, $label = '')
  * @method Field\Mobile         mobile($column, $label = '')
  * @method Field\Slider         slider($column, $label = '')
  * @method Field\Map            map($latitude, $longitude, $label = '')
@@ -52,7 +54,7 @@ use Illuminate\Support\Collection;
 class EmbeddedForm
 {
     /**
-     * @var Form
+     * @var Form|WidgetForm
      */
     protected $parent = null;
 
@@ -107,6 +109,20 @@ class EmbeddedForm
      * @return $this
      */
     public function setParent(Form $parent)
+    {
+        $this->parent = $parent;
+
+        return $this;
+    }
+
+    /**
+     * Set parent form for this form.
+     *
+     * @param WidgetForm $parent
+     *
+     * @return $this
+     */
+    public function setParentWidgetForm(WidgetForm $parent)
     {
         $this->parent = $parent;
 
@@ -208,12 +224,10 @@ class EmbeddedForm
     protected function setFieldOriginalValue($key)
     {
         if (array_key_exists($key, $this->original)) {
-            
-            $this->fields->each(function (Field $field) use ($key) {
-                if($field->column() === $key){
-                    $field->setOriginal($this->original);
-                    return false;
-                }
+            $values = $this->original[$key];
+
+            $this->fields->each(function (Field $field) use ($values) {
+                $field->setOriginal($values);
             });
         }
     }
@@ -305,8 +319,12 @@ class EmbeddedForm
             /** @var Field $field */
             $field = new $className($column, array_slice($arguments, 1));
 
-            $field->setForm($this->parent);
-
+            if ($this->parent instanceof WidgetForm) {
+                $field->setWidgetForm($this->parent);
+            } else {
+                $field->setForm($this->parent);
+            }
+            
             $this->pushField($field);
 
             return $field;

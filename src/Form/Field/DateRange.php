@@ -26,6 +26,15 @@ class DateRange extends Field
      */
     protected $format = 'YYYY-MM-DD';
 
+    protected $defaults = [
+        'weekNumbers'   => true,
+        'time_24hr'     => true,
+        'enableSeconds' => true,
+        'enableTime'    => false,
+        'allowInput'    => true,
+        'noCalendar'    => false,
+    ];
+
     /**
      * Column name.
      *
@@ -69,6 +78,17 @@ class DateRange extends Field
         return $this;
     }
 
+    public function check_format_options()
+    {
+        $format = $this->options['format'];
+        if (substr($format, -2) != 'ss') {
+            $this->options['enableSeconds'] = false;
+        }
+        if (strpos($format, 'H') !== false) {
+            $this->options['enableTime'] = true;
+        }
+    }
+
     /**
      * {@inheritdoc}
      * @param mixed $value
@@ -76,6 +96,7 @@ class DateRange extends Field
      */
     public function prepare($value)
     {
+        $value = parent::prepare($value);
         if ($value === '') {
             $value = null;
         }
