@@ -71,7 +71,7 @@ class Display extends Field
             $this->displayText = $this->displayText->call($this, $this->value);
         }
 
-        return parent::render()->with([
+        return parent::fieldRender([
             'displayText' => $this->displayText,
             'displayClass' => $this->displayClass,
             'escape' => $this->escape,
