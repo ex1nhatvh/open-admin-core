@@ -100,6 +100,11 @@ abstract class AbstractFilter
     public $group;
 
     /**
+     * @var bool
+     */
+    protected $ignore = false;
+
+    /**
      * AbstractFilter constructor.
      *
      * @param mixed $column
