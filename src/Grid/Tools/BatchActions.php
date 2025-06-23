@@ -113,8 +113,8 @@ class BatchActions extends AbstractTool
         foreach ($this->actions as $action) {
             $action->setGrid($this->grid);
 
-            Admin::script($action->script());
-        }
+                Admin::script($action->script());
+            }
     }
 
     /**
