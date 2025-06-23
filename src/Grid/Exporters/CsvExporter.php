@@ -59,7 +59,7 @@ class CsvExporter extends AbstractExporter
                 $key = str_replace('.', ' ', $key);
 
                 return Str::ucfirst($key);
-            }
+        }
         );
 
         return $titles->toArray();
