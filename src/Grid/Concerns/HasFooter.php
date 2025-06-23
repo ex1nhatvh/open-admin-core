@@ -11,6 +11,22 @@ trait HasFooter
      * @var Closure|null
      */
     protected $footer;
+    
+    public $fixedFooter = true;
+
+    /**
+     * Set footer fixed.
+     *
+     * @param bool
+     *
+     * @return $this|Closure
+     */
+    public function fixedFooter($bool = true)
+    {
+        $this->fixedFooter = $bool;
+
+        return $this;
+    }
 
     /**
      * Set grid footer.
