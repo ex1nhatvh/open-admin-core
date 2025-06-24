@@ -7,6 +7,20 @@ use Illuminate\Support\Arr;
 trait HasFormAttributes
 {
     /**
+     * unique class name for class selector
+     * 
+     * @var string
+     */
+    protected $uniqueName;
+
+    /**
+     * If the form horizontal layout.
+     *
+     * @var bool
+     */
+    protected $horizontal = true;
+
+    /**
      * @var array
      */
     protected $attributes = [];
@@ -20,6 +34,59 @@ trait HasFormAttributes
      * @var bool
      */
     protected $validateClientSide = false;
+
+    /**
+     * Set unique class name for class selector
+     * @param string $uniqueName
+     *
+     * @return  $this
+     */ 
+    public function setUniqueName($uniqueName)
+    {
+        $this->uniqueName = $uniqueName;
+        return $this;
+    }
+
+    /**
+     * Get unique class name for class selector
+     *
+     * @return  string
+     */ 
+    public function getUniqueName()
+    {
+        if(!$this->uniqueName){
+            $this->uniqueName = 'form-' . mb_substr(md5(uniqid()), 0, 32);
+        }
+        return $this->uniqueName;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getHorizontal()
+    {
+        return $this->horizontal;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setHorizontal(bool $horizontal)
+    {
+        $this->horizontal = $horizontal;
+        
+        return $this; 
+    }
+
+    /**
+     * @return $this
+     */
+    public function disableHorizontal()
+    {
+        $this->horizontal = false;
+
+        return $this;
+    }
 
     /**
      * Initialize the form attributes.
@@ -50,7 +117,11 @@ trait HasFormAttributes
     {
         if (is_array($attr)) {
             foreach ($attr as $key => $val) {
-                $this->attribute($key, $val);
+                if($key == 'class'){
+                    $this->setClass($val);
+                } else{
+                    $this->attribute($key, $val);
+                }
             }
         } else {
             if ($attr === 'class') {

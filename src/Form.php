@@ -38,7 +38,6 @@ class Form implements Renderable
 {
     use Resource;
     use HasHooks;
-    use FormTrait;
     use HasFields;
     use HasFormAttributes;
     use HandleCascadeFields;
