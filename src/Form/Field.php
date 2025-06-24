@@ -2022,7 +2022,11 @@ class Field implements Renderable
      */
     public function getScript(): string
     {
-        return $this->script;
+        if (is_array($this->script)) {
+            return implode("\n", $this->script); 
+        }
+    
+        return $this->script; 
     }
 
     /**
