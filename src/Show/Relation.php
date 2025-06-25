@@ -122,7 +122,8 @@ class Relation extends Field
 
             $renderable->setName($this->name)
                 ->setTitle($this->title)
-                ->setRelation($relation);
+                ->setRelation($relation)
+                ->fixedFooter(false);
         }
 
         return $renderable->render();
