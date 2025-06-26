@@ -106,7 +106,7 @@ return [
     |
     */
     'use_app_url' => env('ADMIN_USE_APP_URL', false),
-
+    
     /*
     |--------------------------------------------------------------------------
     | Open-admin auth setting
@@ -291,16 +291,11 @@ return [
     | Application Skin
     |--------------------------------------------------------------------------
     |
-    | This value is the skin of admin pages.
-    | @see https://adminlte.io/docs/2.4/layout
-    |
-    | Supported:
-    |    "skin-blue", "skin-blue-light", "skin-yellow", "skin-yellow-light",
-    |    "skin-green", "skin-green-light", "skin-purple", "skin-purple-light",
-    |    "skin-red", "skin-red-light", "skin-black", "skin-black-light".
+    | A custom class to overwrite your admin panel looks.
+    | The orginal adminlte theme is not used anymore.
     |
     */
-    'skin' => 'skin-blue-light',
+    'skin' => 'your-custom-skin-class',
 
     /*
     |--------------------------------------------------------------------------
@@ -404,7 +399,7 @@ return [
     | The global Grid action display class. (Actions::class, DropdownActions:class or ContextMenuActions::class)
     |--------------------------------------------------------------------------
     */
-    'grid_action_class' => \OpenAdminCore\Admin\Grid\Displayers\Actions::class,    
+    'grid_action_class' => \OpenAdminCore\Admin\Grid\Displayers\Actions::class,
 
     /*
     |--------------------------------------------------------------------------

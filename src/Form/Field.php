@@ -2020,12 +2020,9 @@ class Field implements Renderable
      *
      * @return string
      */
-    public function getScript(): string
+    public function getScript(): string|array
     {
-        if (is_array($this->script)) {
-            return implode("\n", $this->script); 
-        }
-    
+   
         return $this->script; 
     }
 
