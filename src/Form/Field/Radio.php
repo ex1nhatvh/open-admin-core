@@ -11,7 +11,7 @@ class Radio extends Field
 {
     use CanCascadeFields;
 
-    protected $stacked = false;
+    // protected $stacked = false;
   /**
      * @var bool
      */
