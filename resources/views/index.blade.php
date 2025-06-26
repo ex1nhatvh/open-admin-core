@@ -17,6 +17,10 @@
 
     <script src="{{ Admin::jQuery() }}"></script>
     {!! Admin::headerJs() !!}
+    {!! Admin::js() !!}
+
+    {!! Admin::js_trans() !!}
+
 
 </head>
 
@@ -27,16 +31,20 @@
 
         @include('admin::partials.sidebar')
 
-        <div class="content-wrapper" id="main">
+        <main id="main" class="p-4">
+
             <div id="pjax-container">
+            <!--start-pjax-container-->
                 {!! Admin::style() !!}
                 <div id="app">
                     @yield('content')
                 </div>
+                {!! Admin::html() !!}
                 {!! Admin::script() !!}
+            <!--end-pjax-container-->
             </div>
 
-        </div>
+        </main>
         @include('admin::partials.footer')
 
 
@@ -52,7 +60,6 @@
     </script>
 
     <!-- REQUIRED JS SCRIPTS -->
-    {!! Admin::js() !!}
 
 </body>
 
