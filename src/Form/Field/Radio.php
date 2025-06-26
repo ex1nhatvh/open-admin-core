@@ -2,13 +2,17 @@
 
 namespace OpenAdminCore\Admin\Form\Field;
 
-use OpenAdminCore\Admin\Form\Field;
-use Illuminate\Contracts\Support\Arrayable;
 use OpenAdminCore\Admin\Validator\HasOptionRule;
+use Illuminate\Contracts\Support\Arrayable;
+use OpenAdminCore\Admin\Form\Field;
+use OpenAdminCore\Admin\Form\Field\Traits\CanCascadeFields;
 
 class Radio extends Field
 {
-    /**
+    use CanCascadeFields;
+
+    protected $stacked = false;
+  /**
      * @var bool
      */
     protected $inline = true;
@@ -23,6 +27,7 @@ class Radio extends Field
     /**
      * @var array<string>
      */
+    protected $cascadeEvent = 'change';
     protected static $js = [
         '/vendor/open-admin/AdminLTE/plugins/iCheck/icheck.min.js',
     ];
