@@ -2,8 +2,8 @@
 
 namespace OpenAdminCore\Admin\Form\Field;
 
-use OpenAdminCore\Admin\Form\Field;
 use Illuminate\Support\Arr;
+use OpenAdminCore\Admin\Form\Field;
 
 class Html extends Field
 {

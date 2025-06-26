@@ -24,6 +24,15 @@ class Date extends Text
      */
     protected $format = 'YYYY-MM-DD';
 
+    protected $defaults = [
+        'weekNumbers'   => true,
+        'time_24hr'     => true,
+        'enableSeconds' => true,
+        'enableTime'    => false,
+        'allowInput'    => true,
+        'noCalendar'    => false,
+    ];
+
     /**
      * @param string $format
      * @return $this
@@ -41,11 +50,30 @@ class Date extends Text
      */
     public function prepare($value)
     {
-        if ($value === '') {
+        $value = parent::prepare($value);
+
+        // allows the value to be empty
+        if (empty($value)) {
             $value = null;
         }
 
+        // if the field is not present in the request it should not be processed
+        if (empty($value) && !request()->has($this->column)) {
+            $value = false;
+        }
+
         return $value;
+    }
+
+    public function check_format_options()
+    {
+        $format = $this->options['format'];
+        if (substr($format, -2) != 'ss') {
+            $this->options['enableSeconds'] = false;
+        }
+        if (strpos($format, 'H') !== false) {
+            $this->options['enableTime'] = true;
+        }
     }
 
     /**

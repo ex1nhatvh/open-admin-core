@@ -6,6 +6,10 @@ use OpenAdminCore\Admin\Form\Field;
 
 class Display extends Field
 {
+    public function prepare($value)
+    {
+        return $this->original();
+    }
     /**
      * Display text
      *
@@ -59,7 +63,7 @@ class Display extends Field
 
         return $this;
     }
-    
+
     /**
      * Render this filed.
      *
