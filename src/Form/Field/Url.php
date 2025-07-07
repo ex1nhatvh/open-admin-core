@@ -2,6 +2,8 @@
 
 namespace OpenAdminCore\Admin\Form\Field;
 
+use OpenAdminCore\Admin\Form;
+
 class Url extends Text
 {
     /**
@@ -9,7 +11,12 @@ class Url extends Text
      */
     protected $rules = 'nullable|url';
 
-    public function setForm(Form $form = null)
+    /**
+     * {@inheritdoc}
+     * @return string
+     */
+
+    public function setForm($form = null)
     {
         $this->form = $form;
         // field type url has a default browser validation
@@ -18,10 +25,6 @@ class Url extends Text
         return $this;
     }
 
-    /**
-     * {@inheritdoc}
-     * @return string
-     */
     public function render()
     {
         $this->prepend('<i class="fa fa-internet-explorer fa-fw"></i>')

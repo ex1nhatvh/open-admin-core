@@ -15,7 +15,7 @@ class Text extends Field
     /**
      * @var string|null
      */
-    protected $icon = 'icon-pencil-alt';
+    protected $icon = 'fa-pencil';
 
     /**
      * @var bool
@@ -45,22 +45,21 @@ class Text extends Field
 {
     $this->initPlainInput();
 
-    if (!isset($this->withoutIcon) || !$this->withoutIcon) {
-        if (isset($this->icon)) {
-            $this->prepend('<i class="fa '.$this->icon.' fa-fw"></i>');
-        }
+    if (empty($this->withoutIcon) && !empty($this->icon)) {
+        $this->prepend('<i class="fa '.$this->icon.' fa-fw"></i>');
     }
 
     $this->defaultAttribute('type', 'text')
         ->defaultAttribute('id', $this->id)
         ->defaultAttribute('name', $this->elementName ?: $this->formatName($this->column))
-        ->defaultAttribute('value', $this->getOld()) // xử lý value thống nhất
+        ->defaultAttribute('value', $this->getOld())
         ->defaultAttribute('class', 'form-control '.$this->getElementClassString())
         ->defaultAttribute('placeholder', $this->getPlaceholder());
 
-        if (method_exists($this, 'mountPicker')) {
-            $this->mountPicker();
-        }
+    if (method_exists($this, 'mountPicker')) {
+        $this->mountPicker();
+    }
+
     $this->addVariables([
         'prepend' => $this->prepend,
         'append'  => $this->append,
@@ -68,6 +67,7 @@ class Text extends Field
 
     return parent::render();
 }
+
 
     /**
      * Add inputmask to an elements.
@@ -80,7 +80,8 @@ class Text extends Field
     {
         $options = json_encode_options($options);
 
-         $this->script = "$('{$this->getElementClassSelector()}').inputmask($options);";
+        $this->script = "$('{$this->getElementClassSelector()}').inputmask($options);";
+        // $this->script = "Inputmask({$options}).mask(document.querySelector(\"{$this->getElementClassSelector()}\"));";
 
         return $this;
     }
