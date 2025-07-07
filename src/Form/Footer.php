@@ -55,6 +55,16 @@ class Footer implements Renderable
     ];
 
     /**
+     * @var string
+     */
+    protected $defaultCheck;
+
+    /**
+     * @var string
+     */
+    public $fixedFooter = true;
+
+    /**
      * Available footer checks.
      * 
      * $submitRedirects : [
@@ -349,8 +359,56 @@ EOT;
             $('#admin-submit').click(function(){setTimeout(function() {waitForElm(".hidden-xs").then(async (elm) => {$('[role="scanButtonDashboard"]').click();})},2000);});
             EOT;
         }
+        if ($script !== null) {
+            Admin::script($script);
+        }
+    }
+    /**
+     * Set `view` as default check.
+     *
+     * @return $this
+     */
+    public function checkView()
+    {
+        $this->defaultCheck = 'view';
 
-        Admin::script($script);
+        return $this;
+    }
+
+    /**
+     * Set `continue_creating` as default check.
+     *
+     * @return $this
+     */
+    public function checkCreating()
+    {
+        $this->defaultCheck = 'continue_creating';
+
+        return $this;
+    }
+
+    /**
+     * Set `continue_editing` as default check.
+     *
+     * @return $this
+     */
+    public function checkEditing()
+    {
+        $this->defaultCheck = 'continue_editing';
+
+        return $this;
+    }
+
+    /**
+     * Set `continue_editing` as default check.
+     *
+     * @return $this
+     */
+    public function fixedFooter($set = true)
+    {
+        $this->fixedFooter = $set;
+
+        return $this;
     }
 
     /**
@@ -361,17 +419,24 @@ EOT;
     public function render()
     {
         $this->setupScript();
+        $submitRedirects = [
+            'continue_editing' => 'continue_editing',
+            'continue_creating' => 'continue_creating',
+            'view' => 'view',
+            //'exit' => 'exit', // can be exit as well when doing ajax request
+        ];
 
         $data = [
+            'width' => $this->builder->getWidth(),
             'buttons' => $this->buttons,
             'checkboxes' => $this->checkboxes,
-            'width' => $this->builder->getWidth(),
+            'submit_redirects' => $submitRedirects,
             'submitLabel' => $this->submitLabel ?? static::$defaultSubmitLabel ?? trans('admin.submit'),
             'submitRedirects' => $this->submitRedirects,
             'default_check' => $this->getDefaultCheck(),
+            'fixedFooter' => $this->fixedFooter,
         ];
-
-        return view($this->view, $data);
+        return view($this->view, $data)->render();
     }
 
 
