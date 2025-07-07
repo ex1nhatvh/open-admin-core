@@ -11570,11 +11570,6 @@ body .choices[data-type*=select-multiple] .choices__button::before, body .choice
   appearance: textfield;
   text-align: center;
 }
-.form input::-webkit-outer-spin-button,
-.form input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
 .form .form-group > label.asterisk::before {
   content: "* ";
   color: red;
