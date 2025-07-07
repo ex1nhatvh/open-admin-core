@@ -5,6 +5,7 @@ namespace OpenAdminCore\Admin\Middleware;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use OpenAdminCore\Admin\Facades\Admin;
@@ -64,7 +65,7 @@ class Pjax
     /**
      * Handle Response with exceptions.
      *
-     * @param \Illuminate\Http\Response $response
+     * @param Response $response
      *
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -73,10 +74,10 @@ class Pjax
         $exception = $response->exception;
 
         $error = new MessageBag([
-            'type'    => get_class($exception),
+            'type' => get_class($exception),
             'message' => $exception->getMessage(),
-            'file'    => $exception->getFile(),
-            'line'    => $exception->getLine(),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
         ]);
 
         return back()->withInput()->withErrors($error, 'exception');
@@ -95,12 +96,11 @@ class Pjax
         $input = $response->getContent();
 
         $title = $this->makeFromBetween($input, '<title>', '</title>');
-        $title = !empty($title) ? '<title>'.$title.'</title>' : '';
+        $title = !empty($title) ? '<title>' . $title . '</title>' : '';
 
         $content = $this->makeFromBetween($input, '<!--start-pjax-container-->', '<!--end-pjax-container-->');
         $content = $this->decodeUtf8HtmlEntities($content);
 
-        /*
         if (empty($content)) {
             // try dom-crwawler
             // this is much slower though
@@ -108,14 +108,13 @@ class Pjax
             $title = $this->makeTitle($crawler);
             $content = $this->fetchContents($crawler, $container);
         }
-        */
 
-        if (empty($content)) {
-            abort(422);
-        }
+        // if (empty($content)) {
+        //     abort(422);
+        // }
 
         $response->setContent(
-            $title.$content
+            $title . $content
         );
 
         return $this;
