@@ -157,6 +157,7 @@ class Tags extends Field
      */
     public function prepare($value)
     {
+         /** @phpstan-ignore-next-line Parameter #2 $callback of function array_filter expects (callable(mixed): bool)|null, 'strlen' given.*/
         $value = parent::prepare($value);
         $value = array_filter($value, 'strlen');
 
