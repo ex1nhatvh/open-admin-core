@@ -3,9 +3,9 @@
 namespace OpenAdminCore\Admin\Form\Field;
 
 use OpenAdminCore\Admin\Form\Field\Traits\HasNumberModifiers;
-use Encore\Admin\Validator\DigitBetweenRule;
-use Encore\Admin\Validator\DigitMinRule;
-use Encore\Admin\Validator\DigitMaxRule;
+use OpenAdminCore\Admin\Validator\DigitMinRule;
+use OpenAdminCore\Admin\Validator\DigitMaxRule;
+use OpenAdminCore\Admin\Validator\DigitBetweenRule;
 
 class Number extends Text
 {
