@@ -3,10 +3,13 @@
 namespace OpenAdminCore\Admin\Form\Field;
 
 use OpenAdminCore\Admin\Form\Field;
+use OpenAdminCore\Admin\Form\Field\Traits\HasNumberModifiers;
 
 class Slider extends Field
 {
-    /**
+    use HasNumberModifiers;
+
+        /**
      * @var array<string>
      */
     protected static $css = [
@@ -35,9 +38,7 @@ class Slider extends Field
      */
     public function render()
     {
-        $option = json_encode($this->options);
-
-        $this->script = "$('{$this->getElementClassSelector()}').ionRangeSlider($option)";
+        $this->attribute('value', old($this->elementName ?: $this->column, $this->value()));
 
         return parent::render();
     }

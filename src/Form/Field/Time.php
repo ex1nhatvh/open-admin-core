@@ -14,8 +14,9 @@ class Time extends Date
      */
     public function render()
     {
-        $this->prepend('<i class="fa fa-clock-o fa-fw"></i>')
-            ->defaultAttribute('style', 'width: 150px !important; flex: 0 0 auto !important;');
+        $this->prepend('<i class="icon-clock"></i>');
+        $this->style('max-width', '160px');
+        $this->options['noCalendar'] = true;
 
         return parent::render();
     }
