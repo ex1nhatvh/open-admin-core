@@ -45,7 +45,7 @@ admin.form = {
         let method = form.getAttribute('method').toLowerCase();
         let url = String(form.getAttribute('action')).split('?')[0];
         let obj = {};
-
+        tinymce.triggerSave();
         this.beforeSave();
 
         if (admin.form.validate(form)) {
