@@ -3,9 +3,9 @@
 namespace OpenAdminCore\Admin\Form\Field;
 
 use OpenAdminCore\Admin\Form\Field\Traits\HasNumberModifiers;
-use Encore\Admin\Validator\DigitBetweenRule;
-use Encore\Admin\Validator\DigitMinRule;
-use Encore\Admin\Validator\DigitMaxRule;
+use OpenAdminCore\Admin\Validator\DigitBetweenRule;
+use OpenAdminCore\Admin\Validator\DigitMinRule;
+use OpenAdminCore\Admin\Validator\DigitMaxRule;
 
 class Number extends Text
 {
@@ -19,8 +19,8 @@ class Number extends Text
     public function render()
     {
         $this->defaultAttribute('type', 'number');
-        $this->append("<i class='icon-plus plus'></i>");
-        $this->prepend("<i class='icon-minus minus'></i>");
+        $this->append("<i class='fa fa-plus plus'></i>");
+        $this->prepend("<i class='fa fa-minus minus'></i>");
         $this->default($this->default);
 
         $this->script = <<<EOT
