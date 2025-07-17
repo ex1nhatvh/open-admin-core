@@ -129,7 +129,7 @@ trait HasAssets
         'vendor/open-admin/bootstrap5/bootstrap.bundle.min.js',
         'vendor/open-admin/nprogress/nprogress.js',
         'vendor/open-admin/axios/axios.min.js',
-        'vendor/open-admin/sweetalert2/sweetalert2.min.js',
+        // 'vendor/open-admin/sweetalert2/sweetalert2.min.js',
         'vendor/open-admin/toastify-js/toastify.js',
         'vendor/open-admin/flatpickr/flatpickr.min.js',
         'vendor/open-admin/choicesjs/scripts/choices.min.js',
