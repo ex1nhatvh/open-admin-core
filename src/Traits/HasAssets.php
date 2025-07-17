@@ -116,6 +116,7 @@ trait HasAssets
         "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.4/js/locales/ja.min.js",
         'vendor/open-admin/AdminLTE/plugins/slimScroll/jquery.slimscroll.min.js',
         '/vendor/open-admin/bootstrap-duallistbox/dist/jquery.bootstrap-duallistbox.min.js?v=4.0.2',
+        'vendor/exment/js/customscript.js',
         'vendor/open-admin/AdminLTE/dist/js/app.min.js',
         'vendor/open-admin/AdminLTE4/js/adminlte.min.js',
         'vendor/open-admin/jquery-pjax/jquery.pjax.js',
@@ -134,7 +135,7 @@ trait HasAssets
         'vendor/open-admin/flatpickr/flatpickr.min.js',
         'vendor/open-admin/choicesjs/scripts/choices.min.js',
         'vendor/open-admin/sortablejs/Sortable.min.js',
-        'vendor/exment/js/customscript.js',
+     
         'vendor/open-admin/open-admin/js/polyfills.js',
         'vendor/open-admin/open-admin/js/helpers.js',
         'vendor/open-admin/open-admin/js/open-admin.js',
