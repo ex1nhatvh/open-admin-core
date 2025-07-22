@@ -8,7 +8,7 @@ class Decimal extends Text
      * @var array<string>
      */
     protected static $js = [
-        '/vendor/open-admin/AdminLTE/plugins/input-mask/jquery.inputmask.bundle.min.js',
+        '/vendor/open-admin/inputmask/inputmask.min.js',
     ];
 
     /**
@@ -28,8 +28,8 @@ class Decimal extends Text
     {
         $this->inputmask($this->options);
 
-        $this->prepend('<i class="fa fa-terminal fa-fw"></i>')
-            ->defaultAttribute('style', 'width: 130px');
+        $this->prepend('<i class="'.$this->icon.'"></i>');
+        $this->style('max-width', '160px');
 
         return parent::render();
     }

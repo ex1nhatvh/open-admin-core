@@ -35,7 +35,7 @@ class Color extends Text
      */
     public function format($format = 'hex')
     {
-        return $this->options(['format' => $format]);
+        return $this->options(['format'=> $format]);
     }
 
     /**
@@ -47,7 +47,7 @@ class Color extends Text
      */
     public function alpha($set = true)
     {
-        return $this->options(['alpha' => $set]);
+        return $this->options(['alpha'=> $set]);
     }
 
     /**
@@ -72,7 +72,13 @@ class Color extends Text
      */
     public function render()
     {
-        $options = json_encode($this->options);
+        $options = array_merge([
+            'el'         => $this->getElementClassSelector(),
+            'theme'      => 'polaroid',
+            'focusInput' => false,
+
+        ], $this->options);
+        $options = json_encode($options);
 
         $this->script = "$('{$this->getElementClassSelector()}').parent().colorpicker($options);";
 

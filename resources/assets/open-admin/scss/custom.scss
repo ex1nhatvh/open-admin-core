@@ -11,6 +11,7 @@
     border-bottom-left-radius: 3px;
 }
 
+
 .col-lg-1,
 .col-lg-10,
 .col-lg-11,
@@ -967,4 +968,9 @@ hr {
     .field-header {
         margin-left: 0;
     }
+}
+
+
+.form-group > label.asterisk::before {
+    display: none !important;
 }

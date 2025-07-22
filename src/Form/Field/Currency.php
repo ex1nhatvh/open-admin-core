@@ -13,7 +13,7 @@ class Currency extends Text
      * @var array<string>
      */
     protected static $js = [
-        '/vendor/open-admin/AdminLTE/plugins/input-mask/jquery.inputmask.bundle.min.js',
+        '/vendor/open-admin/inputmask/inputmask.min.js',
     ];
 
     /**
@@ -72,8 +72,8 @@ class Currency extends Text
     {
         $this->inputmask($this->options);
 
-        $this->prepend($this->symbol)
-            ->defaultAttribute('style', 'width: 120px');
+        $this->prepend($this->symbol);
+        $this->style('max-width', '160px');
 
         return parent::render();
     }

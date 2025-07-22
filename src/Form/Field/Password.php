@@ -18,12 +18,12 @@ class Password extends Text
                 var field = document.getElementById(ref.dataset.id);
                 if (field.type == "password"){
                     field.type = "text";
-                    ref.classList.remove("icon-eye");
-                    ref.classList.add("icon-eye-slash");
+                    ref.classList.remove("fa fa-eye");
+                    ref.classList.add("fa fa-eye-slash");
                 }else{
                     field.type = "password";
-                    ref.classList.remove("icon-eye-slash");
-                    ref.classList.add("icon-eye");
+                    ref.classList.remove("fa fa-eye-slash");
+                    ref.classList.add("fa fa-eye");
                 }
             };
         JS;
@@ -31,12 +31,12 @@ class Password extends Text
 
     public function render()
     {
-        $this->prepend('<i class="icon-eye-slash fa-fw"></i>')
+        $this->prepend('<i class="fa fa-eye-slash fa-fw"></i>')
             ->defaultAttribute('type', 'password');
 
         if ($this->showPasswordToggle) {
             $this->setupScript();
-            $this->append('<i class="icon-eye fa-fw" style="cursor:pointer;margin:-5px;padding:5px;" data-id="' . $this->id . '" onclick="window.togglePassword(this)"></i>');
+            $this->append('<i class="fa fa-eye fa-fw" style="cursor:pointer;margin:-5px;padding:5px;" data-id="' . $this->id . '" onclick="window.togglePassword(this)"></i>');
         }
 
         return parent::render();

@@ -275,7 +275,7 @@ $('.{$class}-delete').unbind('click').click(function() {
                         _token:LA.token,
                     },
                     success: function (data) {
-                        $.pjax({container:'#pjax-container', url: '{$listUrl}' });
+                        window.location.href = '{$listUrl}';
 
                         resolve(data);
                     }
