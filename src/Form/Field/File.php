@@ -2,14 +2,17 @@
 
 namespace OpenAdminCore\Admin\Form\Field;
 
-use OpenAdminCore\Admin\Form\Field;
 use Illuminate\Support\Arr;
+use OpenAdminCore\Admin\Form\Field;
+use OpenAdminCore\Admin\Form\Field\Traits\HasMediaPicker;
+use OpenAdminCore\Admin\Form\Field\Traits\UploadField;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Closure;
 
 class File extends Field
 {
     use UploadField;
+    use HasMediaPicker;
 
     /**
      * Tmp file prefix name. If file name is this prefix, get from tmp file.
@@ -23,7 +26,7 @@ class File extends Field
      * @var array<string>
      */
     protected static $css = [
-        // '/vendor/open-admin/bootstrap-fileinput/css/fileinput.min.css?v=4.5.2',
+        '/vendor/open-admin/bootstrap-fileinput/css/fileinput.min.css?v=4.5.2',
     ];
 
     /**
@@ -32,10 +35,11 @@ class File extends Field
      * @var array<string>
      */
     protected static $js = [
-        '/vendor/open-admin/bootstrap-fileinput/js/plugins/canvas-to-blob.min.js',
-        // '/vendor/open-admin/bootstrap-fileinput/js/fileinput.min.js?v=4.5.2',
+        '/vendor/open-admin/bootstrap-fileinput/js/fileinput.min.js?v=4.5.2',
     ];
 
+    public $type     = 'file';
+    public $readonly = false;
     /**
      * Caption.
      *
@@ -109,7 +113,7 @@ class File extends Field
             return false;
         }
 
-        $rules[$this->column] = $fieldRules;
+        $rules[$this->column]      = $fieldRules;
         $attributes[$this->column] = $this->label;
 
         return \validator($input, $rules, $this->getValidationMessages(), $attributes);
@@ -129,16 +133,24 @@ class File extends Field
             $file = call_user_func($this->getTmp, $file);
         }
 
-        if (request()->has(static::FILE_DELETE_FLAG)) {
+        if (request()->has($this->column.Field::FILE_DELETE_FLAG)) {
             $this->destroy();
-            return;
+
+            return '';
         }
 
-        $this->name = $this->getStoreName($file);
+        if (!empty($this->picker) && request()->has($this->column.Field::FILE_ADD_FLAG)) {
+            return request($this->column.Field::FILE_ADD_FLAG);
+        }
 
-        return $this->uploadAndDeleteOriginal($file);
+        if (!empty($file)) {
+            $this->name = $this->getStoreName($file);
+
+            return $this->uploadAndDeleteOriginal($file);
+        }
+
+        return false;
     }
-
 
     /**
      * Upload file and delete original file.
@@ -221,6 +233,18 @@ class File extends Field
     }
 
     /**
+     * Hides the file preview.
+     *
+     * @return $this
+     */
+    public function hidePreview()
+    {
+        return $this->options([
+            'showPreview' => false,
+        ]);
+    }
+
+    /**
      * Initialize the caption.
      *
      * @param string $caption
@@ -228,7 +252,7 @@ class File extends Field
      *
      * @return string
      */
-    protected function initialCaption($caption, $key)
+    protected function initialCaption($caption, $key = 0)
     {
         if ($this->caption instanceof Closure) {
             return $this->caption->call($this, $caption, $key);
@@ -247,6 +271,24 @@ class File extends Field
         $config = array_merge($config, $this->guessPreviewType($this->value));
 
         return [$config];
+    }
+
+    protected function setType($type = 'file')
+    {
+        $this->options['type'] = $type;
+    }
+
+    protected function getFieldId()
+    {
+        if (!empty($this->elementName)) {
+            $id = $this->elementName;
+        } else {
+            $id = $this->id;
+        }
+        $id = str_replace(']', '_', $id);
+        $id = str_replace('[', '_', $id);
+
+        return $id;
     }
 
     /**
@@ -339,6 +381,10 @@ EOT;
      */
     public function render()
     {
+        if ($this->picker) {
+            $this->renderMediaPicker();
+        }
+
         $this->options(['overwriteInitial' => true, 'msgPlaceholder' => trans('admin.choose_file')]);
 
         $this->setupDefaultOptions();
@@ -348,6 +394,9 @@ EOT;
         }
 
         if (!empty($this->value)) {
+            $this->attribute('data-files', $this->value);
+            $this->attribute('data-file-captions', $this->initialCaption($this->value));
+
             $this->setupPreviewOptions();
 
             $this->attribute('data-initial-preview', $this->preview());
