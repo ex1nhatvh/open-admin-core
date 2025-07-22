@@ -17,7 +17,6 @@
 
     <script src="{{ Admin::jQuery() }}"></script>
     {!! Admin::headerJs() !!}
-    {!! Admin::js() !!}
 
     {!! Admin::js_trans() !!}
 
@@ -33,14 +32,14 @@
 
         <div class="content-wrapper" id="main">
             <div id="pjax-container">
-            <!--start-pjax-container-->
+                <!--start-pjax-container-->
                 {!! Admin::style() !!}
                 <div id="app">
                     @yield('content')
                 </div>
                 {!! Admin::html() !!}
                 {!! Admin::script() !!}
-            <!--end-pjax-container-->
+                <!--end-pjax-container-->
             </div>
 
         </div>
@@ -54,11 +53,12 @@
     <button id="totop" title="Go to top" style="display: none;"><i class="fa fa-chevron-up"></i></button>
 
     <script>
-        function LA() { }
+        function LA() {}
         LA.token = "{{ csrf_token() }}";
     </script>
 
     <!-- REQUIRED JS SCRIPTS -->
+    {!! Admin::js() !!}
 
 </body>
 

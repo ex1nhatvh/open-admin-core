@@ -210,14 +210,61 @@ admin.ajax = {
         document.addEventListener(
             'click',
             function (event) {
-                if (event.target.matches('a[href], a[href] *')) {
-                    let a = event.target.closest('a');
+
+                let a = event.target.closest('a');
+
+                if (a && event.target.matches('a[href], a[href] *')) {
                     let url = a.getAttribute('href');
 
-                    if (url.charAt(0) !== '#' && url.substring(0, 11) !== 'javascript:' && url !== '' && !a.classList.contains('no-ajax') && a.getAttribute('target') !== '_blank') {
-                        preventPopState = false;
-                        admin.ajax.navigate(url, preventPopState);
+                    if (a.hasAttribute('data-bs-toggle') || a.hasAttribute('data-widgetmodal_url')) {
                         event.preventDefault();
+                        return;
+                    }
+
+                    if (url && url.charAt(0) !== '#' && url.substring(0, 11) !== 'javascript:' && url !== '' && !a.classList.contains('no-ajax') && a.getAttribute('target') !== '_blank') {
+                        preventPopState = false;
+                        
+                        admin.ajax.navigate(url, preventPopState);// Prevent default only for navigation
+                    }
+                } else {
+                    let tr = event.target.closest('tr');
+                    if (!tr) return;
+                    if (event.target.closest('.popover')) return;
+
+                    let editFlg = document.querySelector('#gridrow_select_edit')?.value;
+                    let tableOpt = document.querySelector('#gridrow_select_transition')?.value;
+
+                    if (tableOpt === 'edit') {
+                        editFlg = '1';
+                    } else if (tableOpt === 'show') {
+                        editFlg = '0';
+                    }
+
+                    let linkElem = tr.querySelector('.rowclick');
+                    if (editFlg) {
+                        if (!linkElem) linkElem = tr.querySelector('.fa-edit');
+                        if (!linkElem) linkElem = tr.querySelector('.fa-eye');
+                    } else {
+                        if (!linkElem) linkElem = tr.querySelector('.fa-eye');
+                        if (!linkElem) linkElem = tr.querySelector('.fa-edit');
+                    }
+                    if (!linkElem) linkElem = tr.querySelector('.fa-external-link');
+                    if (!linkElem) return;
+
+                    let a = linkElem.closest('a');
+                    if (a) {
+                        let url = a.getAttribute('href');
+                        // Check if the anchor is a dropdown or modal trigger
+                        if (a.hasAttribute('data-bs-toggle') || a.hasAttribute('data-widgetmodal_url')) {
+                            event.preventDefault(); // Prevent default to allow popup/modal
+                            return;
+                        }
+                        // Handle navigation for valid URLs
+                        if (url && url.charAt(0) !== '#' && url.substring(0, 11) !== 'javascript:' && url !== '' && !a.classList.contains('no-ajax') && a.getAttribute('target') !== '_blank') {
+                            preventPopState = false;
+                            admin.ajax.navigate(url, preventPopState);
+                            event.preventDefault(); // Prevent default only for navigation
+                        }
                     }
                 }
             },
@@ -429,3 +476,45 @@ admin.collectGarbage = function () {
         cal.remove();
     });
 };
+(function ($) {
+
+    var Grid = function () {
+        this.selects = {};
+    };
+
+    Grid.prototype.select = function (id) {
+        this.selects[id] = id;
+    };
+
+    Grid.prototype.unselect = function (id) {
+        delete this.selects[id];
+    };
+
+    Grid.prototype.selected = function () {
+        var rows = [];
+        $.each(this.selects, function (key, val) {
+            rows.push(key);
+        });
+
+        return rows;
+    };
+
+    $.fn.admin = LA;
+    $.admin = LA;
+    $.admin.swal = swal;
+    $.admin.toastr = toastr;
+    $.admin.grid = new Grid();
+
+    $.admin.reload = function () {
+        $.pjax.reload('#pjax-container');
+    };
+
+    $.admin.redirect = function (url) {
+        $.pjax({ container: '#pjax-container', url: url });
+    };
+
+    $.admin.getToken = function () {
+        return $('meta[name="csrf-token"]').attr('content');
+    };
+
+})(jQuery);
