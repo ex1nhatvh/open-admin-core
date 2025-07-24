@@ -31,8 +31,7 @@
 
         @include('admin::partials.sidebar')
 
-        <main id="main" class="p-4">
-
+        <div class="content-wrapper" id="main">
             <div id="pjax-container">
             <!--start-pjax-container-->
                 {!! Admin::style() !!}
@@ -44,7 +43,7 @@
             <!--end-pjax-container-->
             </div>
 
-        </main>
+        </div>
         @include('admin::partials.footer')
 
 
