@@ -263,7 +263,6 @@ admin.ajax = {
                         if (url && url.charAt(0) !== '#' && url.substring(0, 11) !== 'javascript:' && url !== '' && !a.classList.contains('no-ajax') && a.getAttribute('target') !== '_blank') {
                             preventPopState = false;
                             admin.ajax.navigate(url, preventPopState);
-                            event.preventDefault(); // Prevent default only for navigation
                         }
                     }
                 }
