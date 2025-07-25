@@ -502,8 +502,8 @@ select[id^="bootstrap-duallistbox-"]:focus-visible{
     border-top: 3px solid #d2d6de;
 }
 
-.box.box-success {
-    border-top-color: #00a65a;
+.box.box-success, .card.box-success {
+    border-top: 3px solid #00a65a !important;
 }
 
 .content-header>h1>small {
@@ -892,7 +892,7 @@ hr {
     margin-bottom: 0 !important;
 }
 
-.box.box-info:where([class="box box-info"]) {
+.box.box-info {
     border-top: 3px solid #00c0ef !important;  
   }
 .modal-lg, .modal-xl{
@@ -973,4 +973,7 @@ hr {
 
 .form-group > label.asterisk::before {
     display: none !important;
+}
+.card.box-info{
+    border-top: 3px solid #00c0ef !important;
 }
