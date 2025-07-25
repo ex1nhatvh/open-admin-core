@@ -117,7 +117,7 @@ trait HasAssets
         'vendor/open-admin/AdminLTE/plugins/slimScroll/jquery.slimscroll.min.js',
         'vendor/open-admin/bootstrap-duallistbox/dist/jquery.bootstrap-duallistbox.min.js?v=4.0.2',
         
-        'vendor/open-admin/AdminLTE/dist/js/app.min.js',
+        // 'vendor/open-admin/AdminLTE/dist/js/app.min.js',
         'vendor/open-admin/AdminLTE4/js/adminlte.min.js',
         'vendor/open-admin/jquery-pjax/jquery.pjax.js',
         'vendor/open-admin/nprogress/nprogress.js',
@@ -148,7 +148,7 @@ trait HasAssets
         'vendor/open-admin/open-admin/js/open-admin-resource.js',
         'vendor/open-admin/open-admin/js/open-admin-tree.js',
         'vendor/open-admin/open-admin/js/open-admin-selectable.js',
-        'vendor/exment/js/customscript.js',
+        // 'vendor/exment/js/customscript.js',
         // 'vendor/open-admin/jquery-pjax/jquery.pjax.js',
         // 'vendor/open-admin/toastr/build/toastr.min.js',
         // 'vendor/open-admin/bootstrap3-editable/js/bootstrap-editable.min.js',
@@ -271,8 +271,8 @@ trait HasAssets
         if (!is_null($js)) {
             return static::$baseJs = $js;
         }
-        array_push(static::$baseJs,         'vendor/open-admin/flatpickr/l10n/'.config('app.locale').'.js'); //4.6.13 version
-        array_push(static::$baseJs, 'vendor/exment/js/customscript.js');
+        array_push(static::$baseJs,         'vendor/open-admin/flatpickr/l10n/' . config('app.locale') . '.js'); //4.6.13 version
+        // array_push(static::$baseJs, 'vendor/exment/js/customscript.js');
         return static::$baseJs;
     }
 
