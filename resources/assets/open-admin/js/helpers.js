@@ -135,3 +135,66 @@
 		template.innerHTML = html;
 		return template.content.childNodes;
 	}
+
+
+function bindSubmitButtonWithLoading() {
+	$('button.submit, button[type="submit"]').off('click.submit').on('click.submit', function (event) {
+		const button = event.target;
+
+		if (!(button && (button.classList.contains('submit') || button.type === 'submit'))) {
+			return;
+		}
+
+		const form = $(button).closest('form');
+
+		if (!form.length) return;
+
+		const originalText = button.innerHTML;
+		const originalDisabledState = button.disabled;
+		button.innerHTML = 'Loading...';
+		button.disabled = true;
+
+		if (form.data('submitted')) {
+			button.innerHTML = originalText;
+			button.disabled = originalDisabledState;
+			return;
+		}
+
+		form.data('submitted', true);
+
+		setTimeout(() => {
+			button.innerHTML = originalText;
+			button.disabled = originalDisabledState;
+			form.data('submitted', false);
+		}, 3000);
+
+		event.preventDefault();
+
+		const method = (form.attr('method') || 'GET').toUpperCase();
+		const actionUrl = form.attr('action') || window.location.href;
+
+		if (method === 'GET') {
+			const formData = form.serialize();
+			const fullUrl = actionUrl.split('?')[0] + '?' + formData;
+
+			$.pjax({
+				url: fullUrl,
+				container: '#pjax-container',
+				type: 'GET',
+				timeout: 10000
+			});
+		} else {
+			const formData = new FormData(form[0]);
+
+			$.pjax({
+				url: actionUrl,
+				data: formData,
+				container: '#pjax-container',
+				type: method,
+				timeout: 10000,
+				processData: false,
+				contentType: false
+			});
+		}
+	});
+}

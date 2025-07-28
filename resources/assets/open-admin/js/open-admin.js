@@ -210,7 +210,6 @@ admin.ajax = {
         document.addEventListener(
             'click',
             function (event) {
-
                 let a = event.target.closest('a');
 
                 if (a && event.target.matches('a[href], a[href] *')) {
@@ -218,13 +217,12 @@ admin.ajax = {
 
                     if (a.hasAttribute('data-bs-toggle') || a.hasAttribute('data-widgetmodal_url')) {
                         event.preventDefault();
-                        return;
                     }
 
                     if (url && url.charAt(0) !== '#' && url.substring(0, 11) !== 'javascript:' && url !== '' && !a.classList.contains('no-ajax') && a.getAttribute('target') !== '_blank') {
                         preventPopState = false;
                         admin.ajax.navigate(url, preventPopState);
-                        event.preventDefault(); 
+                        event.preventDefault();
                     }
                 } else {
                     let tr = event.target.closest('tr');
@@ -438,57 +436,7 @@ admin.ajax = {
 
 admin.pages = {
     init: function () {
-
-        $('button.submit, button[type="submit"]').off('click').on('click', function (event) {
-            const button = event.target;
-
-
-            if (!(button && (button.classList.contains('submit') || button.type === 'submit'))) {
-                return;
-            }
-
-            const originalText = button.innerHTML;
-            const originalDisabledState = button.disabled;
-            button.innerHTML = 'Loading...';
-            button.disabled = true;
-
-            const form = $(button).closest('form');
-            console.log(form);
-
-            if (form.data('submitted')) {
-                button.innerHTML = originalText;
-                button.disabled = originalDisabledState;
-                return;
-            }
-
-            form.data('submitted', true);
-
-            setTimeout(() => {
-                button.innerHTML = originalText;
-                button.disabled = originalDisabledState;
-                form.data('submitted', false);
-            }, 2000);
-
-            event.preventDefault();
-
-            if (form.length) {
-
-                const formData = form.serialize();
-                const actionUrl = form.attr('action') || window.location.href;
-
-                setTimeout(() => {
-                    $.pjax({
-                        url: actionUrl,
-                        data: formData,
-                        container: '#pjax-container',
-                        type: form.attr('method') || 'POST',
-                        timeout: 10000
-                    });
-                }, 50);
-
-            }
-        });
-
+        bindSubmitButtonWithLoading();     
         this.setTitle();
         admin.menu.setActivePage(window.location.href);
         admin.grid.init();
@@ -568,3 +516,11 @@ admin.collectGarbage = function () {
     };
 
 })(jQuery);
+
+$(document).on('submit', 'form[pjax-container]', function (event) {
+    $.pjax.submit(event, '#pjax-container')
+});
+
+$(document).on('pjax:end', function () {
+    bindSubmitButtonWithLoading();
+});
