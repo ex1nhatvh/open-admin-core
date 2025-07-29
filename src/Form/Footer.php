@@ -436,7 +436,7 @@ EOT;
             'default_check' => $this->getDefaultCheck(),
             'fixedFooter' => $this->fixedFooter,
         ];
-        return view($this->view, $data)->render();
+        return view($this->view, $data);
     }
 
 
