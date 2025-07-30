@@ -410,7 +410,8 @@ class Admin
 
         $this->fireRegisteredCallbacks();
 
-        
+        Grid\Filter::registerFilters();
+
         $file = config('admin.bootstrap', admin_path('bootstrap.php'));
         if (\File::exists($file)) {
             require_once $file;
