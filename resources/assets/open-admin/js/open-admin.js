@@ -203,74 +203,14 @@ admin.ajax = {
         // history back
         window.onpopstate = function (event) {
             preventPopState = true;
-            admin.ajax.navigate(document.location, preventPopState);
+            $.pjax({
+                url: document.location.href,
+                container: '#pjax-container',
+                timeout: 2000
+            });
         };
 
         // link in content and menu
-        document.addEventListener(
-            'click',
-            function (event) {
-                let a = event.target.closest('a');
-
-                if (a && event.target.matches('a[href], a[href] *')) {
-                    let url = a.getAttribute('href');
-
-                    if (a.hasAttribute('data-bs-toggle') || a.hasAttribute('data-widgetmodal_url')) {
-                        event.preventDefault();
-                    }
-
-                    if (url.includes('/export') || a.hasAttribute('download')) {
-                        return; 
-                    }
-
-                    if (url && url.charAt(0) !== '#' && url.substring(0, 11) !== 'javascript:' && url !== '' && !a.classList.contains('no-ajax') && a.getAttribute('target') !== '_blank') {
-                        preventPopState = false;
-                        admin.ajax.navigate(url, preventPopState);
-                        event.preventDefault();
-                    }
-                } else {
-                    let tr = event.target.closest('tr');
-                    if (!tr) return;
-                    if (event.target.closest('.popover')) return;
-
-                    let editFlg = document.querySelector('#gridrow_select_edit')?.value;
-                    let tableOpt = document.querySelector('#gridrow_select_transition')?.value;
-
-                    if (tableOpt === 'edit') {
-                        editFlg = '1';
-                    } else if (tableOpt === 'show') {
-                        editFlg = '0';
-                    }
-
-                    let linkElem = tr.querySelector('.rowclick');
-                    if (editFlg) {
-                        if (!linkElem) linkElem = tr.querySelector('.fa-edit');
-                        if (!linkElem) linkElem = tr.querySelector('.fa-eye');
-                    } else {
-                        if (!linkElem) linkElem = tr.querySelector('.fa-eye');
-                        if (!linkElem) linkElem = tr.querySelector('.fa-edit');
-                    }
-                    if (!linkElem) linkElem = tr.querySelector('.fa-external-link');
-                    if (!linkElem) return;
-
-                    let a = linkElem.closest('a');
-                    if (a) {
-                        let url = a.getAttribute('href');
-                        // Check if the anchor is a dropdown or modal trigger
-                        if (a.hasAttribute('data-bs-toggle') || a.hasAttribute('data-widgetmodal_url')) {
-                            event.preventDefault(); // Prevent default to allow popup/modal
-                            return;
-                        }
-                        // Handle navigation for valid URLs
-                        if (url && url.charAt(0) !== '#' && url.substring(0, 11) !== 'javascript:' && url !== '' && !a.classList.contains('no-ajax') && a.getAttribute('target') !== '_blank') {
-                            preventPopState = false;
-                            admin.ajax.navigate(url, preventPopState);
-                        }
-                    }
-                }
-            },
-            false
-        );
 
         // forms that should be submitted with ajax
         // now handled by admin.form.initAjax()
@@ -440,7 +380,8 @@ admin.ajax = {
 
 admin.pages = {
     init: function () {
-        bindSubmitButtonWithLoading();     
+        clickEvent();
+        bindSubmitButtonWithLoading();
         this.setTitle();
         admin.menu.setActivePage(window.location.href);
         admin.grid.init();

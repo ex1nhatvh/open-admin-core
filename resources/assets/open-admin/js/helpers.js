@@ -149,6 +149,15 @@ function bindSubmitButtonWithLoading() {
 
 		if (!form.length) return;
 
+		const actionUrl = form.attr('action') || window.location.href;
+
+		if (/\/template\/export/.test(actionUrl)) {
+			form.off('submit');
+			form[0].submit();
+			return;
+		}
+
+
 		const originalText = button.innerHTML;
 		const originalDisabledState = button.disabled;
 		button.innerHTML = 'Loading...';
@@ -171,7 +180,6 @@ function bindSubmitButtonWithLoading() {
 		event.preventDefault();
 
 		const method = (form.attr('method') || 'GET').toUpperCase();
-		const actionUrl = form.attr('action') || window.location.href;
 
 		if (method === 'GET') {
 			const formData = form.serialize();
@@ -196,5 +204,12 @@ function bindSubmitButtonWithLoading() {
 				contentType: false
 			});
 		}
+	});
+}
+
+function clickEvent() {
+	$(document).pjax('a:not(a[target="_blank"]):not([data-nopjax]):not([href*="export"])', {
+		container: '#pjax-container',
+		timeout: 2000
 	});
 }
