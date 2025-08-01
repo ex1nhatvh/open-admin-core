@@ -158,7 +158,7 @@ class Linker
         
         // add tooltip
         if(isset($this->tooltip)){
-            $this->linkattributes['data-toggle'] = 'tooltip';
+            $this->linkattributes['data-bs-toggle'] = 'tooltip';
             $this->linkattributes['title'] = $this->tooltip;
         }
 

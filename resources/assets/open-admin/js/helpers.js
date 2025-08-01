@@ -212,4 +212,13 @@ function clickEvent() {
 		container: '#pjax-container',
 		timeout: 2000
 	});
+
+	$(document).on('pjax:click', function () {
+		document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+			const instance = bootstrap.Tooltip.getInstance(el);
+			if (instance) {
+				instance.dispose();
+			}
+		});
+	});
 }

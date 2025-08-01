@@ -49,7 +49,7 @@ EOT;
 ```
 视图`admin.tools.gender`文件为`resources/views/admin/tools/gender.blade.php`:
 ```php
-<div class="btn-group" data-toggle="buttons">
+<div class="btn-group" data-bs-toggle="buttons">
     @foreach($options as $option => $label)
     <label class="btn btn-default btn-sm {{ \Request::get('gender', 'all') == $option ? 'active' : '' }}">
         <input type="radio" class="user-gender" value="{{ $option }}">{{$label}}

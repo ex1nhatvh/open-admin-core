@@ -102,7 +102,7 @@ $navbar->right(new \App\Admin\Extensions\Nav\Links());
 或者用下面的html加入下拉菜单：
 ```html
 <li class="dropdown notifications-menu">
-<a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+<a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
   <i class="fa fa-bell-o"></i>
   <span class="label label-warning">10</span>
 </a>

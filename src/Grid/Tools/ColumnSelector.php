@@ -72,7 +72,7 @@ HTML;
         return <<<EOT
 
 <div class="dropdown pull-right column-selector" style="margin-right: 10px">
-    <button type="button" class="btn btn-sm btn-instagram dropdown-toggle" data-toggle="dropdown">
+    <button type="button" class="btn btn-sm btn-instagram dropdown-toggle" data-bs-toggle="dropdown">
         <i class="fa fa-table"></i>
         &nbsp;
         <span class="caret"></span>
