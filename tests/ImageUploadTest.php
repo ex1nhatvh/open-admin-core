@@ -8,7 +8,7 @@ use Tests\Models\MultipleImage;
 class ImageUploadTest extends TestCase
 {
     public function setUp(): void
-    {   
+    {      
         parent::setUp();
 
         $this->be(Administrator::first(), 'admin');
