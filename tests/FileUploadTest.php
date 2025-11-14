@@ -4,6 +4,7 @@ use Encore\Admin\Auth\Database\Administrator;
 
 class FileUploadTest extends TestCase
 {
+    
     public function setUp(): void
     {
         parent::setUp();
