@@ -1,6 +1,6 @@
 <?php
 
-use Encore\Admin\Auth\Database\Administrator;
+use OpenAdminCore\Admin\Auth\Database\Administrator;
 use Illuminate\Support\Facades\File;
 use Tests\Models\Image;
 use Tests\Models\MultipleImage;
@@ -8,7 +8,7 @@ use Tests\Models\MultipleImage;
 class ImageUploadTest extends TestCase
 {
     public function setUp(): void
-    {      
+    {
         parent::setUp();
 
         $this->be(Administrator::first(), 'admin');
