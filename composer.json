@@ -1,9 +1,9 @@
 {
-    "name": "exceedone/open-admin-core",
-    "description": "open-admin-core. Open-source Laravel Admin panel. No pro or paid package, free & open. Based on laravel-admin, with special thanks to z-song",
+    "name": "exceedone/exment-admin-core",
+    "description": "Admin UI framework powering Exment. Based on laravel-admin (z-song) and open-admin-core, modified for Exment.",
     "type": "library",
     "keywords": ["laravel", "admin", "grid", "form", "open-admin","open","free"],
-    "homepage": "https://github.com/exceedone/open-admin-core.git",
+    "homepage": "https://github.com/exceedone/exment-admin-core.git",
     "license": "MIT",
     "authors": [
       {
@@ -18,7 +18,7 @@
       "doctrine/dbal": "^4.1"
     },
     "require-dev": {
-      "laravel/laravel": "^12",
+      "laravel/laravel": "^13",
       "fzaninotto/faker": "~1.4",
       "intervention/image": "~2.3",
       "laravel/browser-kit-testing": "^6.0",
