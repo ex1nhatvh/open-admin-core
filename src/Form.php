@@ -1065,14 +1065,33 @@ class Form implements Renderable
                 case $relation instanceof Relations\HasMany:
                 case $relation instanceof Relations\MorphMany:
                     if (!empty($prepared[$name])) {
-                        foreach ($prepared[$name] as $related) {
-                            /** @var Relations\HasOneOrMany $relation */
-                            $relation = $this->model->$name();
+                        /** @var Relations\HasOneOrMany $relation */
+                        $relation = $this->model->$name();
+                        $keyName  = $relation->getRelated()->getKeyName();
 
-                            $keyName = $relation->getRelated()->getKeyName();
+                        // Perf: preload ALL existing children in a single query instead of one
+                        // findOrNew() SELECT per submitted row (the classic N+1 on has-many forms).
+                        // Each child is still saved individually below, so per-row model events
+                        // (revision/notify/observers) keep firing exactly as before.
+                        $existingKeys = collect($prepared[$name])
+                            ->map(function ($related) use ($keyName) {
+                                return Arr::get($related, $keyName);
+                            })
+                            ->filter(function ($id) {
+                                return !is_null($id) && $id !== '';
+                            })
+                            ->all();
+                        $existing = empty($existingKeys)
+                            ? collect()
+                            : $this->model->$name()->whereIn($keyName, $existingKeys)->get()->keyBy($keyName);
+
+                        foreach ($prepared[$name] as $related) {
+                            $key = Arr::get($related, $keyName);
 
                             /** @var Model $child */
-                            $child = $relation->findOrNew(Arr::get($related, $keyName));
+                            $child = (!is_null($key) && $key !== '' && isset($existing[$key]))
+                                ? $existing[$key]
+                                : $relation->findOrNew($key);
 
                             if (Arr::get($related, static::REMOVE_FLAG_NAME) == 1) {
                                 $child->delete();
