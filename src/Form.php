@@ -506,6 +506,16 @@ class Form implements Renderable
             ]);
         }
 
+        // Explicit API/JSON clients (Accept: application/json) get a real HTTP 422 with the
+        // field errors, instead of a 302 redirect that an API tool would auto-follow and
+        // mistake for success.
+        if (\request()->wantsJson()) {
+            return response()->json([
+                'message' => $message->first(),
+                'errors'  => $message->getMessages(),
+            ], 422);
+        }
+
         return back()->withInput()->withErrors($message);
     }
 
@@ -669,7 +679,7 @@ class Form implements Renderable
         // Handle validation errors.
         if ($validationMessages = $this->validationMessages($data)) {
             if (!$isEditable) {
-                return back()->withInput()->withErrors($validationMessages);
+                return $this->responseValidationError($validationMessages);
             }
 
             return response()->json(['errors' => Arr::dot($validationMessages->getMessages())], 422);

@@ -25,7 +25,12 @@ class Pjax
     {
         $response = $next($request);
 
-        if (!$request->pjax() || $response->isRedirection() || Admin::guard()->guest()) {
+        // A client that explicitly asked for JSON (Accept: application/json) must bypass PJAX's
+        // HTML/redirect processing entirely — otherwise a legitimate JSON response (e.g. a 422
+        // validation failure) is treated as an error and rewritten into a redirect, masking the
+        // failure for API clients (and handleErrorResponse() would even TypeError on the null
+        // exception of a non-exception response).
+        if (!$request->pjax() || $request->wantsJson() || $response->isRedirection() || Admin::guard()->guest()) {
             return $response;
         }
 
